@@ -1,0 +1,8 @@
+# bandwidth_imb job template
+# Uses Intel MPI Benchmarks Sendrecv test
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/IMB-MPI1 -npmin NUM_PROCS_HERE sendrecv"
+
+cbench_run_cmd $CMD
+

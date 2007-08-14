@@ -1,0 +1,186 @@
+[[TOC]]
+= Cbench User Guide =
+
+== Cbench Test Sets ==
+
+"Test sets" are a concept in Cbench used to package up useful collections of testing work with utility scripts to highly assist the entire testing process. Each test set is a subdirectory within the Cbench testing tree.
+
+There are three key utility scripts that facilitate the use of a given test set
+(TESTSET below gets replaced with the actual test set name, e.g. linpack, bandwidth, ...):
+ * TESTSET_gen_jobs.pl - This script is responsible for generating all the directories, scripts, and other files required for generating batch and interactive jobs.  Jobs are generated based on the parameters in cluster.def and scaled as specified in the @run_sizes array of cluster.def.
+ * TESTSET_start_jobs.pl -   This script is responsible for starting all the test jobs matching your criteria in either batch or interactive mode.
+ * TESTSET_output_parse.pl - This script will analyze output on-the-fly from test jobs that you have started and generate various forms of easily digestible summaries.
+
+See the help output of any utility for more information on specific parameters.
+
+A key parameter that is used in the test set utility scripts is the --ident parameter. This
+parameter is used to identify different test runs.  This parameter allows you
+to generate and keep track of many different test runs within a given test
+set.  Depending on the particular properties of a given test set, --ident
+can be useful to run with different optimized binaries, different hardware
+configurations, different test iterations, etc. For example:
+ * linpack_gen_jobs.pl --ident linpack_gcc343
+ * linpack_gen_jobs.pl --ident linpack_intel90
+
+The top-level of the Cbench test tree includes scripts that know how to
+call the related scripts in all available test sets. For example, you can
+use gen_jobs.pl at the top-level to generate jobs in all available test sets in one command
+which could amount to hundreds of job test jobs.
+
+The top-level of the Cbench test tree also will hold key job generation
+header templates (*.in) for your selected batch system and for interactive jobs.
+You'll need to take a look at the batch system header (i.e. torque_header.in)
+and make sure the #PBS directives are correct with regards to queues,
+node properties requested, etc.
+
+The approach Cbench uses in the generation of files (batch scripts,
+interactive run scripts, input files, etc.) is keyword replacement within
+template files. The main use of this is to build the run files for batch or
+interactive execution. This is done by building a script that is composed
+of:
+ 1. either a batch or interactive header template (i.e. torque_header.in and interactive_header.in)
+ 2. a common header template (common_header.in) for any common pre-processing
+ 3. a core job template (i.e. bandwidth_com.in, linpack_xhpl.in) where each job template is named TESTSETNAME_JOBNAME.in
+ 4. a common footer template for any post-processing desired (defaults to none)
+
+Each script is then processed for keyword replacements by the *_gen_jobs.pl scripts.  
+The *_gen_jobs.pl scripts are pretty well commented and use as much common code as
+possible so that one can see the process and logic involved. Input
+files such as the HPL.dat file for HPlinpack are generated as well
+using templates (see xhpl_dat.in and linpack_gen_jobs.pl for an example).
+
+
+The currently available test sets are:
+	Bandwidth     -  Tests the unidirectional and bidirectional bandwidth
+	                 at the MPI level in a cluster. In other words, a
+					 bandwidth scaling study. Currently the benchmarks
+					 used are the common Bandwidth Effective (b_eff) and
+					 the bandwidth benchmark from Presta 1.2, com. Presta
+					 1.2 is part of the ASCI Purple benchmarks.
+	Linpack       -  Uses the High Performance Linpack (xhpl) codebase with
+				     the ASYOUGO patches to perform a Linpack scaling study.
+	NPB           -  NAS Parallel Benchmark scaling study.
+	Rotate        -  Rotate is a cross-sectional bandwidth benchmark
+					 developed at Sandia National Labs. It is useful
+			 		 for measuring how well an interconnect takes
+			 		 advantage of the available hardware bandwidth at
+			 		 the MPI level. Specifically, this benchmark is
+			 		 useful to see the effects of static routing in
+			 		 fully connected CLOS network. The test set is
+			 		 a scaling study using rotate.
+	MPI Overhead  -  Scaling study that measures the memory overhead per
+                     process for MPI as well as the job launch time.
+	IO            -  Scaling study measuring filesystem performance. Currently
+	                 uses iozone and IOR.
+	Latency       -  Scaling study measuring MPI latency
+	Collective    -  Scaling study measuring MPI collectives
+
+Note that work in a 'test set' is most often generated using a "scaling study" type approach.
+
+== Nodehwtest Testset, aka Low Level Node Hardware Testing ==
+
+Cbench has a growing low-level hardware testing capability.  The capability
+includes opensource testing packages (such as 'memtester', Cerberus Test
+Control system', STREAMS, etc.), Cbench scripts, and the Cbench hw_test
+framework. The goal is to facilitate scalable node-level hardware testing.
+Much of the rest of Cbench is aimed at testing/benchmarking/characterizing
+an integrated HPC system at the MPI level. For more information on the
+hw_test framework see README.hw_test.
+
+This capability is captured in a test set named 'nodehwtest'. A normal Cbench
+'make', 'make install', 'make installtests' sequence will compile and install
+all the typically supported tests and scripts that are part of nodehwtest.
+There are some tests that are supported within nodehwtest that aren't always
+available due to licensing restrictions (nodeperf for example) or their
+dependence on certain hardware components such as a type of high-speed 
+interconnect (Myrinet, Infiniband, etc.).
+
+The key utilities in nodehwtest are node_hw_test and nodehwtest_output_parse.pl.
+
+Node_hw_test is the utility responsible for running all tests supported by
+the Cbench hw_test modules. Node_hw_test can be simply run by hand on a node
+or on many nodes via some sort of remote execution method like rsh, pdsh, ssh,
+etc. The key point is that node_hw_test must run on every node that you want to
+test.
+
+Nodehwtest_output_parse.pl is responsible, just like all the other Cbench
+output parsers, for parsing the output in the nodehwtest test set. Currently
+this means output generated by the node_hw_test utility but may expand in the
+future. Nodehwtest_output_parse.pl has many options that control how much
+test data is parsed and analyzed. Nodehwtest_output_parse.pl uses a statistical
+approach to characterize parsed node test result data. The idea is to run
+tests on a set of nodes that are very similar, and then characterize that test data
+statistically based on mean, max, min, and standard deviation. Characterized
+data is then captured into a set of target hardware values.  These target
+hardware values can then be used as the basis for flagging nodes that fall
+outside the characteristic pattern as "bad".  The goal is to filter out all
+the nodes that are performing within norms and only call attention to the nodes
+that are not. This facilitates being able to scalably test a lot of nodes.
+
+The actual heuristic that nodehwtest_output_parse.pl uses is based on basic
+standard deviation principles. Given a set of normally distributed samples, 
+the mean value of those samples, and the standard deviation of those samples
+it is true that:
+	 1) 95% of those samples will be within +/- 2*stddeviation of the mean
+	 2) 68% of those samples will be within +/- 1*stddeviation of the mean
+We use this in nodehwtest_output_parse.pl to flag bad nodes. Nodes with test
+values that differ from the test value mean by greater than two standard
+deviations are flagged with a 95% probability of actually being bad in some
+hardware respect.  Nodes with test values differing from the test value mean
+by more than one standard deviation but less than two have a 68% probability
+of having hardware issues.
+
+Nodehwtest utilities use the Cbench test identifier approach for organizing test
+data. Organizing test data is of particular importance in this test set because
+statistical data is dealt with by nodehwtest_output_parse.pl at the test
+identifier level.  In other words, the statistical profile built by
+nodehwtest_output_parse.pl for a test identifier is valid only for the data
+within that test identifier and for the nodes from which the test data was
+gathered.  The better your test data is organized the less statistical false
+negatives will be generated by nodehwtest_output_parse.pl.  
+
+The nodehwtest test set uses the idea of test runs and test iterations.
+A test run encapsulates all the tests and test output that is run during a 
+single invocation of node_hw_test. A single test run may consist of 1 or
+more test iterations (see the --iter parameter to node_hw_test). The more
+test runs and test iterations that are used to build the characteristic
+profile for a test identifier, the better the stats will be as well.
+
+Ok....so what does all this mean in practice?
+
+Organize your node_hw_test run data using the --ident parameter 
+intelligently.  Some examples:
+	1) all racks in a system contain homogeneous nodes, use a test identifier 
+	   per rack in the system
+	2) all compute nodes in a system are homogeneous, use a test identifier
+	   for all compute nodes
+	3) all compute nodes are homogeneous except that some have more memory,
+	   use a test identifier for the two sets of nodes based on the amount
+	   of memory
+
+Here is an example usage sequence:
+	1) Run node_hw_test on a set of homogeneous nodes using multiple test
+	   test iterations. For example:
+		pdsh -w n[0-127] "node_hw_test --ident compute --iterations 20"
+	2) Characterize the test data and save the target hardware values:
+		nodehwtest_output_parse.pl --ident compute --characterize --savetarget
+
+	   This command will analyze the data, characterize it, save a target
+	   values file named $BENCH_TEST/nodehwtest/compute/target_hw_values, and
+	   also flag test values on any of the nodes that fall outside the
+	   statistical norms for compute nodes n0 through n127.
+	3) Fix a node that was having issues, n10, and rerun node_hw_test on it.
+	4) Run nodehwtest_output_parse.pl to parse the new test data for n10
+	   and compare it to the target hardware values for the group:
+	     nodehwtest_output_parse.pl --ident compute --match n10
+
+Both node_hw_test and nodehwtest_output_parse.pl have parameters to only run
+and parse tests from certain test classes (i.e. memory, cpu, disk) or only 
+specific tests.
+
+To see what specific tests Cbench supports in the hw_test framework look
+at the modules in $CBENCHOME/perllib/hw_test.
+
+
+
+

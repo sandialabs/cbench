@@ -1,0 +1,2 @@
+mpiexec -np 224 piob -ur 2 8388608 1073741824 ./scratch.map
+mpiexec -np 462 piob -ur 2 8388608 1073741824 ./scratch.map

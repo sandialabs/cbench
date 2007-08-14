@@ -1,0 +1,13 @@
+= List of Batch Systems, Job Launchers, and Remote Execution Methods Cbench Currently Supports =
+
+== Batch Systems ==
+ * Torque (OpenPBS successor) - http://www.clusterresources.com/pages/products/torque-resource-manager.php
+
+== Job Launchers ==
+ * mpiexec - http://www.osc.edu/~pw/mpiexec/index.php
+ * mpirun (from MPICH)
+ * mpirun_prun - SNL custom mpiexec/mpirun compatible wrapper around Quadrics prun that works in a Torque environment
+ * openmpi - OpenMPI RunTime Environment (ORTE), ''orterun'' command - http://www.open-mpi.org
+
+== Remote Command Execution ==
+ * pdsh - http://sourceforge.net/projects/pdsh/

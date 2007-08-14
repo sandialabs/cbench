@@ -1,0 +1,327 @@
+###############################################################################
+#    Copyright (2005) Sandia Corporation.  Under the terms of Contract
+#    DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
+#    certain rights in this software
+#
+#    This file is part of Cbench.
+#
+#    Cbench is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    any later version.
+#
+#    Cbench is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with Cbench; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+###############################################################################
+
+# abort if user forgot to set required variables
+ifndef CBENCHOME
+  $(error "Error: Must set CBENCHOME first (see doc/INSTALL)")
+endif
+ifndef CBENCHTEST
+  $(error "Error: Must set CBENCHTEST first (see doc/INSTALL)")
+endif
+ifndef MPIHOME
+  $(error "Error: Must set MPIHOME first (see doc/INSTALL)")
+endif
+ifndef COMPILERCOLLECTION
+  $(error "Error: Must set COMPILERCOLLECTION first (see doc/INSTALL)")
+endif
+
+OS_TYPE = $(shell uname -s)
+ARCH = $(shell uname -m)
+BENCH_HOME = $(CBENCHOME)
+BENCH_TEST = $(CBENCHTEST)
+COMPILER=$(COMPILERCOLLECTION)
+MPICH = $(MPIHOME)
+
+BUILD_PATH = $(MPICH)/bin/
+CC = $(BUILD_PATH)mpicc
+CCC = $(BUILD_PATH)mpicxx
+CXX = $(BUILD_PATH)mpicxx
+F77 = $(BUILD_PATH)mpif77
+# If we are using GNU chain with GCC4 around, F77 works better using mpif90
+# as it well generally pickup gfortran instead of g77. This is true for OpenMPI
+# for sure. This would be a nice thing for configure.... :)
+#F77 = $(BUILD_PATH)mpif90
+F90 = $(BUILD_PATH)mpif90
+INCLUDES = -I$(MPICH)/include
+
+###### Compiler specific general configs
+ifeq ($(COMPILER),intel)
+  FORT = ifort
+  PLAINF77 = ifort
+  PLAINCC = icc
+  PLAINCXX = icpc
+endif
+ifeq ($(COMPILER),intel32)
+  FORT = ifort
+  PLAINF77 = ifort
+  PLAINCC = icc
+  PLAINCXX = icpc
+endif
+ifeq ($(COMPILER),gcc)
+  FORT = g77
+  PLAINF77 = g77
+  PLAINCC = gcc
+  PLAINCXX = gcc
+endif
+ifeq ($(COMPILER),pgi)
+  FORT = pgf77
+  PLAINF77 = pgf77
+  PLAINCC = pgcc
+  PLAINCXX = pgcc
+endif
+ifeq ($(COMPILER),pathscale)
+  FORT = pathf90
+  PLAINF77 = pathf90
+  PLAINCC = pathcc
+  PLAINCXX = pathcc
+endif
+
+# we should know our compilers now
+ifndef FORT
+  $(error "Error: Must set COMPILERCOLLECTION to something valid (see make.def)")
+endif
+ifndef PLAINF77
+  $(error "Error: Must set COMPILERCOLLECTION to something valid (see make.def)")
+endif
+ifndef PLAINCC
+  $(error "Error: Must set COMPILERCOLLECTION to something valid (see make.def)")
+endif
+ifndef PLAINCXX
+  $(error "Error: Must set COMPILERCOLLECTION to something valid (see make.def)")
+endif
+
+###### BLAS library settings
+
+XERBLA = $(CBENCHOME)/opensource/HPLlinpack/xerbla.o
+ifndef RPATH
+  #RPATH = $(CBENCHOME)/restricted/HPLlinpack-gotopatch
+  RPATH = /projects/global/x86_64/libraries/goto_blas
+  RPATH = /projects/global/x86_64/libraries/acml3.6.0/ifort64_mp/lib
+  RPATH = /projects/global/x86_64/libraries/acml3.6.0/gnu64/lib
+  #RPATH = /projects/global/x86_64/libraries/acml3.6.0/gfortran64_mp/lib
+  RPATH = /projects/global/x86_64/libraries/cmkl-9.1_beta/lib/em64t
+endif
+ifndef BLASLIB
+  #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_prescott64p-r1.00 $(XERBLA) -lpthread
+  BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_opteronp $(XERBLA) -lpthread -lm
+  BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lacml $(XERBLA)   -lm
+  BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lmkl $(XERBLA) -lpthread  -lm
+  #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_core2p $(XERBLA) -lpthread -lm 
+  #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lacml -Wl,-rpath,/opt/pathscale/lib/2.1 -L/opt/pathscale/lib/2.1 -lmpath -lpathfortran -lpscrt -lg2c
+endif
+
+
+###### Architecture and Compiler specific Make configs
+
+ifeq ($(ARCH),x86_64)
+
+  ifeq ($(COMPILER),intel)
+  COMMON_FLAGS =
+  OPTFLAGS = -O3 -axP
+  MPILIB = 
+  endif
+
+  ifeq ($(COMPILER),pgi)
+  COMMON_FLAGS = 
+  CFLAGS = -B
+  OPTFLAGS = -O3 -fastsse
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),gcc)
+  COMMON_FLAGS = 
+  FFLAGS += -fno-second-underscore
+  OPTFLAGS = -O3
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),pathscale)
+  COMMON_FLAGS = 
+  FFLAGS =
+  OPTFLAGS = -O3 -mcpu=opteron
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),intel32)
+  INCLUDES = -I$(MPICH)/include
+  COMMON_FLAGS = -Wl,-melf_i386
+  OPTFLAGS = -O3
+  MPILIB =
+  endif
+endif
+
+
+ifeq ($(ARCH),i686)
+  ifeq ($(COMPILER),intel)
+  OPTFLAGS = -O3 -axN
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),gcc)
+  COMMON_FLAGS = 
+  FFLAGS += -fno-second-underscore
+  OPTFLAGS = -O2
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),pgi)
+  COMMON_FLAGS =
+  CFLAGS = -B
+  OPTFLAGS = -O3 -fastsse
+  MPILIB =
+  endif
+endif
+
+ifeq ($(ARCH),alpha)
+  CC = $(BUILD_PATH)cplant-cc
+  F77 = $(BUILD_PATH)cplant-f77
+  F90 = $(F77)
+  COMMON_FLAGS = 
+  OPTFLAGS = -O3 -mcpu=ev6 -arch=ev6
+  MPILIB = -lmpichgm
+endif
+
+# add cbench mpi opt flags if defined
+ifdef CBENCH_MPIOPTFLAGS
+	OPTFLAGS=$(CBENCH_MPIOPTFLAGS)
+endif
+
+
+###### Common rules, targets, etc.
+
+CFLAGS += $(OPTFLAGS) $(COMMON_FLAGS)
+FFLAGS += $(OPTFLAGS) $(COMMON_FLAGS)
+LIBS = $(MPILIB)
+#FMPI_LIB = /usr/lib64/libg2c.so.0
+
+
+.SUFFIXES: .o .c .f .f90
+
+.c.o:
+	$(CC) -c $(CFLAGS) -o $@ $(INCLUDES) $(EXTRA) $<
+
+.f.o:
+	$(F77) -c $(FFLAGS) -o $@ $(INCLUDES) $(EXTRA) $<
+
+
+###### Common functions
+
+define do-hwtest-subdirs
+	@for dir in $(HWTEST_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $1 in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir $1; \
+	if [ $$? -ne 0 -a "$1" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-open-subdirs
+	@for dir in $(OPEN_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $@ in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir ; \
+	if [ $$? -ne 0 -a "$@" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-openextras-subdirs
+	@for dir in $(OPENEXTRAS_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $@ in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir ; \
+	if [ $$? -ne 0 -a "$@" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-restricted-subdirs
+	@for dir in $(RESTRICTED_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $@ in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir ; \
+	if [ $$? -ne 0 -a "$@" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-nwcc-subdirs
+	@for dir in $(NWCC_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $@ in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir ; \
+	if [ $$? -ne 0 ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-subdirs
+	@for dir in $(SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $@ in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir  $@; \
+	if [ $$? -ne 0 -a "$@" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-testset-installs
+	@for test in $(CONFIGURED_TESTSETS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- Installing \"$$test\" test set"; \
+	echo "---------------------------------------------------------"; \
+	$(BENCH_HOME)/sbin/install_$$test; \
+	done
+endef
+
+define do-compiled-bin-installs
+    @echo "---------------------------------------------------------"; \
+    echo "----- Installing $(BENCH_HOME)/bin --> $(BENCH_TEST)/bin"; \
+    echo "---------------------------------------------------------"; \
+	rm -fr $(BENCH_TEST)/bin; cp -fr $(BENCH_HOME)/bin  $(BENCH_TEST)/bin;
+endef
+
+define do-install
+   @$(BENCH_HOME)/sbin/mkinstalldirs $(allinstalldirs)
+   @for target in $(INSTALLTARGETS); \
+   do \
+      install $$target $(INSTALLDIR); \
+      if [ $$? = 0 ]; then \
+          echo $$target installed as $(INSTALLDIR)/`echo $$target | sed -n "s|\([^/]*/\)*\(.*\)|\2|p"`; \
+      else \
+          echo install of $$target in $(INSTALLDIR) failed; \
+      fi \
+   done
+endef
+
+
+define do-uninstall
+   @for target in $(INSTALLTARGETS); do \
+      echo removing $(INSTALLDIR)/$$target; \
+      rm -f $(INSTALLDIR)/$$target; \
+   done
+endef
+
+# Installation variables
+bin_dir = $(BENCH_HOME)/bin
+hwtest_bin_dir = $(bin_dir)/hwtests
+allinstalldirs = $(bin_dir) $(hwtest_bin_dir)
+
+# vim: syntax=make

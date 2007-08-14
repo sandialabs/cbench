@@ -1,0 +1,7 @@
+# bandwidth_beff job template
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/b_eff"
+
+cbench_run_cmd $CMD
+

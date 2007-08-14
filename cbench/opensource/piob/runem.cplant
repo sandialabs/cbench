@@ -1,0 +1,6 @@
+for i in 64 128 256
+do
+	/cplant/bin/yod -sz $i piob  131072-262144:65536 262144 ./cplant.map
+	sleep 10
+done
+ 

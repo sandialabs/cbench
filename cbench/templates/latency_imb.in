@@ -1,0 +1,7 @@
+# collective_imb job template
+# Intel MPI Benchmarks for some choice collective ops
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/IMB-MPI1 -npmin NUM_PROCS_HERE pingpong pingping"
+
+cbench_run_cmd $CMD

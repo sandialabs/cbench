@@ -1,0 +1,9 @@
+# collective_imb job template
+# Intel MPI Benchmarks for some collective ops that often don't
+# work at scale
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/IMB-MPI1 -npmin NUM_PROCS_HERE allgather allgatherv alltoall"
+
+cbench_run_cmd $CMD
+

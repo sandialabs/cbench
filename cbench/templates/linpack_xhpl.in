@@ -1,0 +1,10 @@
+# linpack_xhpl job template
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/XHPL_BIN_HERE"
+
+# note for posterity what xhpl binary was used in case
+# of symlinking
+/bin/ls -al CBENCHTEST_BIN_HERE/XHPL_BIN_HERE
+
+cbench_run_cmd $CMD

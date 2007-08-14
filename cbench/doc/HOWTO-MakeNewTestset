@@ -1,0 +1,23 @@
+= HOWTO: Make a New Cbench Testset =
+
+* create a new install script in sbin
+  * copy a generic one like install_mpioverhead
+    * most testsets are able to use the generic gen and start scripts
+    * all testsets use the same modularized output_parse_generic.pl script for output parsing functionality
+  * modify the $testset var
+  * modify the @files array to pickup the binaries and other files your testset will need
+    * these lines are generic unless you need something different
+{{{
+    "tools/$testset\*.pl",
+    "templates/$testset\*.in",
+}}}
+
+* create job templates in templates directory
+  * use a fairly generic template like templates/bandwidth_beff.in as your starting point
+  * use the naming form TESTSETNAME_JOBNAME.in
+    * ex: mpisanity_routecheck.in
+    * ex: mpisanity_imb.in
+* write output_parse module(s) for any new benchmarks/tests/apps that are used in the testset
+  * see [wiki:doc/HOWTO-MakeNewOutputParseModule]
+* then run/sbin/install_yournewtestset and the cbench testing tree should have your new testset
+

@@ -1,0 +1,15 @@
+This is version 1.2 of the PRESTA benchmark.
+
+
+Updates from version 1.1:
+
+Corrections made to rma test to address:
+  o incorrect group creation
+  o incorrect Op time calculation
+  o incorrect target rank for rma operations
+
+
+Updates from version 1.0:
+
+Additional tests defined and explained.
+

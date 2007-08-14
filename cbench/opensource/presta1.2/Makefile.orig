@@ -1,0 +1,42 @@
+#
+#  MPI Bandwidth and Latency Benchmark Makefile
+#
+#  Modify the CC, LIBS, CFLAGS, LDFLAGS, LIBDIR, and INCDIR values,
+#    if necessary, to compile the test applications for the target system
+#
+
+CC=mpicc
+LIBS= -lmpich
+CFLAGS=
+LDFLAGS=
+INCDIR=
+
+RMA  = rma
+MSG  = com laten allred globalop
+EXES = $(MSG) $(RMA)
+
+
+def: $(EXES)
+
+msg: $(MSG)
+
+.c.o:
+	$(CC) $(CFLAGS) $(INCDIR) -c $<
+
+com: com.c util.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ com.c util.o $(LIBS)
+
+rma: rma.c util.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ rma.c util.o $(LIBS)
+
+laten: laten.c util.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ laten.c util.o $(LIBS)
+
+allred: allred.c util.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ allred.c util.o -lm $(LIBS)
+
+globalop: globalop.c 
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ globalop.c -lm $(LIBS)
+
+clean:
+	rm -f $(EXES) *.o

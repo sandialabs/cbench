@@ -1,0 +1,7 @@
+# latency_rotlat job template
+#   uses the rotate_latency benchmark
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/rotate_latency"
+
+cbench_run_cmd $CMD

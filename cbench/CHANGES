@@ -1,0 +1,221 @@
+		CBENCH REVISION HISTORY
+        
+A __brief__ summary of changes in each release of Cbench.
+
+* upcoming Cbench release
+	* fix a bug with the HPL/HPCC N parameter calulation when using > 1ppn
+	* make the default hpcc input deck match that of linpack
+	* Marcus Epperson added the mpiGraph benchmark, by Adam Moody of LLNL,
+	  http://sourceforge.net/projects/mpigraph. The crunch_mpiGraph utility
+	  can be used to generate an HTML report from mpiGraph run output.
+	* added OSU messsage rate benchmark
+	* changed the IO testset to be a stress test of the
+	  parallel filesystem
+	* adding the IOSANITY to be used as a sanity checker
+	  of parallel filesystems, but not necessarily stressful
+	* Build some openmp versions of streams if we are using Intel compilers
+	* honor RPATH and BLASLIB set in the environment if
+	  found which allows one to recompile with a different
+	  BLAS linkage w/o doing any editing
+	* some under the covers openmpi 1.2.X specific support
+	* added the --waitall option for --throttledbatch mode which will keep 
+	  start_jobs from exiting until all jobs have exited the batch system
+	* add binary identifier support (--binident parameter) which analogous to
+	  test identifiers but for organizing multiple sets binaries in a Cbench
+	  testing tree
+	* update the --ident parameter to accept comma separated lists
+	* fixed a bug with --repeat when combined with with --throttledbatch
+	  or --serialbatch modes of start_jobs*
+	* added a --polldelay option for --throttledbatch/--serialbatch mode
+	* added more variations to compile streams
+	* more improvements to the Cbench testing tree rpm capabilities
+	* Adding initial (but working) support for 'yod' job launcher and 'pbspro'
+	  batch system
+	* Marcus Epperson added the very nice HPCC debug build which
+	  allows one to select on the command line which hpcc tests to run
+	* change the running as root/non-root logic to be smarter in node-level
+	  testing and not depend on privelege escelation
+
+* Cbench 1.1.4
+    o upgraded NPB support to use version 3.2.1
+	o added PSNAP OS noise measurement code from LANL
+	o added STREAM2 benchmark
+	o added the 'stress' UNIX OS system stress testing utility and
+	  included it in the standard NODEHWTEST node-level testing
+	o added NPB serial testing to NODEHWTEST test set
+	o added colorized text output to several key Cbench utilities
+	o switched Cbench self-contained (standalone) MPICH to use ch_shmem
+	o reverted to MPICH 1.2.6 for Cbench self-contained (standalone) MPI
+	o output_parse scripts --ident parameter accecpts comma separated test
+	  identifier lists now
+	o output_parse scripts support --minprocs and --maxprocs params
+	o workaround in output_parse_generic.pl for Perl<->Glibc memory allocation
+	  weirdness with large raw output files
+	o the Cbench test tree can now be used completely standalone:
+		- binaries are installed into a single 'bin' directory instead of scattering
+		the test binaries throughout the tree
+		- the 'tools' directory is installed into the test tree
+		- Cbench standalone MPI is installed into the test tree if built
+	o added tools/make_skel_testset.pl utility script to allow easy creation of
+	  a test set skeleton with appropriate generic utility scripts
+	o upgraded IOR to version 2.9.0
+	o upgraded iozone to version 3_263
+	o added --maxmem parameter to node_hw_test script for overriding the free
+	  memory detection algorithm
+	o added the capability to the NODEHWTEST test set to deal with hw_test modules
+	  that require root privelges to run correctly (like memtester and iozone)
+	o added a new mode for starting jobs called --throttledbatch; it allows you to
+	  control the number of simultaneous running+queued jobs Cbench will allow in
+	  the batch system at once
+	o added the capability to plot statistical distributions (aka dplot) of data
+	  using the 'dplot' utility from Egan Ford's STAB toolkit
+	o fixes to mpi_overhead.c to handle negative memory dececrease cases (i.e. memory
+	  increase after MPI_init)
+	o several new capabilities added to output_parse_generic.pl such as: PNG file
+	  output, persistent gnuplot windows, data normalization, additional plotlines
+	  specified on the command line, range control, collapsing of multiple test
+	  identifier data into a single set of data, key placement control...
+	o added a handly script tools/runsizes_list.pl that allows you to build comma-
+	  separated lists of runsizes that you can use with the --runsizes parameter
+	  of gen_jobs to generate custom runsize sets
+	o catch HPLinpack allocation failures and flag them during output parsing
+	o removed TODO file from source distribution (the TODO list is now on the Cbench
+	  TRAC website)
+	o added doc/ListOfSoftware as a new file mirrored from the Cbench wiki
+	o Changed the implementation of the custom parse filters to be multple Perl module
+	  files specified by the @parse_filter_include array in cluster.def; modules can
+	  easily be excluded or included by commenting out/in
+	o added OSU mpi benchmarks to the BANDWIDTH test set
+	o added an MPI message rate data point to the BANDWIDTH test set
+	o added support for running HPlinpack as a node-level test (i.e. added an xhpl.pm
+	  hw_test module)
+	o added --statsmode to output_parse_generic.pl to dump out a more statistically
+	  oriented tabular output
+	o Added the --grepable option to output_parse_generic.pl to output gathered data
+	  in a grep friendly fashion
+	o rename data metrics generated by the hpcc.pm output_parse module to be more
+	  consistent with what the HPCC website names them
+	o make CBENCHTEST environment variable a requirement; if it's not defined and you do
+	  a "make itests" as root, your /bin directory will be forcibly removed...this is not
+	  good!
+	o undo several implicit path assumptions
+	o added the 'nodehwtest' top-level Makefile target which takes care of building
+	  everything needed for node-level testing (i.e. the nodehwtest test set) and
+	  nothing more (e.g. no MPI builds occur)
+	o added the output_parse_customparse.pl script to allow usage of the custom parse
+	  filters without having to use the full output parsing framework
+	o added the rather nifty single_node_benchmark.pl script which uses various
+	  benchmarks and capabilities in Cbench for the singular purpose of benchmarking
+	  a single node and generating a nice PDF report of the data
+    o better support for the new realms of running greater than 2 ppn (processes per node)
+	  and for the new multi-core landscape
+	o started adding support for 'binary identifiers' which are very similar in
+	  concept to test identifiers but used for cleanly and dynamically managing multiple
+	  sets of test binaries
+	o several minor changes and under-the-cover capabilities to support the new Fixit123
+	  Hardware Qualification/Requalification Framework
+	o clean up some minor compile annoyances in various sources
+	o many other small bugfixes and tweaks....
+
+* Cbench 1.1.3
+	o add CBENCHTEST environment variable to easily support multiple
+	  Cbench testing trees
+	o Completely new output parsing framework that moves from a bunch of
+	  individual scripts to a core script that utilizes output parsing
+	  modules. The output parsing modules are responsible for each
+	  benchmark/test that Cbench will support output parsing. The core
+	  output parsing script was updated with much more analysis capabilities.
+	o custom parse filters add the capability to define custom regex matches
+	  and an associtated string that the core output parser code will apply
+	  while parsing output files. This allows you to define custom errors on
+	  the fly that you want to see flagged by the output parsers.
+	o redid how the stdout/stderr is grabbed for interactively run jobs making
+	  it easier to write job templates and have them just work
+	o all Cbench generated jobs are now contained in their own directory versus
+	  many job files in a single directory
+	o new --repeat, --procs, and --batchargs  parameters used by the start_jobs
+	  scripts
+	o new scaling study test sets
+		- mpisanity (tests the sanity of MPI code on a cluster)
+		- hpcc (HPC Challenge)
+	o fully implemented all partially implemented testsets
+		- io, latency, collective, mpioverhead
+	o support for IOR parallel filesystem benchmark in the 'io' testset
+	o added the ability to use Cbench testing trees completely isolated from
+	  the Cbench main source tree
+	o upgraded hpcc to version 1.0.0
+	o remove more code duplication in the *gen_jobs scripts
+	o support for using OpenMPI as a joblaunch method
+	o Lots of bugfixes and tweaks from ongoing Thunderbird cluster work
+	
+* Cbench 1.1.2
+	o !!! Formally approved GPL v2 licensed opensource release !!!
+	o Removed GOTO BLAS libs from Cbench distribution (we cannot distribute)
+	o improved job template generation structure; added common_header
+	  and common_footer templates
+	o several cleanups, bugfixes, and improvements by Marcus
+	o some under-the-hood changes to remove some code duplication
+	  (*_start_jobs and *_gen_jobs scripts)
+	o new rotate_latency benchmark
+	o added three new scaling study test sets (w/o output parsing support yet)
+	  - io
+	  - latency
+	  - collective
+	o HPlinpack updated with very helpful (for long runs anyway) timestamping
+	  output in ASYOUGO outputs
+	o several small Tbird derived bugfixes and tweaks
+	o about 70% done with the revamped output parsing structure, but not
+	  using it as the default yet
+
+* Cbench 1.1.1
+	o the nodehwtest capabilities received numerous upgrades and tweaks
+      to facilitate testing of a 4096+ node cluster including full
+      integration as a test set (i.e. *_start_jobs.pl and *_gen_jobs.pl
+      scripts were written), support for batch submission of node-level
+      tests (supports Torque only at this point) in addition to the default
+      remote execution method (i.e. pdsh via ssh), offloading of startup
+      work for remotely executed node-level test jobs (i.e. make the remote
+      execution start-up MUCH more scalable), more diags (cachebench, mpqc,
+      hpcc using a local Cbench ch_p4 compile of mpich), more fine grained
+      control of what nodes to include/exclude in testing
+	o transitioned to a separate CBench tree for opensource applications
+ 	  such as LAMMPS
+	o added MPQC as a semi-supported opensource application; the nodehwtest
+      capabilities can use MPQC as non-MPI node-level test to some extent
+    o lots of tweaks and bugfixes as a result of the Thunderbird cluster
+      integration
+    o *_start_jobs.pl scripts are all pretty much dumb shells now as all
+      the core functionality is in the Cbench library
+    o fixed bugs in the N value computation for the linpack test set
+    o added the mpi_overhead benchmark to measure the amount of memory
+      consumed by MPI to do MPI_init(); rolled the 'mpioverhead' test
+      set to generate nice graphs of MPI memory overhead scaling and MPI
+      job launch time scaling
+    o changed cluster.def to have $memory_per_node config paramater
+      instead of $memory_per_processor
+
+* Cbench 1.1
+	o nodehwtest capabilities added to facilitate scalable node-level
+	  testing, i.e. testing on a single node w/o any assumptions about
+      system-level integration or MPI
+    o added 'rotate' test set (rotate is a cross-sectional MPI bandwidth
+      benchmark developed at Sandia Labs)
+    o added NAS Parallel Benchmark (aka 'npb') test set
+	o added several new benchmarks into the opensource area including
+      OSU MPI benchmarks, Intel MPI Benchmarks v2.3, IOR, PIOB, HPCC
+
+* Cbench 1.0
+	o implemented the core Cbench infrastructure, such as cbench.pl
+      and cluster.def
+    o formalized the idea of test sets and implemented a couple:
+      the 'bandwidth' and 'linpack' test sets
+    o all the existing Cbench scripts were rewritten using the Cbench
+      trio of scripts test harness methodology (*_gen_jobs.pl,
+      *_start_jobs.pl,*_output_parse.pl)
+    o a couple of the output parsing scripts were updated with dynamic
+      GNUplot generation capabilities
+    
+* Cbench 0.9
+	o first semi-official tagging off Cbench code
+    o just a loose collection of scripts and a small amount
+      of build framework at this point

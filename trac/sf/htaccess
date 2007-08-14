@@ -1,0 +1,10 @@
+# start the rewrite engine
+RewriteEngine On
+
+# all uri starting with wiki are _not_ translated (we have images for example in it)
+RewriteRule ^(common.*)$ $1 [L]
+RewriteRule ^(sitemap.*)$ $1 [L]
+RewriteRule ^(google.*)$ $1 [L]
+
+# all other uri are translated to the trac.cgi script
+RewriteRule ^(.*)$ /cgi-bin/trac.cgi/$1 

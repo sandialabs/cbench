@@ -1,0 +1,13 @@
+#%Module########################################
+#
+# help info
+#
+proc ModulesHelp { } {
+puts stderr "The cbench modulefile defines the default system paths and"
+puts stderr "environment variables needed to compile cbench programs."
+}
+ 
+setenv CBENCHOME /scratch4/cdmaest/svn/cbench
+setenv CBENCHTEST /scratch4/cdmaest/svn/cbench-test
+setenv COMPILERCOLLECTION intel
+setenv MPIHOME /apps/openmpi

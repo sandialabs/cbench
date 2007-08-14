@@ -1,0 +1,25 @@
+--- site-packages/trac/notification.py.orig	2006-11-02 13:15:09.000000000 -0700
++++ site-packages/trac/notification.py	2006-11-22 09:54:38.000000000 -0700
+@@ -298,7 +298,8 @@
+         headers['X-Trac-Project'] =  projname
+         headers['X-URL'] = self.config.get('project', 'url')
+         headers['Subject'] = self.subject
+-        headers['From'] = (projname, self.from_email)
++        #headers['From'] = (projname, self.from_email)
++        headers['From'] = (self.from_email)
+         headers['Sender'] = self.from_email
+         headers['Reply-To'] = self.replyto_email
+ 
+@@ -316,8 +317,10 @@
+                     all.append(rcpt)
+             return (tmp, all)
+ 
+-        toaddrs = build_addresses(torcpts)
+-        ccaddrs = build_addresses(ccrcpts)
++	toaddrs = []
++	toaddrs.append(u'cbench-sf-devel@lists.sourceforge.net')
++        #toaddrs = build_addresses(torcpts)
++        ccaddrs = build_addresses(torcpts + ccrcpts)
+         accparam = self.config.get('notification', 'smtp_always_cc')
+         accaddrs = accparam and \
+                    build_addresses(accparam.replace(',', ' ').split()) or []

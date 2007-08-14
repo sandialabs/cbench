@@ -1,0 +1,11 @@
+# io_iozone job template
+# non-MPI test of aggregate filesystem performance using iozone
+# assumes you can ssh w/o a password between nodes in a job as
+# a user
+# NOTE: bash syntax is used here
+
+CMD="/projects/tbird/jbogden/cbench/tools/iozone_aggregate_bw --machinefile $PBS_NODEFILE --fs '/scratch3/jbogden/iozone' --rsh /usr/bin/ssh --debug 1 --size 8g"
+
+cbench_run_cmd $CMD
+
+sync

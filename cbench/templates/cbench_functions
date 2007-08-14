@@ -1,0 +1,30 @@
+# vim: syntax=sh tabstop=4
+#
+# This file contains Cbench common support for the bash based
+# job scripts used
+
+#
+# Some common routines that Cbench job scripts use to help deal
+# with where stdout and stderr output is captured
+cbench_run_cmd()
+{
+	local cmd=$@
+    
+    if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" ]; then
+	    $cmd 1>>$STDOUT_FILE 2>>$STDERR_FILE
+    else
+	    $cmd
+    fi
+}
+
+cbench_echo()
+{
+	local string=$@
+    
+    if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" ]; then
+	    echo $string 1>>$STDOUT_FILE
+    else
+	    echo $string
+    fi    
+}
+

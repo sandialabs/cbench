@@ -1,0 +1,11 @@
+# NAS Parallel Benchmarks job template
+# NOTE: bash syntax is used here
+
+if [ ! -e "CBENCHTEST_BIN_HERE/npb/NPB_HERE" ]; then
+	cbench_echo "CBENCH NOTICE: CBENCHTEST_BIN_HERE/npb/NPB_HERE binary NOT BUILT"
+	exit 1
+fi
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/npb/NPB_HERE"
+
+cbench_run_cmd $CMD

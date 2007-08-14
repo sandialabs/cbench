@@ -1,0 +1,24 @@
+include ../../make.def
+
+DEFINES = 
+CFLAGS += 
+LIBS = $(MPILIB) -lm
+
+EXEC = rotate rotate_latency
+
+INSTALLDIR = $(bin_dir)
+INSTALLTARGETS = $(EXEC)
+
+default: $(EXEC)
+
+rotate: rotate.c
+	$(CC) $(CFLAGS) $(DEFINES) -o $@ $< $(LIBS)
+
+rotate_latency: rotate_latency.c
+	$(CC) $(CFLAGS) $(DEFINES) -o $@ $< $(LIBS)
+
+clean:
+	rm -f *.o $(EXEC)
+
+install uninstall:
+	$(do-$@)

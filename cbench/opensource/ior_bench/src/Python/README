@@ -1,0 +1,108 @@
+/******************************************************************************\
+*                                                                              *
+*        Copyright (c) 2003, The Regents of the University of California       *
+*      See the file COPYRIGHT for a complete copyright notice and license.     *
+*                                                                              *
+\******************************************************************************/
+
+ CVS info:
+   $RCSfile: README,v $
+   $Revision: 1.27 $
+   $Date: 2006/07/12 00:04:47 $
+   $Author: loewe $
+
+IOR Instructions:
+
+	1)  Compile the C code (from the IOR/ directory, type 'gmake mpiio',
+	    'gmake hdf5', 'gmake ncmpi', or 'gmake all').
+
+	2)  Set the I/O layer, platform, and platform settings.  MPI hints
+	    may be set in the platform settings in the form:
+		'setenv IOR_HINT__MPI__IBM_largeblock_io true' or
+		'setenv IOR_HINT__GPFS__important_hint true'
+
+	3)  Under the system resources, set the machine group to run on, the
+	    max time (in minutes) for the job to run, any job dependency, the
+	    earliest start time, and any PSUB commandline options (e.g.,
+	    -standby, -expedite, etc.).  Also, set the number of nodes and
+	    tasks per node to run the job with.  Select (or deselect) multiple
+	    values in these listboxes using the ctrl key.  For selections
+	    not available in the listbox, manually key them in to the
+	    entry box delimiting multiple entries with a space.
+
+	4)  Set locations for the script/result file, the executable, the
+            file(s) to be accessed, and the hints file.  The hints file should
+            contain 'IOR_HINT__MPI__xxx=yyy', e.g.
+
+	5)  Set the test parameters of block size and transfers size
+	    following the protocol for the nodes entry.  In addition,
+	    K, M, and G suffices are recognized.  (E.g., '1K' == 1024.)
+	    Notes for some test parameters follow:
+	  * segment count -- a segment is a contiguous chunk of data
+	    accessed by multiple clients each writing/reading their
+	    own contiguous data; note that with hdf5 this repeats the
+	    pattern of an entire shared dataset or smaller, blockSize
+	    individual data sets (see shared data set flag)
+	  * test repetitions -- number of complete iterations of the test
+	  * multiple file -- use repetition count for number of files
+	  * numTasks -- number of tasks that should participate in the test
+	  * intertest delay -- time between complete writes/reads and
+	    iterations
+	  * max time duration -- max time in minutes to run tests; note that
+	    this is an internal timer for IOR, distinct from the psub timer
+	  * outlier threshold -- warn if task more this many seconds from mean
+	  * verbose -- output information; this can be set to:
+		0 - summary of all test iterations
+		1 - summary of each individual test
+		2 - details of each task running each test
+	  * option string --  string of options; e.g., key1=true,key2=false;
+	    these options can be set:
+		LUSTRE_STRIPE_COUNT, LUSTRE_STRIPE_SIZE, and LUSTRE_START_OST
+	  * keep test file -- keep test file at close of test
+	  * keep test file with error -- keep test file containing error(s)
+	  * preallocation -- MPIIO allows for preallocation of the
+	    entire file size on the storage device
+	  * setTimeStampSignature -- set value for time stamp signature
+	  * file per process -- allows a single file for all processes
+	    or a single file for each process
+	  * show hints -- MPIIO hints can be requested from an open file
+	    to determine is settings were accepted
+	  * reorder tasks -- changes task ordering to n+1 ordering for readback
+	  * single transfer attempt -- when performing a write() or read() in
+	    POSIX, there is no guarantee that the entire requested size of the
+	    buffer will be transferred; this flag prevents retrying a single
+	    transfer until it completes or returns an error
+	  * use existing test file -- do not erase test before creating/opening
+	  * no fill -- HDF5 option to not pre-fill dataset to write
+	  * read file -- may be used alone, but an existing file must have
+	    been previously written
+	  * write file -- may be used alone write a file
+	  * check read -- after a read call, reads again and compares
+	  * check write -- after file has been written, reads again
+	    and compares
+	  * collective -- under MPIIO, HDF5, or NCMPI, use collective calls
+	  * file view -- uses MPI datatype for setting file view
+	  * shared file pointer -- not yet implemented
+	  * strided datatype -- akin to MULTIBLOCK_REGION_SIZE; not yet
+	    implemented
+	  * individual datasets -- not yet implemented
+	  * use O_DIRECT -- uses O_DIRECT open flag on file create/opn
+	  * show help -- displays '-h' help info in output
+	  * quit on error -- on transfer retry error, quit
+	  * use fsync() -- perform fsync after POSIX write close
+	  * use unique directory -- unique directory for file-per-process
+	  * store file offset -- store absolute file offset in data signature
+	    written; slows performance measurements
+	    
+	6)  Save this configuration setup; it may be retrieved later
+	    with load configuration.
+
+	7)  Submit will submit a job to batch; reset will clear the window
+	    to allow for new settings.
+
+
+NOTES:
+	For MPIIO, IOR can use explicit or individual file pointers.
+	(Shared file pointer is not yet implemented.) The collective
+	or independent option also can be set.  The MPIIO fileview may
+	used as well.

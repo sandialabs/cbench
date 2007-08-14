@@ -1,0 +1,22 @@
+Readme File for Intel® MPI Benchmarks 2.3 Distribution
+
+After unpacking, the directory will contain
+
+  - This file (ReadMe_first)
+
+and 4 subdirectories
+
+  - ./doc  (ReadMe_IMB.txt; IMB_ug.pdf, the methodology description)
+  - ./src  (program source code and Makefiles)
+  - ./license (source license agreement, trademark use license agreement) 
+  - ./versions_news (version history and news)
+
+>>>>
+Please read the license agreements first:
+  - license.txt specifies the source code license granted to you
+  - use-of-trademark-license.txt specifies the license for using the 
+    name and trademark "Intel® MPI Benchmarks"
+<<<<
+
+For a quick start on compiling and using the Intel® MPI Benchmarks,
+see ./doc/ReadMe_IMB.txt.

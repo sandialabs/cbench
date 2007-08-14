@@ -1,0 +1,8 @@
+# bandwidth_osubw job template
+# Uses the OSU unidirectional bw test
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/osu_bibw"
+
+cbench_run_cmd $CMD
+
