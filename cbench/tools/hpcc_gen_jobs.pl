@@ -119,6 +119,11 @@ foreach $ppn (keys %max_ppn_procs) {
 				# this check should be superflous but do it anyway
 				($numnodes > $max_nodes) and next;
 
+				# don't generate jobs for redundant 1-node cases, like the following:
+				# mpiexec -npernode 8 -np 2 ...
+				# mpiexec -npernode 4 -np 2 ...
+				($numnodes == 1 and $ppn > $numprocs) and next;
+
 				# build the full job name
 				$jobname = "$job-".$ppn."ppn-$numprocs";
 

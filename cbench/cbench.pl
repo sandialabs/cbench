@@ -2102,6 +2102,7 @@ sub compute_N {
 	(! defined $ppn) and $ppn = 1;
 
 	my $numnodes = int($numprocs/$ppn);
+	(($numnodes * $ppn) < $numprocs) and $numnodes++;
 	my $total_memory = $memory_per_node * $numnodes * 1024 * 1024;
 	
 	for $factor (@memory_util_factors) {

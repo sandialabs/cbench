@@ -54,7 +54,7 @@ GetOptions( 'ident=s' => \$ident,
             'help' => \$help,
           );
 
-$minprocs=2 unless $minprocs;
+$minprocs=1 unless $minprocs;
 if (defined $help) {
     usage();
     exit;
