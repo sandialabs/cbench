@@ -1773,8 +1773,9 @@ sub pdshlist_to_hash {
 				"$1  #7\n";
 		}
 		else {
-			(defined $DEBUG and $DEBUG > 1) and print "DEBUG:pdshlist_to_hash() ".
-				"$_ did not match any cases...\n";
+			print STDERR "WARNING:pdshlist_to_hash() '$_' did not match any cases (treating it as a node name...)\n";
+			$hashref->{$_} = 1;
+			$num++;
 		}
 	}
 
