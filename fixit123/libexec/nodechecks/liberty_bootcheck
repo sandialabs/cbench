@@ -116,7 +116,7 @@ if [ $CAPROLE = "worker" ]; then
 	#check_num_of_panfs_mounts 1
 	#check_panfs_mount_option
 	#check_for_mount /gscratch3
-	check_for_mount /scratch2
+	check_for_mount /gscratch1
 	#check_for_mount /scratch3_old
 	check_sysctl
 

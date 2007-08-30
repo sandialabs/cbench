@@ -83,12 +83,14 @@ if [ $CAPROLE = "worker" ]; then
 	check_for_mount /projects
 	check_lustrefs_software lustre-1.4.10 lustre-1.4.10-2.6.9_42.0.2.EL_lustre.1.4.7.3smp_200704120937
 	check_lustrefs_software lustre-modules-1.4.10 lustre-modules-1.4.10-2.6.9_42.0.2.EL_lustre.1.4.7.3smp_200704120937
-	check_for_mount /scratchl2
+	check_for_mount /gscratch1
 #	check_panfs_software 2.3.7 panfs-2.6.9-42.0.2.EL_lustre.1.4.7.3-mp-2.3.7-194456.5
 	check_panfs_software 2.3.8.a panfs-2.6.9-42.0.2.EL_lustre.1.4.7.3-mp-2.3.8.a-202058.20
 #	check_num_of_panfs_mounts 1
 #	check_panfs_mount_option
 	check_for_mount /scratchp3
+	# this is imminen6
+	#check_for_mount /gscratch3
 
 	check_sysctl
 

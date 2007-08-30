@@ -125,6 +125,7 @@ if [ $CAPROLE = "worker" ]; then
 	if [ $? -ne 0 ]; then
 		echo
 		umount /scratchp3
+		umount /gscratch3
 		update_panfs_rpm /projects/global/src/panasas/2.3.8.a/x86_64/panfs-2.6.9-42.0.2.EL_lustre.1.4.7.3-mp.rpm
 	fi
 
@@ -139,15 +140,15 @@ if [ $CAPROLE = "worker" ]; then
 		update_lustrefs_rpm /projects/global/src/lustre/1.4.10/tbird/lustre-modules-1.4.10-2.6.9_42.0.2.EL_lustre.1.4.7.3smp_200704120937.x86_64.rpm
 	fi
 
-	check_for_mount /scratchl2
+	check_for_mount /gscratch1
 	if [ $? -ne 0 ]; then
 		echo
-		mount /scratchl2
+		mount /gscratch1
 	fi
-	check_for_mount /scratchp3
+	check_for_mount /gscratch3
 	if [ $? -ne 0 ]; then
 		echo
-		mount /scratchp3
+		mount /gscratch3
 	fi
 
 	check_ib_stack
