@@ -33,6 +33,7 @@ require "cbench.pl";
 
 $bench_test = get_bench_test();
 mkdir "$bench_test",0750;
+# FIXME: need to check for errors and need to make parents as well, maybe use mkdir binary
 
 print "Installing core files to the Cbench test set tree ($bench_test)...\n";
 

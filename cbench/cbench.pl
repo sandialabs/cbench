@@ -1773,9 +1773,8 @@ sub pdshlist_to_hash {
 				"$1  #7\n";
 		}
 		else {
-			print STDERR "WARNING:pdshlist_to_hash() '$_' did not match any cases (treating it as a node name...)\n";
-			$hashref->{$_} = 1;
-			$num++;
+			(defined $DEBUG and $DEBUG > 1) and print "DEBUG:pdshlist_to_hash() ".
+				"$_ did not match any cases...\n";
 		}
 	}
 
@@ -1834,6 +1833,7 @@ sub std_substitute {
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
+	my $benchmark = shift;  # aka job name
 	my $runtype = uc shift;
 	my $walltime = shift;
 	my $testset = shift;
@@ -1857,6 +1857,7 @@ sub std_substitute {
 	$string =~ s/CBENCHTEST_BIN_HERE/$temp/gs;
 	$temp = $benchtest . "\/$testset";
 	$string =~ s/TESTSET_PATH_HERE/$temp/gs;
+	$string =~ s/TESTSET_NAME_HERE/$testset/gs;
 	$string =~ s/RUN_TYPE_HERE/$runtype/gs;
 	$string =~ s/JOBLAUNCHMETHOD_HERE/$joblaunch_method/gs;
 	$string =~ s/WALLTIME_HERE/$walltime/gs;
@@ -1865,8 +1866,11 @@ sub std_substitute {
 	$string =~ s/NUM_NODES_HERE/$numnodes/gs;
 	$string =~ s/NUM_PPN_HERE/$ppn/gs;
 	$string =~ s/JOBNAME_HERE/$jobname/gs;
+	$string =~ s/BENCHMARK_PPN_HERE/$benchmark/gs;
 	$string =~ s/IDENT_HERE/$ident/gs;
 	$string =~ s/TORQUE_NODESPEC_HERE/$numnodes\:ppn\=$procs_per_node/gs;
+	$temp =join(',',@memory_util_factors);
+	$string =~ s/MEM_UTIL_FACTORS_HERE/$temp/gs;
 
 	# build the job launching command and substitute
 	my $funcname = "$joblaunch_method\_joblaunch_cmdbuild";
@@ -1901,6 +1905,7 @@ sub use_custom_runsizes {
     # we expect a comma separated list
     @run_sizes = split(',',$runsizes);
 }
+
 
 # print out a nicely colored string about a job failure found during
 # output parsing. this is used in the output_parse modules
@@ -1939,6 +1944,26 @@ sub detect_color_support {
 
 	if ($ttytest =~ /not a tty/) {
 		$ENV{'ANSI_COLORS_DISABLED'} = 1;
+	}
+}
+
+
+# Figure out what testset name a script is running on behalf of based
+# on the name of the script. All testset scripts have the convention of
+# TESTSET_blah.pl
+sub find_testset_identity {
+	my $fullname = shift;
+
+	# strip of path stuff
+	$fullname =~ s/^.*\/*\S*\///;
+	debug_print(2,"DEBUG: fullname = $fullname\n");
+	if ($fullname =~ /^(\S+)\_(gen_jobs|output_parse|start_jobs)\.pl$/) {
+		debug_print(1,"DEBUG: testset identity is $1\n");
+		return $1;
+	}
+	else {
+		warning_print("Cannot determine testset identity.");
+		return "";
 	}
 }
 
@@ -2172,9 +2197,22 @@ sub debug_print {
 	my $msg = shift;
 
 	if (defined $DEBUG and $DEBUG >= $level) {
-		print $msg;
+		#print $msg;
+    	#print colored("WARNING: $_[0]\n", "yellow", "bold");
+    	print colored($msg, "magenta", "bold");
 	}
 }
+
+# print out cbench warnings
+sub warning_print {
+    print colored("WARNING: $_[0]\n", "yellow", "bold");
+}
+
+# print out cbench info messages
+sub info_print {
+    print colored("INFO: $_[0]\n", "blue", "bold");
+}
+
 
 
 #

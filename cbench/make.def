@@ -59,30 +59,35 @@ ifeq ($(COMPILER),intel)
   PLAINF77 = ifort
   PLAINCC = icc
   PLAINCXX = icpc
+  NOOPT_FLAGS = -O0
 endif
 ifeq ($(COMPILER),intel32)
   FORT = ifort
   PLAINF77 = ifort
   PLAINCC = icc
   PLAINCXX = icpc
+  NOOPT_FLAGS = -O0
 endif
 ifeq ($(COMPILER),gcc)
   FORT = g77
   PLAINF77 = g77
   PLAINCC = gcc
   PLAINCXX = gcc
+  NOOPT_FLAGS = -O0
 endif
 ifeq ($(COMPILER),pgi)
   FORT = pgf77
   PLAINF77 = pgf77
   PLAINCC = pgcc
   PLAINCXX = pgcc
+  NOOPT_FLAGS = -O0
 endif
 ifeq ($(COMPILER),pathscale)
   FORT = pathf90
   PLAINF77 = pathf90
   PLAINCC = pathcc
   PLAINCXX = pathcc
+  NOOPT_FLAGS = -O0
 endif
 
 # we should know our compilers now

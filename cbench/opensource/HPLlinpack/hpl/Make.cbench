@@ -83,9 +83,9 @@ HPLlib       = $(LIBdir)/libhpl.a
 # ----------------------------------------------------------------------
 #
 #CC           = mpicc
-NOOPT        = $(COMMON_FLAGS)
+NOOPT        = $(NOOPT_FLAGS) $(COMMON_FLAGS)
 CCFLAGS      = $(CFLAGS) $(HPL_DEFS)
-CCNOOPT      = $(HPL_DEFS)
+CCNOOPT      = $(NOOPT_FLAGS) $(HPL_DEFS)
 #
 # On some platforms,  it is necessary  to use the Fortran linker to find
 # the Fortran internals used in the BLAS library.

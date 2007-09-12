@@ -22,7 +22,9 @@ CBENCH_RUN_TYPE=RUN_TYPE_HERE
 cbench_echo "Cbench numprocs: NUM_PROCS_HERE"
 cbench_echo "Cbench numnodes: NUM_NODES_HERE"
 cbench_echo "Cbench ppn: NUM_PPN_HERE"
+cbench_echo "Cbench benchmark: BENCHMARK_PPN_HERE"
 cbench_echo "Cbench jobname: JOBNAME_HERE"
+cbench_echo "Cbench testset: TESTSET_NAME_HERE"
 cbench_echo "Cbench joblaunchmethod: JOBLAUNCHMETHOD_HERE"
 cbench_echo ""
 

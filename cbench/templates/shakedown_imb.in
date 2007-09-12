@@ -1,4 +1,4 @@
-# mpisanity_imb job template
+# shakedown_imb job template
 # uses the Intel MPI Benchmarks in a safer mode, i.e.
 # smaller buffers, to keep it from blowing up on memory
 # like it loves to do
@@ -20,6 +20,8 @@ if [ ! -f ./lengths ]; then
 512
 1024
 2048
+4096
+8192
 EOF
 
 fi

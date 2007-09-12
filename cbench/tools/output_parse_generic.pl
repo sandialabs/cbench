@@ -1648,5 +1648,7 @@ sub usage {
 			"                       of the default left-hand y-axis.\n".
 			"   --usecwd          Override the path to the nodehwtest that is determined\n".
 			"                     and use the currend working directory\n".
+			"   --numcolumns <num>  Number of columns used for text output of parsed data.\n".
+			"                       The default is 2.\n".
             "   --debug <level>  turn on debugging at the specified level\n";
 }

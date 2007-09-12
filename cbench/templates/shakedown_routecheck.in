@@ -1,4 +1,4 @@
-# mpisanity_routecheck job template
+# shakedown_routecheck job template
 # uses the venerable mpi_routecheck test
 # NOTE: bash syntax is used here
 
