@@ -413,7 +413,13 @@ psp_install() {
 	echo "  Installing Proliant Support Pack...be patient...."
 
 	#/projects/global/src/hp/psp-7.70/compaq/csp/linux/install770.sh --nui -s
-	/projects/global/src/hp/install_psp.sh
+	if [ -x /projects/global/src/hp/install_psp-7.90.sh ]; then
+		echo "  Using PSP version 7.90"
+		/projects/global/src/hp/install_psp-7.90.sh
+	else
+		echo "  Using PSP version 7.70"
+		/projects/global/src/hp/install_psp.sh
+	fi
 
 	echo "ATTENTION: Updated HP Proliant Support Pack, you must now reboot this system ..."
 }
