@@ -81,6 +81,7 @@ check_myrinet_mx_state() {
 	if [ "$match" == "10" ]; then
 		grep -P 'Status:\s+Running, P0: Link up, P1: Link up' $tmpfile > /dev/null
 		if [ $? -eq 0 ]; then
+			/opt/mx/bin/mx_counters -c > /dev/null
 			echo_success
 			return 0
 		else
@@ -94,6 +95,7 @@ check_myrinet_mx_state() {
 	if [ "$match" == "9" ]; then
 		grep -P 'Status:\s+Running, P0: Link up' $tmpfile > /dev/null
 		if [ $? -eq 0 ]; then
+			/opt/mx/bin/mx_counters -c > /dev/null
 			echo_success
 			return 0
 		else

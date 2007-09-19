@@ -50,6 +50,7 @@ do
 			n3=$((n2-n1))
 			tail -$n3 $FIXIT123_DB_HOME/step2b/$n.log | grep -v -P '^$|==============================='
 		fi
+	echo "------------------"
 	fi
 done
 

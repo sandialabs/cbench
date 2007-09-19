@@ -84,6 +84,12 @@ if [ $? -eq 0 ]; then
 	steplogentry "$MSG" $MAINLOG
 	exit 1
 fi
+# make sure we actually looked at some data
+grep -P "Parsing .*$1" $TEMP
+if [ $? -eq 1 ]; then
+    echo "Looks like STEP2A has not been run yet"
+	exit 1
+fi
 
 # further refine the cbench report to look for data points more clearly out
 # of range
