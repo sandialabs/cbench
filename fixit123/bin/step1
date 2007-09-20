@@ -60,7 +60,10 @@ if [ -z $STEP1_RECURSIVE_EXEC ]; then
 	if [ `hostname` != $NODE ]; then
 		# so.... try to execute step1 recursively via ssh
 		/usr/bin/ssh -o ConnectTimeout=2 $NODE "FIXIT123_CONF=$FIXIT123_CONF STEP1_RECURSIVE_EXEC=1 $FIXIT123_HOME/bin/step1 $NODE"
-		exit $?
+		if [ $? -ne 0 ]; then
+			echo "FAILED Cannot ssh to $NODE to run step1"
+			exit $?
+		fi
 	fi
 else
 	# we ARE in recursion
