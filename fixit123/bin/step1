@@ -65,6 +65,7 @@ if [ -z $STEP1_RECURSIVE_EXEC ]; then
 			exit $?
 		fi
 	fi
+	exit 0
 else
 	# we ARE in recursion
 
