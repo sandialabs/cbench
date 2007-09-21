@@ -52,5 +52,5 @@ else
 	EXTRA="--quiet"
 fi
 
-$CBENCHTEST/nodehwtest/nodehwtest_output_parse.pl --ident $FIXIT123_STEP2_TESTIDENT --loadtarget $CBENCHTEST/nodehwtest/cluster_target_values $EXTRA --match "$1\." --warn
+$CBENCHTEST/nodehwtest/nodehwtest_output_parse.pl --ident $FIXIT123_STEP2_TESTIDENT --loadtarget $CBENCHTEST/nodehwtest/cluster_target_values $EXTRA --match "$1\." --warn --debug 1
 
