@@ -50,6 +50,10 @@ do
     grep -P "STEP1 PASSED|DIAGNOSE short step2a|STEP2A INITIATED|STEP2A INIT FAILED" $TEMP
 	if [ $? -eq 0 ]; then
 		$BINDIR/step2a $n
+	else 
+		if [ "$1" == "force" ]; then
+			$BINDIR/step2a $n
+		fi
 	fi
     echo "------------------"
 done
