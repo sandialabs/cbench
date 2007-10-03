@@ -13,7 +13,11 @@ cbench_run_cmd()
     if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" ]; then
 	    $cmd 1>>$STDOUT_FILE 2>>$STDERR_FILE
     else
-	    $cmd
+        if [ -n "$STDIN_FILE" ] ; then
+	        $cmd < "$STDIN_FILE"
+        else
+	        $cmd
+        fi
     fi
 }
 
