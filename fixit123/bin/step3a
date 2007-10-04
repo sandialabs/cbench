@@ -49,7 +49,7 @@ HWTDIR=$FIXIT123_CBENCHTEST/nodehwtest
 
 check_for_step3_pausefile
 
-MINNODES=4
+MINNODES=2
 MAXNODES=64
 
 if [ "$1" == 'maxnodes' ]; then
