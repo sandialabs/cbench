@@ -65,7 +65,7 @@ fi
 TEMP=`mktemp`
 $BINDIR/query_breakfix_data --node $1 > $TEMP
 grep -P "STEP2B requires manual review" $TEMP
-if [ $? -eq 0 ]; then
+if [ $? -eq 0 -a "$2" != "force" ]; then
 	echo "Looks like STEP2A needs to be run or rerun"
 	exit 1
 fi

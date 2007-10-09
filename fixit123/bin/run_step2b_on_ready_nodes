@@ -41,8 +41,8 @@ get_step2_node_list
 for n in $STEP2_NODE_LIST
 do 
 	$BINDIR/query_breakfix_data --node $n | grep -P "READY for STEP2B|STEP2B requires manual review" 
-	if [ $? -eq 0 ]; then
-		$BINDIR/step2b $n
+	if [ $? -eq 0 -o "$1" == "force" ]; then
+		$BINDIR/step2b $n $1
 	fi
     echo "------------------"
 done
