@@ -214,7 +214,7 @@ if ($finish_stamp != 99) {
 # jobs run
 $cmd = ". $CBENCHTEST/cbench-init.sh; cd $CBENCHTEST; ".
 	"$CBENCHOME/tools/output_parse_generic.pl --meta --ident step3a_$step3basename".
-    " --diag --custom --listfound";
+    " --diag --custom --listfound --filestat";
 @output = `$cmd` unless ($job_running and ! defined $status);
 (defined $DEBUG) and print @output;
 

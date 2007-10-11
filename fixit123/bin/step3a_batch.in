@@ -2,7 +2,7 @@
 #
 #
 #PBS -l nodes=TORQUE_NODESPEC_HERE
-#PBS -l walltime=30:00:00
+#PBS -l walltime=WALLTIME_HERE
 #PBS -q step3
 
 # this tells us details of the Cbench job in the job output

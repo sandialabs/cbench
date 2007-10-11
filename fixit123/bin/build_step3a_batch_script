@@ -65,7 +65,14 @@ my $batch_temp = <IN>;
 close(IN);
 $/ = "\n";
 
+# if the step3 walltime parameter is in the environment, use it
+my $walltime = "24:00:00";
+if (defined $ENV{FIXIT123_STEP3_WALLTIME}) {
+	$walltime = $ENV{FIXIT123_STEP3_WALLTIME};
+} 
+
 $batch_temp =~ s/TORQUE_NODESPEC_HERE/$nodespec/gs;
+$batch_temp =~ s/WALLTIME_HERE/$walltime/gs;
 $batch_temp =~ s/NUM_NODES_HERE/$numnodes/gs;
 $batch_temp =~ s/IDENT_HERE/$ident/gs;
 $batch_temp =~ s/BREAKFIX_LOG_HERE/$bf_log/gs;
