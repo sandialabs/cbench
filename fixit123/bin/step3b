@@ -214,7 +214,7 @@ if ($finish_stamp != 99) {
 # jobs run
 $cmd = ". $CBENCHTEST/cbench-init.sh; cd $CBENCHTEST; ".
 	"$CBENCHOME/tools/output_parse_generic.pl --meta --ident step3a_$step3basename".
-    " --diag --custom --listfound --filestat";
+    " --diag --custom --listfound --filestat --usecwd";
 @output = `$cmd` unless ($job_running and ! defined $status);
 (defined $DEBUG) and print @output;
 
@@ -277,22 +277,40 @@ if (!$step3b_passed) {
 	}
     
 	print GREEN "\n\nKey errors to track down\n========================",RESET,"\n";
-	foreach $k (@customparse_hits) {
+	# What we really want to do is figure out the list of unique runs that failed
+	# and then pass that list one-by-one to the output_parse_customparse.pl script.
+	# Otherwise we can gets lots of redundant errors because there can be multiple
+	# PARSEMATCHes per run.
+	my %customparse_files = ();
+	foreach my $k (@customparse_hits) {
 		$k =~ s/\033\[0m//g;
-		print "$k\n";
-
-		# run errors through additional output diagnostics
+		# find the jobid and .o/.e filenames
 		$k =~ /\*PARSEMATCH\*\*\((.*)\)\s*\=/;
-		$o_file = $1;
-		($outid) = $o_file =~ /\.o(\d+)$/;
-		$o_file =~ s/\.o$outid/\.e$outid/;
+		my $o_file = $1;
+		my @parts = split("/",$o_file);
+		my $jobname = $parts[$#parts-1];
+		my $testset = $parts[$#parts-3];
+		my ($outid) = $o_file =~ /\.o(\d+)$/;
+		my $e_file = $o_file;
+		$e_file =~ s/\.o$outid/\.e$outid/;
+		$customparse_files{$e_file}{id} = $outid;
+		$customparse_files{$e_file}{jobname} = $jobname;
+		$customparse_files{$e_file}{testset} = $testset;
+		#print "$outid $jobname\n";
+	}
+
+	foreach my $k (keys %customparse_files) {
+		print "-----------> Errors for job \'$customparse_files{$k}{jobname}\' with id \'$customparse_files{$k}{id}\' from testset \'$customparse_files{$k}{testset}\'\n";
+		# run files through additional output diagnostics
 		#system("$DIR/SCRIPTS_step123/job_output_diag.pl --nocustom $CBENCHTEST\/$o_file");
-	    system(". $CBENCHTEST/cbench-init.sh; $CBENCHTEST/tools/output_parse_customparse.pl --diag $CBENCHTEST\/$o_file");
+	    (defined $DEBUG) and print ". $CBENCHTEST/cbench-init.sh; $CBENCHTEST/tools/output_parse_customparse.pl --diag $CBENCHTEST\/$k\n";
+	    system(". $CBENCHTEST/cbench-init.sh; $CBENCHTEST/tools/output_parse_customparse.pl --diag $CBENCHTEST\/$k");
 		print "------------\n";
 	}
 
 	# run output diagnostics on the actual step3a batch job stderr file
 	if (!defined $status) {
+		print "-----------> Errors from the Step3 batch job stdout/stderr\n";
 	    #system("$DIR/SCRIPTS_step123/job_output_diag.pl $STEP3ADIR\/$step3errorfile");
 	    #system(". $CBENCHTEST/cbench-init.sh; $CBENCHTEST/tools/output_parse_customparse.pl $STEP3ADIR\/$step3errorfile");
 	    system(". $CBENCHTEST/cbench-init.sh; $CBENCHTEST/tools/output_parse_customparse.pl --diag $STEP3ADIR\/$step3errorfile");
