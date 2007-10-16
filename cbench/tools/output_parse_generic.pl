@@ -45,6 +45,7 @@ use Term::ANSIColor qw(:constants color);
 $Term::ANSIColor::AUTORESET = 1;
 
 my $num_data_columns = 2;
+my $testset = 'TESTSET_NAME_HERE';
 
 GetOptions( 'ident=s' => \$ident,
 			'debug:i' => \$DEBUG,
@@ -84,10 +85,8 @@ GetOptions( 'ident=s' => \$ident,
 			'y2units=s' => \$y2units,
 			'usecwd' => \$usecwd,
 			'grepable' => \$grepable,
+			'testset=s' => \$testset,
 );
-
-
-my $testset = 'TESTSET_NAME_HERE';
 
 if (defined $help) {
     usage();
@@ -1561,6 +1560,7 @@ sub normalize_value {
 sub usage {
     print   "USAGE: $0 \n";
     print   "Cbench script to analyze job output in the $testset test set\n".
+            "   --testset <name> Override the name of the testset (optional).\n".
             "   --ident <name>   Test identifier to analyze (optional).\n".
 			"                    Can also have the form of a list:\n".
 			"                      --ident test1,test2,test3\n".
