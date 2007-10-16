@@ -46,6 +46,7 @@ $Term::ANSIColor::AUTORESET = 1;
 
 my $num_data_columns = 2;
 my $testset = 'TESTSET_NAME_HERE';
+my $xaxis_ppn = 0;
 
 GetOptions( 'ident=s' => \$ident,
 			'debug:i' => \$DEBUG,
@@ -86,6 +87,7 @@ GetOptions( 'ident=s' => \$ident,
 			'usecwd' => \$usecwd,
 			'grepable' => \$grepable,
 			'testset=s' => \$testset,
+			'xaxis_ppn' => \$xaxis_ppn,
 );
 
 if (defined $help) {
@@ -334,12 +336,20 @@ if (defined $DEBUG and $DEBUG > 2) {
 $matchstr = "$metricstr";
 %dplotdata = ();
 $didx = 0;
+my %ppndata = ();
 for $testid (keys %data) {
     for $ppn (keys %{$data{$testid}}) {
 		for $bench (keys %{$data{$testid}{$ppn}}) {
 			$benchlist{$bench} = 1;
 			for $np (keys %{$data{$testid}{$ppn}{$bench}}) {
 				for $k (keys %{$data{$testid}{$ppn}{$bench}{$np}}) {
+					if ($xaxis_ppn) {
+						# store data for use when ppn is on the x-axis
+						my $ppn_num = $ppn;
+						$ppn_num =~ s/ppn//;
+						$ppndata{$testid}{"np$np"}{$bench}{$ppn_num} = $data{$testid}{$ppn}{$bench}{$np};
+					}
+
 					if ($k =~ /^DATA/) {
 						$metrics{$k} = $bench;
 
@@ -378,9 +388,16 @@ for $testid (keys %data) {
 # where each column corresponds to a jobname, eg. cgC-2ppn
 my %outhash = ();
 my $columnidx = 1;
-$outhash{'0'}{'0'} = "NP";
+$outhash{'0'}{'0'} = $xaxis_ppn ? "PPN" : "NP";
 $outhash{'UNITS'}{'0'} = "UNITS";
 $outhash{'META'}{'0'} = "META";
+
+if ($xaxis_ppn) {
+	# this could be a bit misleading based on the variable names used in the loops below.
+	# %ppndata contains the same data as %data, only with PPN as the second hash key and
+	# NP as the fourth
+	%data = %ppndata;
+}
 
 my $numtestids = keys %data;
 for $testid (keys %data) {
@@ -390,7 +407,6 @@ for $testid (keys %data) {
 			for $rawmetric (keys %metrics) {
 				$metric = $rawmetric;
 				$metric =~ s/DATA_//;
- 
 
 				# key zero, which would be 0 processors, in the first dimension
 				# of the hash is the 'legend' line that records which column
@@ -1065,7 +1081,7 @@ sub results_to_stdout {
 				$row++;
 			}
 			$output[$firstrow] = color('bold yellow');
-			$output[$firstrow] .= sprintf("%4s ",'NP');
+			$output[$firstrow] .= sprintf("%4s ",$xaxis_ppn ? 'PPN' : 'NP');
 			$output[$firstrow] .= color('bold cyan');
 			$output[$firstrow] .= sprintf("%25s ",$outhash->{'0'}{$job});
 			$output[$firstrow] .= color('reset');
@@ -1192,6 +1208,7 @@ sub results_to_gnuplot {
 	}
 
 	my $xstring = "Number of Processors";
+	(defined $xaxis_ppn) and $xstring = "PPN";
 	(defined $xlabel) and $xstring = $xlabel;
 
 	# continue building the gnuplot cmd file
@@ -1332,7 +1349,7 @@ sub cleanup_output_hash {
 		if ($outhash->{'META'}{$job} =~ /no datapoints/) {
 			delete $outhash->{'0'}{$job};
 		}
-		elsif ($outhash->{'0'}{$job} =~ /NP/) {
+		elsif ($outhash->{'0'}{$job} =~ /NP|PPN/) {
 			next;
 		}
 		elsif (defined $metricstr and ($outhash->{'0'}{$job} !~ /$matchstr/)) {
@@ -1351,6 +1368,9 @@ sub dump_success_stats{
 		(defined $logy) and print CMD "set log y\n";
 		(defined $logx) and print CMD "set log x\n";
 
+		my $xstring = "Number of Processors";
+		(defined $xaxis_ppn) and $xstring = "PPN";
+
 		print CMD
 			"set ylabel \"%\"\n" .
 			"set yrange [0:100]\n" .
@@ -1358,7 +1378,7 @@ sub dump_success_stats{
 			#"set y2tics\n" .
 			"set sample 10000\n" .
 			"set ytics nomirror\n" .
-			"set xlabel \"Number of Processors\"\n" .
+			"set xlabel \"$xstring\"\n" .
 			"set key top right\n".
 			"set title \"Cbench $testset Test Set Job Success Summary\"\n".
 			"plot ";
@@ -1366,11 +1386,11 @@ sub dump_success_stats{
 	}
 	
 	print color('bold yellow');
-	printf "%4s ",'NP';
+	printf "%4s ",$xaxis_ppn ? 'PPN' : 'NP';
 	print color('bold magenta');
 	printf "%15s","Job Success %";
 	print RESET "\n";
-	(defined $gnuplot) and printf PLOT "%s %s %s %s\n",'NP',"Job_Success_%","Successful_Job_Count",
+	(defined $gnuplot) and printf PLOT "%s %s %s %s\n",$xaxis_ppn ? 'PPN' : 'NP',"Job_Success_%","Successful_Job_Count",
 		"Total_Job_Count";
 	(defined $gnuplot) and print CMD "\"$testset.dat\" using 1:2 title \"Job Success\" with filledcurves axes x1y1\n";
 	#(defined $gnuplot) and print CMD "\"$testset.dat\" using 1:3 title \"Successful Jobs\" with fsteps axes x1y2,";
@@ -1413,7 +1433,7 @@ sub dump_jobdiag_stats {
 	my $hash = shift;
 
 	print GREEN "\nJob Failure Diagnostics:\n-----------------------------\n";
-	printf "%4s  %s\n",'NP',"Failure Diagnoses";
+	printf "%4s  %s\n",$xaxis_ppn ? 'PPN' : 'NP',"Failure Diagnoses";
 	for $np (sort {$a <=> $b} (keys %{$hash}) ) {
 		printf "%4d   ",$np;
 		foreach $k (sort {$a <=> $b} (keys %{$hash->{$np}}) ) {
@@ -1650,5 +1670,6 @@ sub usage {
 			"                     and use the currend working directory\n".
 			"   --numcolumns <num>  Number of columns used for text output of parsed data.\n".
 			"                       The default is 2.\n".
+			"   --xaxis_ppn       Put PPN on the x-axis\n".
             "   --debug <level>  turn on debugging at the specified level\n";
 }
