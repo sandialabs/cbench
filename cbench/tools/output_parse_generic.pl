@@ -1207,8 +1207,7 @@ sub results_to_gnuplot {
 		($normalize =~ /const/) and $units .= " / $normalize_const";
 	}
 
-	my $xstring = "Number of Processors";
-	(defined $xaxis_ppn) and $xstring = "PPN";
+	my $xstring = $xaxis_ppn ? "PPN" : "Number of Processors";
 	(defined $xlabel) and $xstring = $xlabel;
 
 	# continue building the gnuplot cmd file
@@ -1239,15 +1238,23 @@ sub results_to_gnuplot {
 
 	print CMD "plot ";
 
-	$numkeys = keys %{$outhash->{'0'}};
-	$keyindex = 0;
+	my %job_to_column = ();
+	my $col = 0;
 	for $job (sort {$a <=> $b} (keys %{$outhash->{'0'}}) ) {
-    	$keyindex++;
     	print PLOT "$outhash->{'0'}{$job} ";
+		# store column info so we can arbitrarily arrange our gnuplot key entries later
+		$job_to_column{$job} = ++$col;
+	}
+
+	$numkeys = keys %{$outhash->{'0'}};
+	my $keyindex = 0;
+	for $job (sort {$outhash{'0'}{$a} cmp $outhash{'0'}{$b} or $a <=> $b} (keys %{$outhash{'0'}}) ) {
+    	$keyindex++;
     	($job == 0) and next;
 
+		$column = $job_to_column{$job};
     	my $my_units = defined $outhash->{UNITS}{$job} ? $outhash->{UNITS}{$job} : 'NA';
-    	print CMD "\"$testset.dat\" using 1:$keyindex title \"$outhash->{'0'}{$job} ($my_units)\" with lp";
+    	print CMD "\"$testset.dat\" using 1:$column title \"$outhash->{'0'}{$job} ($my_units)\" with lp";
 		(defined $linewidth) and print CMD " lw $linewidth";
     	(defined $y2units and $y2units eq $my_units) and print CMD " axes x1y2";
     	($keyindex != $numkeys) and print CMD ",";
@@ -1368,8 +1375,7 @@ sub dump_success_stats{
 		(defined $logy) and print CMD "set log y\n";
 		(defined $logx) and print CMD "set log x\n";
 
-		my $xstring = "Number of Processors";
-		(defined $xaxis_ppn) and $xstring = "PPN";
+		my $xstring = $xaxis_ppn ? "PPN" : "Number of Processors";
 
 		print CMD
 			"set ylabel \"%\"\n" .
