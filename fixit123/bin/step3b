@@ -262,12 +262,14 @@ elsif ($delta_min < $minimum_runtime) {
 }
 
 my @stdout_log = ();
+my $lastjob = '';
 if (!$step3b_passed) {
-	my $lastjob = '';
 	if (defined $status) {
-		@stdout_log =`/apps/contrib/qpeek -o $jobid`;
+		# FIXME : need to check for the existence of qpeek
+		#@stdout_log =`/apps/torque/contrib/qpeek -o $jobid`;
+		@stdout_log =`qpeek -o $jobid`;
 		my $lastline = $stdout_log[$#stdout_log];
-		($lastjob) = $lastline =~ /jobname\s+(.*)\s+\.\.\./;
+		($lastjob) = $lastline =~ /jobname\s+(\S+)\s+\(.*$/;
 		#print "lastjob = $lastjob\n";
 	}
 
@@ -334,6 +336,7 @@ if (defined $status) {
 
 	print GREEN "\n\nTailing the STEP3A job's STDOUT\n================================",RESET,"\n";
 	print "@stdout_log";
+	print BOLD MAGENTA "\n\nCurrent running test is: ",RESET, "$lastjob\n";
 }
 
 if (defined $status) {
