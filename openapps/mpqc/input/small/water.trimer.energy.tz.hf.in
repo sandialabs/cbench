@@ -1,0 +1,42 @@
+% Emacs should use -*- KeyVal -*- mode
+molecule<Molecule>: (
+  symmetry = c1
+  unit = "angstrom"
+  {  n atoms                        geometry                     }={
+    1    O [    1.6011582699     0.0913288640     0.1467091898]
+    2    H [    0.9310088722     0.7921117395     0.0753032006]
+    3    H [    2.2493983782     0.2880136075    -0.5312990055]
+    4    O [   -0.7098745915    -1.4320782262    -0.1272876046]
+    5    O [   -0.8639765990     1.3475378678    -0.1175621020]
+    6    H [    0.2282806056    -1.1961779121    -0.0279071229]
+    7    H [   -1.1591950362     0.4228650942    -0.0733680651]
+    8    H [   -0.8664685018    -2.1384811544     0.5008077262]
+    9    H [   -1.4103313972     1.8248801194     0.5083198724]
+  }
+)
+% basis set specification
+basis<GaussianBasisSet>: (
+  name = "cc-pVTZ"
+  molecule = $:molecule
+)
+reference<CLHF>: (
+  molecule = $:molecule
+  basis = $:basis
+  memory = 4GB
+  guess_wavefunction<CLHF>: (
+    molecule = $:molecule
+    memory = 4GB
+    basis<GaussianBasisSet>: (
+      molecule = $:molecule
+      name = "3-21G"
+    )
+  )
+)
+mpqc: (
+  checkpoint = no
+  savestate = no
+  restart = no
+  do_energy = yes
+  do_gradient = no
+  mole = $:reference
+)

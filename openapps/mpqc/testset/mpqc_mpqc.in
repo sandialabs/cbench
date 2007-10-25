@@ -1,0 +1,11 @@
+# MPQC job template
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE BIN_PATH_HERE/MPQC_BIN_HERE"
+
+if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" ]; then
+	$CMD 1>JOBNAME_HERE.o$JOBID 2>JOBNAME_HERE.e$JOBID
+else
+	$CMD
+fi
+

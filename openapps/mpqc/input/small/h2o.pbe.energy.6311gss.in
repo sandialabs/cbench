@@ -1,0 +1,47 @@
+% Emacs should use -*- KeyVal -*- mode
+% molecule specification
+molecule<Molecule>: (
+  symmetry = C2V
+  unit = angstrom
+  { atoms geometry } = {
+     O     [     0.000000000000     0.000000000000     0.369372944000 ]
+     H     [     0.783975899000     0.000000000000    -0.184686472000 ]
+     H     [    -0.783975899000     0.000000000000    -0.184686472000 ]
+  }
+)
+% basis set specification
+basis<GaussianBasisSet>: (
+  name = "6-311G**"
+  molecule = $:molecule
+)
+mpqc: (
+  checkpoint = no
+  savestate = no
+  restart = no
+  optimize = no
+  % molecular coordinates for optimization
+  coor<SymmMolecularCoor>: (
+    molecule = $:molecule
+    generator<IntCoorGen>: (
+      molecule = $:molecule
+    )
+  )
+  do_energy = yes
+  do_gradient = no
+  % method for computing the molecule's energy
+  mole<CLKS>: (
+    molecule = $:molecule
+    basis = $:basis
+    coor = $..:coor
+    memory = 4GB
+    functional<StdDenFunctional>: name = "PBE"
+    guess_wavefunction<CLHF>: (
+      molecule = $:molecule
+      basis<GaussianBasisSet>: (
+        molecule = $:molecule
+        name = "STO-3G"
+      )
+      memory = 4GB
+    )
+  )
+)

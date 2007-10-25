@@ -1,0 +1,51 @@
+% emacs should use -*- KeyVal -*- mode
+% molecule specification
+molecule<Molecule>: (
+  symmetry = C1
+  angstroms = yes
+  { atoms geometry } = {
+N [    1.1729819324     0.9827953433    -0.0000117477]
+C [    1.2188795048    -0.4011916127    -0.0000000044]
+N [   -0.0347191935    -0.9768309570    -0.0000149421]
+C [   -1.2870983653    -0.3437317331     0.0000008244]
+C [   -1.2004141359     1.1062232031    -0.0000015157]
+C [    0.0072941779     1.7038707265    -0.0000002903]
+O [    2.2584727379    -1.0303452781     0.0000193129]
+O [   -2.3123996784    -1.0026817391     0.0000180722]
+H [   -2.1113908391     1.6779691752     0.0000102305]
+H [    2.0694583605     1.4402785960     0.0000103458]
+H [   -0.0465347138    -1.9877041245     0.0000054069]
+H [    0.1251982121     2.7765154002     0.0000113072]
+ }
+)
+
+% basis set specification
+basis<GaussianBasisSet>: (
+  name = "cc-pVDZ"
+  molecule = $:molecule
+  puream = true
+)
+
+mpqc: (
+  checkpoint = no
+  restart = no
+  savestate = no
+  do_energy = yes
+  do_gradient = yes
+  mole<CLHF>: (
+    molecule = $:molecule
+     basis = $:basis
+     memory = 4GB
+     value_accuracy = 1e-7
+       guess_wavefunction<CLHF>: (
+         lindep_tol = 1e-10
+         molecule = $:molecule
+         value_accuracy = 1e-6
+         memory = 4GB
+         basis<GaussianBasisSet>: (
+           molecule = $:molecule
+           name = "STO-3G"
+         )
+       )
+   )
+)

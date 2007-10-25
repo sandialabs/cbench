@@ -1,0 +1,26 @@
+% emacs should use -*- KeyVal -*- mode
+% molecule specification
+molecule<Molecule>: (
+  symmetry = C2V
+  unit = angstrom
+  { atoms geometry } = {
+    O     [     0.00000000     0.00000000     0.37000000 ]
+    H     [     0.78000000     0.00000000    -0.18000000 ]
+    H     [    -0.78000000     0.00000000    -0.18000000 ]
+  }
+)
+mpqc: (
+  restart = no
+  checkpoint = no
+  savestate = no
+  do_gradient = no
+  mole<CLHF>: (
+    %maxiter = 1
+    molecule = $:molecule
+    basis<GaussianBasisSet>: (
+      name = "aug-cc-pVQZ"
+      molecule = $:molecule
+    )
+    memory = 4GB
+  )
+)
