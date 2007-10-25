@@ -105,10 +105,11 @@ sub parse {
     my $status = 'NOTSTARTED';
 	my $found_endrecord = 0;
     foreach my $l (@{$txtbuf}) {
-		($l =~ /NOT BUILT/) and
-			$status = 'NOTBUILT';
-		($l =~ /INSUFFICIENT MEMORY/) and
-			$status = 'INSUFFICIENT MEMORY';
+        ($l =~ /CBENCH NOTICE/) and $status = $l;
+		#($l =~ /NOT BUILT/) and
+		#	$status = 'NOTBUILT';
+		#($l =~ /INSUFFICIENT MEMORY/) and
+		#	$status = 'INSUFFICIENT MEMORY';
         ($l =~ /NAS Parallel Benchmarks/) and $status = 'STARTED';
 		($l =~ /Benchmark Completed/) and $found_endrecord = 1 and
 			$status = 'COMPLETED';
@@ -128,6 +129,11 @@ sub parse {
 	elsif ($status =~ /UNSUCCESSFUL/) {
 		$data{'STATUS'} = "FAILED VERIFICATION";
 		$data{'mops'} = 'NODATA';
+	}
+	elsif ($status =~ /CBENCH NOTICE/) {
+		$data{'STATUS'} = 'NOTICE';
+		(my $tmp = $status) =~ s/CBENCH NOTICE://;
+        defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
 	}
 	else {
 		$data{'STATUS'} = "ERROR($status)";

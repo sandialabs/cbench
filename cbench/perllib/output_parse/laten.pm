@@ -111,7 +111,7 @@ sub parse {
     my $status = 'NOTSTARTED';
 	my $parse_state = 0;
     foreach my $l (@{$txtbuf}) {
-        ($l =~ /CBENCH NOTICE/) and $status = 'NOTICE';
+        ($l =~ /CBENCH NOTICE/) and $status = $l;
         ($l =~ /MPI.*Bidir.*latency/) and $status = 'STARTED';
 		($l =~ /Processes.*/) and $parse_state = 1;
 		($parse_state > 0) or next;
@@ -133,11 +133,13 @@ sub parse {
 	if ($status =~ /COMPLETED/) {
 		$data{'STATUS'} = "PASSED";
 	}
-	elsif ($status =~ /NOTICE/) {
+	elsif ($status =~ /CBENCH NOTICE/) {
 		# this means the job was not an error, but did not
 		# run because the benchmark does not support running
 		# on an odd number of processors
-		$data{'STATUS'} = $status;
+		$data{'STATUS'} = 'NOTICE';
+		(my $tmp = $status) =~ s/CBENCH NOTICE://;
+        defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
 	}
 	else {
 		$data{'STATUS'} = "ERROR($status)";
