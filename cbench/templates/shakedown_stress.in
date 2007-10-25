@@ -3,7 +3,7 @@
 # using the all-to-all nonblocking pattern
 # NOTE: bash syntax is used here
 
-CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/stress -async -all -quiet -ttime 00:15"
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/stress -async -all -quiet -ttime 00:30"
 
 cbench_run_cmd $CMD
 

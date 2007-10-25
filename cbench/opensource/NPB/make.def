@@ -1,4 +1,3 @@
-# vim: syntax=make
 include $(CBENCHOME)/make.def
 
 #---------------------------------------------------------------------------
@@ -51,9 +50,6 @@ FMPI_INC = $(INCLUDES)
 #---------------------------------------------------------------------------
 #FFLAGS	= $(OPTFLAGS) 
 # FFLAGS = -g
-ifeq ($(ARCH),x86_64)
-FFLAGS += -mcmodel=medium
-endif
 
 #---------------------------------------------------------------------------
 # Global *link time* flags. Flags for increasing maximum executable 
@@ -101,9 +97,6 @@ CMPI_INC = $(INCLUDES)
 #---------------------------------------------------------------------------
 #CFLAGS	= $(OPTFLAGS)
 # CFLAGS = -g
-ifeq ($(ARCH),x86_64)
-CFLAGS += -mcmodel=medium
-endif
 
 #---------------------------------------------------------------------------
 # Global *link time* flags. Flags for increasing maximum executable 

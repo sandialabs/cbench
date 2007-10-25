@@ -73,8 +73,9 @@ while (defined ($_ = <STDIN>)) {
 		$src = $3;
 		$dest = $4;
 	} else {
-		print "NEW UNMATCHED ERROR from CBENCH OUTPUT PARSER!\n";
-		print "====$_====\n";
+		#print "NEW UNMATCHED ERROR from CBENCH OUTPUT PARSER!\n";
+		#print "====$_====\n";
+		print "$_\n";
 	}
 
 print "$src -- $dest -- $outputfile -- $parse_message\n" if $debug;

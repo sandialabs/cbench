@@ -169,8 +169,8 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				$outbuf = $templates{$job}{$runtype};
 
 				# here we do all the standard substitutions
-				$outbuf = std_substitute($outbuf,$numprocs,$ppn,$numnodes,$job,
-							$runtype,$default_walltime,$testset,$jobname,$ident);
+				$outbuf = std_substitute($outbuf,$numprocs,$ppn,$numnodes,
+							$runtype,$default_walltime,$testset,$jobname,$ident,$job);
 
 				# other substitutions
 				$outbuf =~ s/TESTDIR_HERE/$testdir/gs;
@@ -178,8 +178,8 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				$outbuf =~ s/HPCC_BIN_HERE/$hpccbin/gs;
 
 				# run any custom generation inner loop work
-				custom_gen_innerloop($outbuf,$numprocs,$ppn,$numnodes,$job,
-							$runtype,$default_walltime,$testset,$jobname,$ident);
+				custom_gen_innerloop($outbuf,$numprocs,$ppn,$numnodes,
+							$runtype,$default_walltime,$testset,$jobname,$ident,$job);
 
 				# build the filename
 				($runtype eq 'batch') and $outfile = "$jobname\.pbs";
@@ -225,13 +225,12 @@ sub custom_gen_innerloop {
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
-	my $job = shift;
 	my $runtype = uc shift;
 	my $walltime = shift;
 	my $testset = shift;
 	my $jobname = shift;
 	my $ident = shift;
-
+	my $job = shift;
 
 	debug_print(3,"DEBUG: entering custom_gen_innerloop()\n");
 
@@ -240,8 +239,8 @@ sub custom_gen_innerloop {
 		debug_print(2,"DEBUG:custom_gen_innerloop() calling $custom_gen_hash{benchmark}{$job}{innerloop} \n");
 		my $funcname = "$custom_gen_hash{benchmark}{$job}{innerloop}";
 		*func = \&$funcname;
-		func($outbuf,$numprocs,$ppn,$numnodes,$job,
-			$runtype,$default_walltime,$testset,$jobname,$ident);
+		func($outbuf,$numprocs,$ppn,$numnodes,
+			$runtype,$default_walltime,$testset,$jobname,$ident,$job);
 	}
 }
 
@@ -254,7 +253,7 @@ sub xhpl_gen_init {
 	# if we are generating for the shakedown testset, we use low
 	# memory utilization setup for Linpack to speed the testing up
 	if ($testset == "shakedown") {
-		@memory_util_factors = (0.40);
+		@memory_util_factors = (0.45);
 	}
 
 	# read in the xhpl HPL.dat config file generation template
@@ -273,12 +272,12 @@ sub xhpl_gen_innerloop {
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
-	my $job = shift;
 	my $runtype = uc shift;
 	my $walltime = shift;
 	my $testset = shift;
 	my $jobname = shift;
 	my $ident = shift;
+	my $job = shift;
 
 	debug_print(3,"DEBUG: entering xhpl_gen_innerloop()\n");
 

@@ -215,7 +215,7 @@ sub find_cbenchtest_files {
 		else {
 			$rpm_file_list .= "$destdir\/$relative_part\n";
 			$install_file_list .= "mkdir -p \$\{RPM_BUILD_ROOT\}/$destdir/$relative_path\n";
-			$install_file_list .= "/bin/cp $srcdir/$relative_part \$\{RPM_BUILD_ROOT\}/$destdir/$relative_part\n";
+			$install_file_list .= "/bin/cp --no-dereference -p $srcdir/$relative_part \$\{RPM_BUILD_ROOT\}/$destdir/$relative_part\n";
 		}
 	}
 }

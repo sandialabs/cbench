@@ -67,6 +67,7 @@ else {
 }
 
 foreach $n (@sizes) {
+	($n > $max_procs) and next;
 	(defined $max and $n > $max) and next;
 	(defined $min and $n < $min) and next;
 	(defined $pof2 and power_of_two($n)) and (push @list, $n and next);

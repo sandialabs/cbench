@@ -1,6 +1,6 @@
 diff -Naurp hpcc-1.0.0-orig/hpl/Make.top hpcc-1.0.0/hpl/Make.top
---- hpcc-1.0.0-orig/hpl/Make.top	2004-05-18 15:03:54.000000000 -0600
-+++ hpcc-1.0.0/hpl/Make.top	2006-03-23 10:07:46.249336000 -0700
+--- src-orig/hpl/Make.top	2004-05-18 15:03:54.000000000 -0600
++++ src/hpl/Make.top	2006-03-23 10:07:46.249336000 -0700
 @@ -188,5 +188,7 @@ leaf             :
  	- ( $(CD) $(le) ; $(MKDIR) $(arch) )
  	- ( $(CD) $(le)/$(arch) ; \
@@ -9,3 +9,14 @@ diff -Naurp hpcc-1.0.0-orig/hpl/Make.top hpcc-1.0.0/hpl/Make.top
 +            $(LN_S) $(TOPdir)/make.def make.def )
  #
  ########################################################################
+--- src-orig/hpl/lib/arch/build/Makefile.hpcc  2007-09-21 11:51:41.025389000 -0600
++++ src/hpl/lib/arch/build/Makefile.hpcc       2007-09-21 11:52:14.796787000 -0600
+@@ -512,7 +512,7 @@
+ 	$(CC) -o ../../../../src/io.o -c ../../../../src/io.c -I../../../../include $(CCFLAGS)
+ 
+ ../../../../src/HPL_slamch.o : ../../../../src/HPL_slamch.c $(HDEP18)
+-	$(CC) -o ../../../../src/HPL_slamch.o -c ../../../../src/HPL_slamch.c -I../../../../include $(CCFLAGS)
++	$(CC) -o ../../../../src/HPL_slamch.o -c ../../../../src/HPL_slamch.c -I../../../../include $(CCNOOPT)
+ 
+ ../../../../DGEMM/tstdgemm.o : ../../../../DGEMM/tstdgemm.c $(HDEP19)
+ 	$(CC) -o ../../../../DGEMM/tstdgemm.o -c ../../../../DGEMM/tstdgemm.c -I../../../../include $(CCFLAGS)

@@ -687,7 +687,7 @@ sub load_target_values {
 		# skip comments
 		$_ =~ (/^\s*#/) and next;
 		my ($key, $mean, $max, $min, $stddev) = $_ =~
-			/(\S+), (.+), (.+), (.+), (.+),.*$/;
+			/^(\S+), (\S+), (\S+), (\S+), (\S+),.*$/;
 		$target{$key}{'mean'} = $mean;
 		$target{$key}{'max'} = $max;
 		$target{$key}{'min'} = $min;

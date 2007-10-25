@@ -9,7 +9,9 @@
 cbench_run_cmd()
 {
 	local cmd=$@
-    
+
+	# FIXME: just a note that teh STDIN_FILE stuff needs to work for the
+	#        interactive case too.... before I forget to note that it does...
     if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" ]; then
 	    $cmd 1>>$STDOUT_FILE 2>>$STDERR_FILE
     else

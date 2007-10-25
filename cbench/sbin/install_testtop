@@ -32,8 +32,8 @@ unshift @INC, "$BENCH_HOME";
 require "cbench.pl";
 
 $bench_test = get_bench_test();
-mkdir "$bench_test",0750;
-# FIXME: need to check for errors and need to make parents as well, maybe use mkdir binary
+#mkdir "$bench_test",0750;
+system("mkdir -m 0750 -p $bench_test");
 
 print "Installing core files to the Cbench test set tree ($bench_test)...\n";
 
@@ -61,7 +61,7 @@ rsync_filelist(\@files,$bench_test);
 
 # stuff to sync to CBENCHTEST/sbin
 @files = (
-	"sbin/get_benchtest",
+	"sbin/get_*",
 );
 rsync_filelist(\@files,"$bench_test/sbin");
 

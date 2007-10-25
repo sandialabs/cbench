@@ -1833,12 +1833,12 @@ sub std_substitute {
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
-	my $benchmark = shift;  # aka job name
 	my $runtype = uc shift;
 	my $walltime = shift;
 	my $testset = shift;
 	my $jobname = shift;
 	my $ident = shift;
+	my $benchmark = shift;  # aka job name
 
 	my $benchtest = get_bench_test();	
 	if (defined $JOBCBENCHTEST) {
@@ -1849,8 +1849,8 @@ sub std_substitute {
 
 	$string =~ s/BENCH_HOME_HERE/$BENCH_HOME/gs;
 	$string =~ s/CBENCHOME_HERE/$BENCH_HOME/gs;
-	$string =~ s/BENCH_TEST_HERE/$benchtest/gs;
-	#$string =~ s/BENCH_TEST_HERE/$temp/gs;
+	my $temp = $benchtest;
+	$string =~ s/BENCH_TEST_HERE/$temp/gs;
 	$string =~ s/CBENCHTEST_HERE/$temp/gs;
 	(defined $BINIDENT) and $temp .= "\/bin.$BINIDENT";
 	(!defined $BINIDENT) and $temp .= "\/bin";
@@ -1866,7 +1866,7 @@ sub std_substitute {
 	$string =~ s/NUM_NODES_HERE/$numnodes/gs;
 	$string =~ s/NUM_PPN_HERE/$ppn/gs;
 	$string =~ s/JOBNAME_HERE/$jobname/gs;
-	$string =~ s/BENCHMARK_PPN_HERE/$benchmark/gs;
+	$string =~ s/BENCHMARK_NAME_HERE/$benchmark/gs;
 	$string =~ s/IDENT_HERE/$ident/gs;
 	$string =~ s/TORQUE_NODESPEC_HERE/$numnodes\:ppn\=$procs_per_node/gs;
 	$temp =join(',',@memory_util_factors);

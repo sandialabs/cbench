@@ -53,6 +53,7 @@ GetOptions(
 	'match=s' => \$match,
 	'exclude=s' => \$exclude,
 	'dump' => \$dump,
+	'random' => \$random,
 	'dryrun|dry-run' => \$dryrun,
 	'quiet' => \$quiet,
 	'small' => \$SMALL,
@@ -202,7 +203,8 @@ for $i (1..$iterations) {
 		last;
 	}
 	print $out_fh "$cbench_mark_prefix ITERATION $i\n";
-	for $k (sort {$a cmp $b} keys %test_modules) {
+	#for $k (sort {$a cmp $b} keys %test_modules) {
+	for $k (list_of_test_modules()) {
 		if ($main::INTsignalled) {
 			print "Exiting testing module loop on SIGINT...\n";
 			last;
@@ -284,6 +286,19 @@ close(OUT) unless defined $dump;
 $SIG{INT} = 'DEFAULT';
 
 
+sub list_of_test_modules {
+	use List::Util (shuffle);
+	my @list = sort {$a cmp $b} keys(%test_modules);
+	if (! defined $random) {
+		return @list
+	}
+	else {
+		my @random_list = shuffle @list;
+		return @random_list;
+	}
+}
+
+
 sub usage {
 	print "USAGE: $0 \n" .
 		"Cbench utility to run node-level hardware tests\n" .
@@ -307,6 +322,7 @@ sub usage {
 		"                      the specified regex string. For example,\n" .
 		"                         --exclude streams\n" .
 		"                      would only run the streams hw_test module\n" .
+		"   --random           Randomize the ordering of test modules\n".
 		"   --numcpus <num>    Override the auto-detection of the number of CPU\n".
 		"                      cores\n".
 		"   --maxmem <num>     Override the auto-detection of free memory to be\n".

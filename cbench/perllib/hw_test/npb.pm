@@ -121,6 +121,9 @@ sub run {
 	
 	for my $i (1..$iterations) {
 		for	(@binlist) {
+			# lu.D seems to be not so well behaved on a single node with
+			# less than maybe 16GB of memory
+			/lu.D/ and next;
 			chomp $_;
 			print $ofh "====> $_\n";
 			@buf = `$path/$_ 2>&1`;
