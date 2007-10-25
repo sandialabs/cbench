@@ -1,0 +1,9 @@
+# lammps_rhodo job template
+# Uses LAMMPS benchmark code Rhodopsin
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE $LAMMPSDIR/src/lmp_$LAMMPSMACHINE"
+STDIN_FILE="$LAMMPSDIR/bench/in.rhodo"
+
+cbench_run_cmd $CMD
+
