@@ -1,9 +1,9 @@
-# lammps_rhodo job template
-# Uses LAMMPS benchmark code Rhodopsin
+# lammps_lj job template
+# Uses LAMMPS benchmark code LJ
 # NOTE: bash syntax is used here
 
 CMD="JOBLAUNCH_CMD_HERE$LAMMPSDIR/src/lmp_$LAMMPSMACHINE"
-STDIN_FILE="$LAMMPSDIR/bench/in.rhodo"
+STDIN_FILE="$LAMMPSDIR/bench/in.lj"
 
 cbench_run_cmd $CMD
 
