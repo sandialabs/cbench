@@ -1849,8 +1849,8 @@ sub std_substitute {
 
 	$string =~ s/BENCH_HOME_HERE/$BENCH_HOME/gs;
 	$string =~ s/CBENCHOME_HERE/$BENCH_HOME/gs;
-	my $temp = $benchtest;
-	$string =~ s/BENCH_TEST_HERE/$temp/gs;
+	$string =~ s/BENCH_TEST_HERE/$benchtest/gs;
+	#$string =~ s/BENCH_TEST_HERE/$temp/gs;
 	$string =~ s/CBENCHTEST_HERE/$temp/gs;
 	(defined $BINIDENT) and $temp .= "\/bin.$BINIDENT";
 	(!defined $BINIDENT) and $temp .= "\/bin";
@@ -2031,6 +2031,7 @@ sub install_util_script {
 	$buf =~ s/TESTSET_NAME_HERE/$testset/gs;
 
 	# write out destination file
+    print "writing to $dest\n";
 	open (OUT,">$dest") or die
 		"Could not open $dest for write ($!)";
 	print OUT $buf;
@@ -2363,6 +2364,80 @@ sub CATCH {
 		kill( INT ,$_);
 	}
 	$main::INTsignalled = 1;
+}
+
+#
+# Copy LAMMPS input and data files to CBENCHTEST for use during 
+# test runs
+#
+sub install_lammps_files {
+	my $dest = shift;
+	my $testset = shift;
+	my $lammps_dir = $ENV{LAMMPSDIR};
+
+	(! -d $dest) and mkdir $dest,0750;
+	
+	system("cp $lammps_dir/bench/in.* $dest");
+	system("cp $lammps_dir/bench/data* $dest");
+}
+
+#
+# Substitute the absolute path of the data file into the in.* file
+# for certain LAMMPS jobs
+#
+sub lammps_file_substitute {
+	#my $data_file_dest = shift;
+	my $lammps_bench = "$ENV{CBENCHTEST}/lammps/bench";
+
+	#LAMMPS benchmark/example codes requiring data files are:
+	# rhodo, chute, chain, meam, rigid, peptide, and micelle
+
+	 my @codes = qw/rhodo rhodo.scaled chute chute.scaled chain chain.scaled meam meam.shear rigid peptide micelle/;
+
+	for my $code_name (@codes) {
+		my $input_file = "$lammps_bench/in.$code_name";
+
+		#check for and open data file; skip if not present
+		(-e $input_file) and open(IN, "<$input_file") or next;
+		
+		#change the read_data line to include the full path of the data file
+		$/ = undef;
+		my $string = <IN>;
+		close(IN);
+		$/ = "\n";
+		#$string =~ s/^read_data.*\n/"read_data\t\t$data_file_dest\/data.$codename\n"/gs;
+		$string =~ s/read_data.*data.$code_name\n/read_data\t$lammps_bench\/data.$code_name\n/gs;
+
+		#overwrite in.$codename with new file
+		open(OUT, ">$input_file");
+		print OUT $string;
+		close(OUT);
+	}
+}
+#copy the input files into a job file
+sub lammps_copy_files {
+	my $input_file_dest = shift;
+	my $code_name = shift;
+	my $lammps_bench = "$ENV{CBENCHTEST}/lammps/bench";
+	
+#	 my @codes = qw/rhodo rhodo.scaled chute chute.scaled chain chain.scaled meam meam.shear rigid peptide micelle/;
+
+#	 for my $code_name (@codes) {
+		 my $input_file = "$lammps_bench/in.$code_name";
+
+		 #check for input file; skip if not present
+		 (-e $input_file) or die("Could not locate $input_file: $?\n");
+
+		 #copy the in.whatever file to the new jobdir
+		 system("cp $input_file $input_file_dest") == 0 or die("Could not copy $input_file: $?\n");
+
+		 #check for scaled version of input deck
+		 if ( -e "$lammps_bench/in.$code_name.scaled" ) {
+			 $input_file = "$lammps_bench/in.$code_name.scaled";
+
+			 system("cp $input_file $input_file_dest") == 0 or die("Could not copy $input_file: $?\n");
+		 }
+	#}
 }
 
 1;
