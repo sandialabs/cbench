@@ -1,3 +1,4 @@
+# vim: syntax=make tabstop=4
 ###############################################################################
 #    Copyright (2005) Sandia Corporation.  Under the terms of Contract
 #    DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
@@ -114,6 +115,10 @@ installcbench: domostall
 updatecbench: 
 	@sbin/install_testtop
 	@sbin/update_util_scripts
+
+# compile and install LAMMPS
+installlammps: install 
+	@sbin/install_lammps
 
 #cbench-tests-rpm: 
 
