@@ -51,7 +51,7 @@ check_for_myrinet_mx_driver() {
 
 check_myrinet_mx_state() {
 	local tmpfile=`mktemp`
-	
+
 	echo
 	echo -n "Checking Myrinet MX state: "
 
@@ -79,7 +79,7 @@ check_myrinet_mx_state() {
 	# rev E cards
 	local match=`expr match "$type" 'M3F2-PCIXE'`
 	if [ "$match" == "10" ]; then
-		grep -P 'Status:\s+Running, P0: Link up, P1: Link up' $tmpfile > /dev/null
+		grep -iP 'Status:\s+Running, P0: Link up, P1: Link up' $tmpfile > /dev/null
 		if [ $? -eq 0 ]; then
 			/opt/mx/bin/mx_counters -c > /dev/null
 			echo_success
@@ -93,7 +93,7 @@ check_myrinet_mx_state() {
 	# rev D cards
 	match=`expr match "$type" 'M3F-PCIXD'`
 	if [ "$match" == "9" ]; then
-		grep -P 'Status:\s+Running, P0: Link up' $tmpfile > /dev/null
+		grep -iP 'Status:\s+Running, P0: Link up' $tmpfile > /dev/null
 		if [ $? -eq 0 ]; then
 			/opt/mx/bin/mx_counters -c > /dev/null
 			echo_success
