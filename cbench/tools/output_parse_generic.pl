@@ -1247,10 +1247,10 @@ sub results_to_gnuplot {
 	}
 
 	$numkeys = keys %{$outhash->{'0'}};
-	my $keyindex = 0;
+	my $keyindex = 1;
 	for $job (sort {$outhash{'0'}{$a} cmp $outhash{'0'}{$b} or $a <=> $b} (keys %{$outhash{'0'}}) ) {
-    	$keyindex++;
     	($job == 0) and next;
+    	$keyindex++;
 
 		$column = $job_to_column{$job};
     	my $my_units = defined $outhash->{UNITS}{$job} ? $outhash->{UNITS}{$job} : 'NA';
