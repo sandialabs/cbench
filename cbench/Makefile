@@ -168,3 +168,14 @@ itests:
 	@sbin/install_testtop
 	$(do-compiled-bin-installs)
 	$(do-testset-installs)
+
+ifndef BINIDENT
+  DEST = $(BENCH_TEST)/bin
+else
+  DEST=$(BENCH_TEST)/bin.$(BINIDENT)
+endif
+
+itests-with-ident:
+	@echo sbin/install_testtop
+	$(do-compiled-bin-installs-binident)
+	$(do-testset-installs)

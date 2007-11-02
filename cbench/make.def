@@ -303,6 +303,17 @@ define do-compiled-bin-installs
 	rm -fr $(BENCH_TEST)/bin; cp -fr $(BENCH_HOME)/bin  $(BENCH_TEST)/bin;
 endef
 
+define do-compiled-bin-installs-binident
+	@if [ "$(DEST)" == "/bin" ]; then \
+		echo "ABORT: DEST resolved to /bin!"; \
+		exit 1; \
+	fi; \
+	echo "---------------------------------------------------------"; \
+    echo "----- Installing $(BENCH_HOME)/bin --> $(DEST)"; \
+    echo "---------------------------------------------------------"; \
+	rm -fr $(DEST); cp -fr $(BENCH_HOME)/bin  $(DEST);
+endef
+
 define do-install
    @$(BENCH_HOME)/sbin/mkinstalldirs $(allinstalldirs)
    @for target in $(INSTALLTARGETS); \
