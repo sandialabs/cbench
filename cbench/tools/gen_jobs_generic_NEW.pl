@@ -149,7 +149,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 			# don't generate jobs for redundant 1-node cases, like the following:
 			# mpiexec -npernode 8 -np 2 ...
 			# mpiexec -npernode 4 -np 2 ...
-			($ppn > $numprocs) and next;
+			($numnodes == 1 and $ppn > $numprocs) and next;
 
 			# build the full job name
 			$jobname = "$job-".$ppn."ppn-$numprocs";
@@ -178,8 +178,13 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				$outbuf =~ s/HPCC_BIN_HERE/$hpccbin/gs;
 
 				# run any custom generation inner loop work
-				custom_gen_innerloop($outbuf,$numprocs,$ppn,$numnodes,
+				my $ret = custom_gen_innerloop($outbuf,$numprocs,$ppn,$numnodes,
 							$runtype,$default_walltime,$testset,$jobname,$ident,$job);
+				if ($ret) {
+					# custom_gen_innerloop returned some sort of error
+					# skip the remainder of this loop
+					next;
+				}
 
 				# build the filename
 				($runtype eq 'batch') and $outfile = "$jobname\.pbs";
@@ -239,7 +244,7 @@ sub custom_gen_innerloop {
 		debug_print(2,"DEBUG:custom_gen_innerloop() calling $custom_gen_hash{benchmark}{$job}{innerloop} \n");
 		my $funcname = "$custom_gen_hash{benchmark}{$job}{innerloop}";
 		*func = \&$funcname;
-		func($outbuf,$numprocs,$ppn,$numnodes,
+		return func($outbuf,$numprocs,$ppn,$numnodes,
 			$runtype,$default_walltime,$testset,$jobname,$ident,$job);
 	}
 }
@@ -296,7 +301,7 @@ sub xhpl_gen_innerloop {
 	if ($P == 0 or $Q == 0) {
 		print "No files generated for linpack $jobname\n";
 		rmdir "$testset_path\/$ident\/$jobname";
-		return;
+		return 1;
 	}
 	my @Nvals = compute_N($numprocs,$ppn);
 	my $num_Nvals = @Nvals;
@@ -312,6 +317,8 @@ sub xhpl_gen_innerloop {
 		"Could not write $full_test_path ($!)";
 	print OUTFILE $datbuf;
 	close(OUTFILE);
+
+	return 0;
 }
 
 

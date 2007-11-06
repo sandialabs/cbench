@@ -538,7 +538,7 @@ if (defined $grepable) {
 (defined $nodediag) and dump_nodediag_stats(\%nodediag_data);
 
 if (defined $listfound) {
-	print GREEN "List of key stuff found during parsing:\n";
+	print GREEN "\nList of key stuff found during parsing:\n";
 	print GREEN "---------------------------------------\n";
 	print "Test identifiers: ";
 	for $k (keys %data) {
@@ -630,17 +630,17 @@ sub parse_output_file {
 
 		(defined $collapse) and $testident = $collapse;
 
-		# NOTE: Some batch systems may truncate filenames which can
-		#		cause erroneous information to be parsed from the 
-		#		output filename. Newer Cbench job templates try to embed
-		#		the job information inside the output file as well so
-		#		we check for the existence of this information. If we
-		#		find it, we trust it over the filename.
+		# In the olden days, we started embedding info to avoid
+		# batch systems filename truncatiion. Now we embed more info
+		# that can be useful later on in parsing.
+		# Read in the embedded Cbench info tags.
 		undef $/;
-		my $embedded_info_buf = `head -100 $stdout_file | /bin/grep -P \"Cbench \\S+:\" `;
+		my $embedded_info_buf = `egrep '\^Cbench \.\*\\:' $stdout_file`;
 		$/ = "\n";
 		if ($embedded_info_buf =~ /Cbench \S+\:/) {
-			# found embedded Cbench job info
+			# found embedded Cbench info
+			
+			# extract jobname
 			my ($tmpjob) = $embedded_info_buf =~ /\nCbench jobname: (\S+)\n/;
 			if ($tmpjob =~ /ppn/) {
 				# looks like we grabbed a jobname
@@ -922,108 +922,130 @@ sub parse_output_file {
 		
 		# if job failure node diagnosis is enabled, we need to do more work
 		if (defined $nodediag and ($filedata->{'STATUS'} ne 'PASSED')) {
-        	(defined $DEBUG and $DEBUG > 2) and print
-            	"DEBUG:parse_output_file() Starting nodediag work...\n";
+        	debug_print(2,"DEBUG:parse_output_file() Starting nodediag work...\n");
 
-			my @files_to_grok = ();
-			my @files_to_grok_bufrefs = ();
-			my $joblaunchmethod = 'NADA';
-			# The first thing we need to figure out what joblaunch method,
-			# and thus what kind of output to look for, was used for the job.
-			# We do this by three checks:
-			#   1) Cbench embedded job info
-			#   2) look at both STDOUT and STDERR and guess (worst, slow, inefficient)
-			if ($embedded_info_buf =~ /\nCbench joblaunchmethod: (\S+)\n/) {
-				(defined $DEBUG and $DEBUG > 1) and print
-					"DEBUG: nodediagnose using embedded joblaunchmethod $1\n";
+			my $nodelistdata;
 
-				$joblaunchmethod = $1;
+			# extract nodelist if it is there
+			my $embedded_nodelist_raw;
+			($embedded_nodelist_raw) = $embedded_info_buf =~ /\nCbench \S+ nodelist:([\s+\w+]+)\n/;
+			debug_print(3,"DEBUG: embedded_nodelist_raw: $embedded_nodelist_raw\n");
 
-				# build function name to use for ranktonode support
-				my $filelist_func_name = "$1_ranktonode_files";
-				*filelist_func = \&$filelist_func_name;
-				push @files_to_grok, filelist_func();
+			# if we found the embedded nodelist, phew, just sanity check it
+			# and record the data
+			if (length $embedded_nodelist_raw > 2) {
+				debug_print(2,"DEBUG: found embedded nodelist for nodediag\n");
+				my %nodelisthash;
+				my $cnt = 0;
+				foreach my $k (split(/ /,$embedded_nodelist_raw)) {
+					if ($k =~ /\S+/) {
+						$nodelisthash{$cnt} = $k;
+						$cnt++;
+					}
+				}
+				$nodelistdata = \%nodelisthash;	
 			}
 			else {
-				push @files_to_grok, 'STDOUT';
-				push @files_to_grok, 'STDERR';
-			}
+				my @files_to_grok = ();
+				my @files_to_grok_bufrefs = ();
+				my $joblaunchmethod = 'NADA';
+				# The first thing we need to figure out what joblaunch method,
+				# and thus what kind of output to look for, was used for the job.
+				# We do this by three checks:
+				#   1) Cbench embedded job info
+				#   2) look at both STDOUT and STDERR and guess (worst, slow, inefficient)
+				if ($embedded_info_buf =~ /\nCbench joblaunchmethod: (\S+)\n/) {
+					(defined $DEBUG and $DEBUG > 1) and print
+						"DEBUG: nodediagnose using embedded joblaunchmethod $1\n";
 
-			foreach my $f (@files_to_grok) {
-				my $file;
-				# look for keywords
-				if ($f eq 'STDOUT') {
-					$file = $stdout_file;
-				}
-				elsif ($f eq 'STDERR') {
-					$file = $stdout_file;
-					$file =~ s/\.o$jobid/\.e$jobid/;
-				}
+					$joblaunchmethod = $1;
 
-				# check the files_sucked_in cache, we may already have the
-				# file in a buffer
-				if (!exists $files_sucked_in{$f}) {
-					# open and slurp the output file
-					my @txtbuf;
-					open_and_slurp($file,\@txtbuf) or do {
-						print "parse_output_file() Could not open $file for read ($!)\n";
-						next;
-					};
-
-					# save references to this buffer
-					push @files_to_grok_bufrefs, \@txtbuf;
-					$files_sucked_in{$f} = \@txtbuf;
-
-					$total_files_parsed++;
-
-        			(defined $DEBUG and $DEBUG > 1) and print
-            			"DEBUG:parse_output_file(nodediag) Reading file $file,job $jobname,ident $testident " .
-            			"(np=$np ppn=$ppn benchmark=$bench)\n";
+					# build function name to use for ranktonode support
+					my $filelist_func_name = "$1_ranktonode_files";
+					*filelist_func = \&$filelist_func_name;
+					push @files_to_grok, filelist_func();
 				}
 				else {
-					# already have the file, just grab the buffer reference
-					push @files_to_grok_bufrefs, $files_sucked_in{$f};
+					push @files_to_grok, 'STDOUT';
+					push @files_to_grok, 'STDERR';
 				}
-			}
-			
-			# if we don't know the joblaunch method, we now need to look at
-			# the output files and take an educated guess
-			if ($joblaunchmethod eq 'NADA') {
-				foreach my $bufref (@files_to_grok_bufrefs) {
-					foreach my $l (@{$bufref}) {
-						if ($l =~ /mpiexec:.*start evt/ or
-                        	$l =~ /mpiexec: process_start_event: evt.*task/) {
-							$joblaunchmethod = 'mpiexec';
-							(defined $DEBUG and $DEBUG > 1) and print
-								"DEBUG: nodediagnose guessed joblaunchmethod mpiexec\n";
 
-							last;
-						}
+				foreach my $f (@files_to_grok) {
+					my $file;
+					# look for keywords
+					if ($f eq 'STDOUT') {
+						$file = $stdout_file;
 					}
-					($joblaunchmethod ne 'NADA') and last;
-				}
-			}
+					elsif ($f eq 'STDERR') {
+						$file = $stdout_file;
+						$file =~ s/\.o$jobid/\.e$jobid/;
+					}
 
-			# if we haven't found a joblaunch method, we have to give up
-			if ($joblaunchmethod eq 'NADA') {
-            	(defined $DEBUG and $DEBUG > 1) and print "DEBUG:" .
-                	"nodediag: COULD NOT determine joblaunch method\n";
-            	last;
-            }
-			
-			# OK... now we have all the output file data in buffers that
-			# we need to look at and we have a joblaunch method
-			my $ranktonode_parse_func_name = "$joblaunchmethod\_ranktonode_parse";
-			*ranktonode_parse_func = \&$ranktonode_parse_func_name;
-			
-			# parse the output for ranktonode information!
-			my $nodelistdata = ranktonode_parse_func(@files_to_grok_bufrefs);
+					# check the files_sucked_in cache, we may already have the
+					# file in a buffer
+					if (!exists $files_sucked_in{$f}) {
+						# open and slurp the output file
+						my @txtbuf;
+						open_and_slurp($file,\@txtbuf) or do {
+							print "parse_output_file() Could not open $file for read ($!)\n";
+							next;
+						};
+
+						# save references to this buffer
+						push @files_to_grok_bufrefs, \@txtbuf;
+						$files_sucked_in{$f} = \@txtbuf;
+
+						$total_files_parsed++;
+
+						(defined $DEBUG and $DEBUG > 1) and print
+							"DEBUG:parse_output_file(nodediag) Reading file $file,job $jobname,ident $testident " .
+							"(np=$np ppn=$ppn benchmark=$bench)\n";
+					}
+					else {
+						# already have the file, just grab the buffer reference
+						push @files_to_grok_bufrefs, $files_sucked_in{$f};
+					}
+				}
+				
+				# if we don't know the joblaunch method, we now need to look at
+				# the output files and take an educated guess
+				if ($joblaunchmethod eq 'NADA') {
+					foreach my $bufref (@files_to_grok_bufrefs) {
+						foreach my $l (@{$bufref}) {
+							if ($l =~ /mpiexec:.*start evt/ or
+								$l =~ /mpiexec: process_start_event: evt.*task/) {
+								$joblaunchmethod = 'mpiexec';
+								(defined $DEBUG and $DEBUG > 1) and print
+									"DEBUG: nodediagnose guessed joblaunchmethod mpiexec\n";
+
+								last;
+							}
+						}
+						($joblaunchmethod ne 'NADA') and last;
+					}
+				}
+
+				# if we haven't found a joblaunch method, we have to give up
+				if ($joblaunchmethod eq 'NADA') {
+					(defined $DEBUG and $DEBUG > 1) and print "DEBUG:" .
+						"nodediag: COULD NOT determine joblaunch method\n";
+					last;
+				}
+				
+				# OK... now we have all the output file data in buffers that
+				# we need to look at and we have a joblaunch method
+				my $ranktonode_parse_func_name = "$joblaunchmethod\_ranktonode_parse";
+				*ranktonode_parse_func = \&$ranktonode_parse_func_name;
+				
+				# parse the output for ranktonode information!
+				$nodelistdata = ranktonode_parse_func(@files_to_grok_bufrefs);
+			}
 			
 			foreach $k (keys %{$nodelistdata}) {
 				if ($k eq 'NUMPROCS') {
-					($nodelistdata->{$k} != $np) and print "WARNING:nodediagnose: ".
+					($nodelistdata->{$k} != $np) and debug_print(1,"WARNING:nodediagnose: ".
 						"parsed rank-to-node map for only $nodelistdata->{$k} out of ".
-						"$np processes\n";
+						"$np processes\n");
 				}
 				else {
 					my $node = $nodelistdata->{$k};
