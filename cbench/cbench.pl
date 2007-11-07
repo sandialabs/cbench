@@ -27,6 +27,7 @@ require "cluster.def";
 
 use Data::Dumper;
 use Term::ANSIColor qw(:constants color colored);
+$Term::ANSIColor::AUTORESET = 1;
 
 # The Cbench release version. This isn't necessarily the exact version of the
 # Cbench code because it could be a Subversion checkout, but this is the
