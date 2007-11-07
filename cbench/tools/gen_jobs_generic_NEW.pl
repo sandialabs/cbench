@@ -59,6 +59,7 @@ GetOptions(
 	'jobcbenchtest=s' => \$JOBCBENCHTEST,
 	'debug:i' => \$DEBUG,
 	'help' => \$help,
+	'redundant' => \$redundant,
 );
 
 if (defined $help) {
@@ -146,10 +147,12 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 			# this check should be superflous but do it anyway
 			($numnodes > $max_nodes) and next;
 
-			# don't generate jobs for redundant 1-node cases, like the following:
-			# mpiexec -npernode 8 -np 2 ...
-			# mpiexec -npernode 4 -np 2 ...
-			($ppn > $numprocs) and next;
+			if (!$redundant) {
+				# don't generate jobs for redundant 1-node cases, like the following:
+				# mpiexec -npernode 8 -np 2 ...
+				# mpiexec -npernode 4 -np 2 ...
+				($ppn > $numprocs) and next;
+			}
 
 			# build the full job name
 			$jobname = "$job-".$ppn."ppn-$numprocs";
@@ -347,5 +350,6 @@ sub usage {
 		  "                           generating jobs in one place and being able to use\n".
 		  "                           a different path where the jobs are run, like a \n".
 		  "                           lightweight initramfs Linux node for instance\n".
+		  "   --redundant      Generate redundant ppn/np combinations (not on by default)\n".
 		  "   --debug <level>  Turn on debugging at the specified level\n";
 }
