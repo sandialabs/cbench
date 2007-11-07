@@ -1,0 +1,5 @@
+# HPCCG 50x50x50 template
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/test_HPCCG 50 50 50"
+
+cbench_run_cmd $CMD
