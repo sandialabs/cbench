@@ -17,6 +17,8 @@ INSTALLTARGETS = $(EXECS)
 # so configure_wrapper can see these
 export CFLAGS
 export FFLAGS
+export BLASLIB
+export LAPACKLIB
 
 $(SRC)/EPETRA_MPI_OPT/$(BENCH_SRC)/$(BENCH_EXEC_RENAMED): $(SRC)
 	cd $(SRC)/EPETRA_MPI_OPT && ../../configure_wrapper && $(MAKE) && $(MAKE) install
