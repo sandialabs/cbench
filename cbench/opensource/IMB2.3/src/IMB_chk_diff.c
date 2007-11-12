@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -628,7 +628,7 @@ if( mode == get )
        AUX = (void*)((char*)AUX + pos + faultpos);
        IMB_show( "Expected portion: ",c_info, AUX,
              Locsize-pos-faultpos, Locsize-pos-faultpos, j_sample, -1);
-       MPI_Gather(&pos,1,MPI_INT,c_info->displs,1,MPI_INT,0,c_info->File_comm);
+       MPI_Gather(&pos,1,MPI_INT,c_info->rdispl,1,MPI_INT,0,c_info->File_comm);
       }
    else
    {
@@ -643,12 +643,12 @@ if( mode == get )
     {
 /* Check permuted buffer */
 
-    MPI_Gather(&pos,1,MPI_INT,c_info->displs,1,MPI_INT,0,c_info->File_comm);
+    MPI_Gather(&pos,1,MPI_INT,c_info->rdispl,1,MPI_INT,0,c_info->File_comm);
     MPI_Gather(&Locsize,1,MPI_INT,c_info->reccnt,1,MPI_INT,0,c_info->File_comm);
 
     if( c_info->File_rank == 0 )
     {
-    IMB_chk_contiguous(c_info, c_info->displs, c_info->reccnt, &defloc );
+    IMB_chk_contiguous(c_info, c_info->rdispl, c_info->reccnt, &defloc );
     }
     else defloc=0.;
 
@@ -939,7 +939,7 @@ for( rank=0; rank<NP && curr >=0 ; rank++ )
 
 
 
-void IMB_chk_contiguous(struct comm_info *c_info, int* displs, int* sizes, 
+void IMB_chk_contiguous(struct comm_info *c_info, int* rdispl, int* sizes, 
                         double*diff)
 /*
 
@@ -956,7 +956,7 @@ Input variables:
                       see [1] for more information
                       
 
--displs               (type int*)                      
+-rdispl               (type int*)                      
                       Array of displacements (one for each process)
                       
 
@@ -984,11 +984,11 @@ NP = c_info->num_procs;
 
 for(i=0; i<NP; i++)
 for(j=i; j<NP; j++)
- if( displs[j] < displs[i] )
+ if( rdispl[j] < rdispl[i] )
      {
-     p = displs[i];
-     displs[i] = displs[j];
-     displs[j]=p;
+     p = rdispl[i];
+     rdispl[i] = rdispl[j];
+     rdispl[j]=p;
      p = sizes[i];
      sizes[i] = sizes[j];
      sizes[j]=p;
@@ -998,7 +998,7 @@ p=0;
 *diff = 0.;
 for(rank = 0; rank<NP; rank++)
   {
-  if( displs[rank] == p || sizes[rank] == 0 )
+  if( rdispl[rank] == p || sizes[rank] == 0 )
     p = p+sizes[rank];
   else
  *diff = 1.; 
@@ -1009,7 +1009,7 @@ if( *diff > TOL )
  fprintf(unit,"Got the following portions/displacements:\n");
  for(rank = 0; rank<NP; rank++)
   {
-  fprintf(unit,"%d / %d; ",sizes[rank], displs[rank]);
+  fprintf(unit,"%d / %d; ",sizes[rank], rdispl[rank]);
   }
  fprintf(unit,"\n");
  }

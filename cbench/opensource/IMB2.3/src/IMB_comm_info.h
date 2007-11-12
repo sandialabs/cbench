@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -114,8 +114,10 @@ int group_no;              /* own group index                         */
 int* g_sizes;              /* array of group sizes                    */
 int* g_ranks;              /* w_ranks constituting the groups         */
 
+int* sndcnt;               /* send count argument for global ops.     */
+int* sdispl;               /* displacement argument for global ops.   */
 int* reccnt;               /* recv count argument for global ops.     */
-int* displs;               /* displacement argument for global ops.   */
+int* rdispl;               /* displacement argument for global ops.   */
 
 MPI_Errhandler ERR;
  

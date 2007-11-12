@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -136,9 +136,10 @@ defect=0.;
 
   for (i=0;i<c_info->num_procs ;i++)
     {
-      c_info->displs[i] = r_num*i;
+      c_info->rdispl[i] = r_num*i;
       c_info->reccnt[i] = r_num;
     }
+
   
   
   if(c_info->rank!=-1)
@@ -149,7 +150,7 @@ defect=0.;
       for(i=0;i< n_sample;i++)
         {
           ierr = MPI_Allgatherv(c_info->s_buffer,s_num,c_info->s_data_type,
-			        c_info->r_buffer,c_info->reccnt,c_info->displs,
+			        c_info->r_buffer,c_info->reccnt,c_info->rdispl,
                                 c_info->r_data_type,
 			        c_info->communicator);
           MPI_ERRHAND(ierr);

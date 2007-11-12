@@ -56,29 +56,118 @@ For more documentation than found here, see
     Users Guide and Methodology Description
     In 
     doc/IMB_ug.pdf
-    
+
+ File: IMB_alltoallv.c 
+
+ Implemented functions: 
+
+ IMB_alltoallv;
+
  ***************************************************************************/
 
 
 
 
+
+#include "IMB_declare.h"
 #include "IMB_benchmark.h"
 
-/* NAMES OF BENCHMARKS (DEFAULT CASE)*/
-char *DEFC[] = {
-   "PingPong" 
-  ,"PingPing" 
-  ,"Sendrecv"
-  ,"Exchange" 
-  ,"Allreduce" 
-  ,"Reduce" 
-  ,"Reduce_scatter" 
-  ,"Allgather" 
-  ,"Allgatherv" 
-  ,"Alltoall"
-  ,"Alltoallv"
-  ,"Bcast" 
-  ,"Barrier" 
-  ,NULL
-};
+#include "IMB_prototypes.h"
 
+/*******************************************************************************/
+
+
+
+void IMB_alltoallv(struct comm_info* c_info, int size, int n_sample, 
+                    MODES RUN_MODE, double* time)
+/*
+
+                      
+                      MPI-1 benchmark kernel
+                      Benchmarks MPI_Alltoallv
+                      
+
+
+Input variables: 
+
+-c_info               (type struct comm_info*)                      
+                      Collection of all base data for MPI;
+                      see [1] for more information
+                      
+
+-size                 (type int)                      
+                      Basic message size in bytes
+
+-n_sample             (type int)                      
+                      Number of repetitions (for timing accuracy)
+
+-RUN_MODE             (type MODES)                      
+                      (only MPI-2 case: see [1])
+
+
+Output variables: 
+
+-time                 (type double*)                      
+                      Timing result per sample
+
+
+*/
+{
+  double t1, t2;
+  int    i;
+  Type_Size s_size,r_size;
+  int s_num, r_num;
+
+#ifdef CHECK
+defect=0.;
+#endif
+  ierr = 0;
+
+  /*  GET SIZE OF DATA TYPE */  
+  MPI_Type_size(c_info->s_data_type,&s_size);
+  MPI_Type_size(c_info->r_data_type,&r_size);
+  if ((s_size!=0) && (r_size!=0))
+    {
+      s_num=size/s_size;
+      r_num=size/r_size;
+    } 
+
+  /* INITIALIZATION OF DISPLACEMENT and SEND/RECEIVE COUNTS */
+
+  for (i=0;i<c_info->num_procs ;i++)
+    {
+      c_info->sdispl[i] = s_num*i;
+      c_info->sndcnt[i] = s_num;
+      c_info->rdispl[i] = r_num*i;
+      c_info->reccnt[i] = r_num;
+    }
+
+  
+  
+  if(c_info->rank!=-1)
+    {
+      for(i=0; i<N_BARR; i++) MPI_Barrier(c_info->communicator);
+
+      t1 = MPI_Wtime();
+      for(i=0;i< n_sample;i++)
+        {
+          ierr = MPI_Alltoallv(c_info->s_buffer,c_info->sndcnt,c_info->sdispl,
+                               c_info->s_data_type,
+			       c_info->r_buffer,c_info->reccnt,c_info->rdispl,
+                               c_info->r_data_type,
+			       c_info->communicator);
+          MPI_ERRHAND(ierr);
+
+          CHK_DIFF("Alltoallv",c_info, c_info->r_buffer, c_info->rank*size,
+                   0, c_info->num_procs*size, 1, 
+                   put, 0, n_sample, i,
+                   -2, &defect);
+        }
+      t2 = MPI_Wtime();
+      *time=(t2 - t1)/n_sample;
+    }
+  else
+    { 
+      *time = 0.; 
+    }
+}

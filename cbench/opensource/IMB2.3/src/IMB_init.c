@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -59,9 +59,18 @@ For more documentation than found here, see
     
  File: IMB_init.c 
 
+ Modifications IMB_2.3 => IMB_3.0:
+ Better argument checking and error messages
+ Include -h flag for help
+ 2 new auxiliary functions:
+ IMB_chk_arg_int
+ IMB_chk_arg_file
+
  Implemented functions: 
 
  IMB_basic_input;
+ IMB_chk_arg_int
+ IMB_chk_arg_file
  IMB_get_rank_portion;
  IMB_init_communicator;
  IMB_set_communicator;
@@ -81,6 +90,42 @@ For more documentation than found here, see
 
 /********************************************************************/
 
+
+int IMB_chk_arg_int(int* val, char ***argv, int *argc, int iarg)
+{
+/* Checks command line argument for being nonnegative integer */
+int ok;
+ok=1;
+if( iarg < *argc ){
+int tst=IMB_str_atoi((*argv)[iarg]);
+if( tst>=0 ) {
+*val=tst;
+}
+else ok=0;
+}
+else ok=0;
+
+return ok;
+}
+
+
+int IMB_chk_arg_file(FILE** fd, char ***argv, int *argc, int iarg)
+{
+/* Checks command line argument for being a file */
+int ok;
+*fd=(FILE*)NULL;
+ok=1;
+if( iarg < *argc ){
+FILE* tst=(FILE*) fopen((*argv)[iarg],"r");
+if( tst ) {
+*fd=tst;
+}
+else ok=0;
+}
+else ok=0;
+
+return ok;
+}
 
 #define N_baseinfo 8
 
@@ -130,6 +175,9 @@ Output variables:
   char** DEFC, **CMT;
 
   int ok;
+/* IMB_3.0 */
+  int help_only;
+  help_only=0;
 
   *P_BList = (struct Bench *)NULL;
 
@@ -178,35 +226,67 @@ Output variables:
        
       while( iarg <= *argc-1 )
       {
+      if(!strcmp((*argv)[iarg],"-h") || !strcmp((*argv)[iarg],"-help"))
+	{
+          help_only=1;
+          break;
+	}
       if(!strcmp((*argv)[iarg],"-npmin"))
 	{
-	  *NP_min=IMB_str_atoi((*argv)[iarg+1]);
-	  if(*NP_min>=0){n_cases -= 2;}
+/* IMB_3.0: Better arg checking for following cases */
+          if( !IMB_chk_arg_int(NP_min,argv,argc,iarg+1) )
+            {ok=-1;}
+	  else if(*NP_min>0){n_cases -= 2;}
 	  else
-	    {IMB_err_hand(0, APPL_ERR_OPTIONS);}
+	    {ok=-1;}
+          if( ok==-1 ) 
+            { fprintf(stderr,"Invalid argument after \"npmin\"\n");
+              break;
+          }
           iarg++;
 	}
       if(!strcmp((*argv)[iarg],"-multi"))
 	{
-	  c_info->group_mode=IMB_str_atoi((*argv)[iarg+1]);
-          n_cases -= 2;
+          int tst;
+          if( !IMB_chk_arg_int(&tst,argv,argc,iarg+1) )
+            {ok=-1;}
+          else if( tst==0 || tst==1 ){
+              c_info->group_mode=tst;
+              n_cases -= 2;
+          }
+	  else
+	    {ok=-1;}
+          if( ok==-1 ) 
+            { fprintf(stderr,"Invalid argument after \"multi\"\n");
+              break;
+          }
           iarg++;
 	}
       if(!strcmp((*argv)[iarg],"-map"))
 	{
           int ierr;
+          if( iarg+1>=*argc ) {
+              fprintf(stderr,"Missing argument after \"map\"\n");
+              ok=-1;
+              break;
+          }
 	  ierr=sscanf((*argv)[iarg+1],"%d%c%d",&c_info->px,&i,&c_info->py);
           if(ierr<3 || c_info->px*c_info->py < c_info->w_num_procs)
            {
            fprintf(stderr,"Invalid map selection\n");
            ok = -1;
+           break;
            } 
           n_cases -= 2;
           iarg++;
 	}
       if(!strcmp((*argv)[iarg],"-msglen"))
 	{
-	  FILE*t = fopen((*argv)[iarg+1],"r");
+	  FILE*t;
+          if( !IMB_chk_arg_file(&t,argv,argc,iarg+1) )
+            {ok=-1; 
+             fprintf(stderr,"Filename after \"msglen\" flag invalid\n");
+             break;}
           iarg_msg=iarg+1;
           n_cases -= 2;
           if( t )
@@ -222,14 +302,18 @@ Output variables:
 
           if ( n_lens==0 )
           {
-          fprintf(stderr,"Sizes File %s invalid or doesnt exist\n",(*argv)[iarg+1]);
-          ok = -2;
+          fprintf(stderr,"Sizes file %s invalid or doesnt exist\n",(*argv)[iarg_msg]);
+          ok = -1;
           }
           iarg++;
 	}
       if(!strcmp((*argv)[iarg],"-input"))
 	{
-	  FILE*t = fopen((*argv)[iarg+1],"r");
+	  FILE*t;
+          if( !IMB_chk_arg_file(&t,argv,argc,iarg+1) )
+            {ok=-1; 
+             fprintf(stderr,"Filename after \"input\" flag invalid\n");
+             break;}
           n_cases -= 2;
           if( t )
           {
@@ -246,6 +330,10 @@ Output variables:
         iarg++;
        }
 
+
+/* IMB_3.0 */
+      if( !help_only ) {
+
       if(n_cases <= 0 )
         deflt = 1;
       else
@@ -259,6 +347,8 @@ Output variables:
         else if(!strcmp((*argv)[iarg],"-multi")) 
                 iarg++;
         else if(!strcmp((*argv)[iarg],"-msglen")) 
+                iarg++;
+        else if(!strcmp((*argv)[iarg],"-map")) 
                 iarg++;
         else if(!strcmp((*argv)[iarg],"-input"))
 	  {
@@ -276,7 +366,7 @@ Output variables:
           }
           fclose(t);
           }
-          else fprintf(unit,"Input File %s doesnt exist\n",(*argv)[iarg+1]);
+          else fprintf(unit,"Input file %s doesnt exist\n",(*argv)[iarg+1]);
           iarg++;
           }
 	else  
@@ -286,7 +376,21 @@ Output variables:
         iarg ++;
         }
         }
+/* IMB_3.0 ; end "help_only" */
+     }
     }
+
+/* IMB_3.0 */
+    if( help_only || ok<0 ) {
+
+/* Set flag "not ok" => help mode in main */
+    n_cases=0;
+    IMB_i_alloc(&ALL_INFO,N_baseinfo,"Basic_Input");
+    ok=-3;
+
+    }
+    else
+    {
 
     if(deflt) {
       n_cases = 0;
@@ -332,7 +436,7 @@ Output variables:
                    }
                  else
                    {
-                  fprintf(stderr,"Invalid line in file %s\n",(*argv)[iarg+1]);
+                  fprintf(stderr,"Invalid line in file %s\n",(*argv)[iarg_msg]);
                    }
                  }
                }
@@ -340,8 +444,8 @@ Output variables:
                fclose(t);
                if ( n_lens==0 )
                {
-               fprintf(stderr,"Sizes File %s invalid or doesnt exist\n",(*argv)[iarg+1]);
-               ok = -2;
+               fprintf(stderr,"Sizes File %s invalid or doesnt exist\n",(*argv)[iarg_msg]);
+               ok = -1;
                }
           }
        }
@@ -359,11 +463,17 @@ Output variables:
       int index;
       IMB_get_def_index(&index,(*P_BList)[i].name );
   
+/* IMB_3.0
       if( index >= 0 )
+*/
+      if( index  != LIST_END )
                  ALL_INFO[N_baseinfo+n_cases++] = index;
 
       i++;
       }
+    }
+
+/* IMB_3.0 end "!help_only" */
     }
 
     ALL_INFO[0] = *NP_min;
@@ -415,7 +525,15 @@ Output variables:
      MPI_Bcast(ALL_INFO,n_cases,MPI_INT,0,MPI_COMM_WORLD);
      IMB_get_def_cases(&DEFC,&CMT);
      for( i = 0; i<n_cases; i++ )
+/* IMB_3.0 */
+     {
+     if ( ALL_INFO[i] != LIST_INVALID ) {
      IMB_construct_blist(P_BList,n_cases,DEFC[ALL_INFO[i]]);
+     }
+     else {
+     IMB_construct_blist(P_BList,n_cases,"");
+     }
+     }
      free(ALL_INFO);
      }
     else
@@ -843,7 +961,7 @@ c_info->group_no = -1;
 c_info->g_sizes = NULL;
 c_info->g_ranks = NULL;
 c_info->reccnt = NULL;
-c_info->displs = NULL;
+c_info->rdispl = NULL;
 
 c_info->ERR=MPI_ERRHANDLER_NULL;
  

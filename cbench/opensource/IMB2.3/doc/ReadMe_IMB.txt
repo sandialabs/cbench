@@ -1,11 +1,18 @@
 Intel® MPI Benchmarks
 
-Version 2.3
+Version 3.0
 Release Notes
 
 ====================================================================
 
+Main changes vs. IMB_2.3:
 
+- Benchmark "Alltoallv" added
+- Flag -h[elp] added for help
+- All except 2 makefiles erased
+- Better argument line error handling
+
+====================================================================
 
 This document contains the description of the software package
 (installation, running, header files and data structures, interfaces
@@ -53,38 +60,57 @@ I.2 Installation and quick start
 
 (please read [1] for more extensive explanations).
 
-Select or provide a Makefile template like 'make_ia64':
+2 Makefiles are provided:
 
-MPI_HOME    = ${MPICH}
-MPI_INCLUDE = $(MPI_HOME)/include 
+make_ict   (for Intel Cluster Tools usage)
+make_mpich (for mpich; has to be edited)
+
+, invoked by
+
+make -f make_ict <target>
+make -f make_mpich <target>
+
+(attention: in contrast to IMB_2.3, these are full makefiles
+and don't need to included)
+
+In their header, variables are set:
+
+Mandatory:
+
+CC          = mpicc (e.g.)
+CLINKER     = ${CC} (e.g.)
+
+Optional:
+
+MPI_INCLUDE =
 LIB_PATH    =
-LIBS        =
-CC          = ${MPI_HOME}/bin/mpicc 
-OPTFLAGS    = -O
-CLINKER     = ${CC}
+LIBS        = 
+OPTFLAGS    = 
 LDFLAGS     =
-CPPFLAGS    =
+CPPFLAGS    = 
+
+These variables are then exported to the main part of the Makefile,
+Makefile.base.
+
+In make_mpich, the root of the installation must be set:
+
+MPI_HOME=/opt/mpich2-1.0.3-icc.icpc-ifort/ch3_ssm
+
 
 In the end, compilation will follow the rule
 
-	$(CC) -I$(MPI_INCLUDE) $(CPPFLAGS) $(OPTFLAGS) -c $*.c
+	$(CC) $(MPI_INCLUDE) $(CPPFLAGS) $(OPTFLAGS) -c $*.c
 
 and linkage is done by
 
-	$(CLINKER) -o <exe> <objects>  $(LIB_PATH) $(LIBS)
+	$(CLINKER) $(LDFLAGS) -o <exe> <objects>  $(LIB_PATH) $(LIBS)
 
 The only CPPFLAGS setting currently provided is "-DCHECK"; when activated,
 IMB checks contents of message passing buffers, as far as possible. Should
 be used for correctness check of an implementation only, not for 
 performance measurements.
 
-Then, include the template in the main Makefile, e.g.:
-
-include make_ia64
-
-and type
-
-make  IMB-<case>, where case is
+make -f <choice> IMB-<case>, where case is
 
 "MPI1", "EXT" or "MPIIO"
 
@@ -92,7 +118,8 @@ make  IMB-<case>, where case is
 I.3 Running and run time flags
 ------------------------------
 
-IMB-<case>  [-npmin  <NPmin>]
+IMB-<case>  [-h{elp}]
+            [-npmin  <NPmin>]
             [-multi  <MultiMode>]
             [-msglen <Lengths_file>]
             [-map    <PxQ>]
@@ -103,6 +130,9 @@ where
 
 - case is one of MPI1, EXT, IO
 
+- h ( or help) just provides basic help 
+  (if active, all other arguments are ignored)
+
 - NPmin is the minimum number of processes to run on
   (then if IMB is started on NP processes, the process numbers 
    NPmin, 2*NPmin, ... ,2^k * NPmin < NP, NP are used)
@@ -112,6 +142,7 @@ where
   Default: NPmin=2
 
 - P,Q are integer numbers with P*Q <= NP
+  Enter PxQ with the 2 numbers separated by letter "x" and no blanc
   The basic communicator is set up as P by Q process grid
 
   If, e.g., one runs on N nodes of X processors each, and inserts
@@ -156,6 +187,7 @@ Bcast
 Allgather
 Allgatherv
 Alltoall
+Alltoallv
 Reduce
 Reduce_scatter
 Allreduce

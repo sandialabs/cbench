@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -374,11 +374,8 @@ if( c_info->filename != (char*)NULL )
 if( c_info->File_rank == 0 )
   {
    int ierr;
-   ierr = MPI_File_open(MPI_COMM_SELF, c_info->filename,
-                        MPI_MODE_CREATE | MPI_MODE_DELETE_ON_CLOSE,
-                        c_info->info, &c_info->fh);
-
-   MPI_File_close(&c_info->fh);
+/* IMB_3.0: simplify file deletion */
+   ierr=MPI_File_delete(c_info->filename,MPI_INFO_NULL);
   }
 }
 }

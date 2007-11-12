@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -72,11 +72,10 @@ For more documentation than found here, see
  IMB_edit_format;
  IMB_make_line;
 
+New in IMB_3.0:
+ IMB_help;
+
  ***************************************************************************/
-
-
-
-
 
 #include <string.h>
 #include "IMB_declare.h"
@@ -897,4 +896,135 @@ Input variables:
       fprintf(unit,"%s",char_line);
     }
   fprintf(unit,"\n");	
+
+}
+/* New function for IMB_3.0 */
+void IMB_help()
+{
+fflush(stderr);
+fflush(unit);
+
+fprintf(unit,"\nCalling sequence:\n\n");
+
+#ifdef MPI1
+fprintf(unit,"\n\
+IMB-MPI1    [-h{elp}]\n");
+#elif defined(EXT)
+fprintf(unit,"\n\
+IMB-EXT     [-h{elp}]\n");
+#elif defined (MPIIO)
+fprintf(unit,"\n\
+IMB-IO      [-h{elp}]\n");
+#endif
+fprintf(unit,"\
+            [-npmin  <NPmin>]\n\
+            [-multi  <MultiMode>]\n\
+            [-msglen <Lengths_file>]\n\
+            [-map    <PxQ>]\n\
+            [-input  <filename>]\n\
+            [benchmark1 [,benchmark2 [,...]]]\n\
+\n\
+where \n\
+\n\
+- h ( or help) just provides basic help \n\
+  (if active, all other arguments are ignored)\n\
+\n\
+- NPmin is the minimum number of processes to run on\n\
+  (then if IMB is started on NP processes, the process numbers \n\
+   NPmin, 2*NPmin, ... ,2^k * NPmin < NP, NP are used)\n\
+   >>>\n\
+   to run on just NP processes, run IMB on NP and select -npmin NP\n\
+   <<<\n\
+  Default: NPmin=2\n\
+\n\
+- P,Q are integer numbers with P*Q <= NP\n\
+  Enter PxQ with the 2 numbers separated by letter \"x\" and no blancs\n\
+  The basic communicator is set up as P by Q process grid\n\
+\n\
+  If, e.g., one runs on N nodes of X processors each, and inserts\n\
+  P=X, Q=N, then the numbering of processes is \"inter node first\".\n\
+  Running PingPong with P=X, Q=2 would measure inter-node performance\n\
+  (assuming MPI default would apply 'normal' mapping, i.e. fill nodes\n\
+  first priority) \n\
+\n\
+  Default: Q=1\n\
+\n\
+- MultiMode is 0 or 1\n\
+\n\
+  if -multi is selected, running the N process version of a benchmark\n\
+  on NP overall, means running on (NP/N) simultaneous groups of N each.\n\
+\n\
+  MultiMode only controls default (0) or extensive (1) output charts.\n\
+  0: Only lowest performance groups is output\n\
+  1: All groups are output\n\
+\n\
+  Default: multi off\n\
+\n\
+- Lengths_file is an ASCII file, containing any set of nonnegative\n\
+  message lengths, 1 per line\n\
+\n\
+  Default: no Lengths_file, lengths defined by settings.h, settings_io.h\n\
+  \n\
+- filename is any text file containing, line by line, benchmark names.\n\
+  Facilitates running particular benchmarks as compared to using the\n\
+  command line.\n\
+\n\
+  Default: no input file exists\n\
+  \n\
+- benchmarkX is (in arbitrary lower/upper case spelling)\n\
+\n");
+#ifdef MPI1
+
+fprintf(unit,"\
+PingPong\n\
+PingPing\n\
+Sendrecv\n\
+Exchange\n\
+Bcast\n\
+Allgather\n\
+Allgatherv\n\
+Alltoall\n\
+Alltoallv\n\
+Reduce\n\
+Reduce_scatter\n\
+Allreduce\n\
+Barrier\n\
+\n");
+
+#elif defined(EXT)
+
+fprintf(unit,"\
+Window\n\
+Unidir_Put\n\
+Unidir_Get\n\
+Bidir_Get\n\
+Bidir_Put\n\
+Accumulate\n\
+\n");
+
+#else
+
+fprintf(unit,"\
+S_Write_indv\n\
+S_Read_indv\n\
+S_Write_expl\n\
+S_Read_expl\n\
+P_Write_indv\n\
+P_Read_indv\n\
+P_Write_expl\n\
+P_Read_expl\n\
+P_Write_shared\n\
+P_Read_shared\n\
+P_Write_priv\n\
+P_Read_priv\n\
+C_Write_indv\n\
+C_Read_indv\n\
+C_Write_expl\n\
+C_Read_expl\n\
+C_Write_shared\n\
+C_Read_shared\n\
+\n");
+
+#endif
+
 }

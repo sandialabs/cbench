@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -126,5 +126,9 @@ struct Bench
   POSITIONING fpointer;
 #endif
   };
+
+/* IMB_3.0 */
+#define LIST_END -2
+#define LIST_INVALID -1
 
 #endif

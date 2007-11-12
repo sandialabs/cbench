@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -123,7 +123,7 @@ double  time[MAX_TIMINGS];
 
 Type_Size unit_size;      
 
-if( (ierr=MPI_Init(&argc,&argv))!=MPI_SUCCESS) IMB_err_hand(1, ierr);
+if( (ierr=MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&mpi_thread_environment))!=MPI_SUCCESS) IMB_err_hand(1, ierr);
 
 IMB_set_default(&C_INFO);
 
@@ -131,9 +131,14 @@ IMB_init_pointers(&C_INFO);
 
 if( IMB_basic_input(&C_INFO,&BList,&argc,&argv,&NP_min)<0 )
 {
+/* IMB_3.0: help mode */
+if( C_INFO.w_rank==0 ){
+IMB_help();
+}
+MPI_Barrier(MPI_COMM_WORLD);
 IMB_free_all(&C_INFO, &BList);
 MPI_Finalize();
-return 1;
+return 0;
 }
 
 IMB_show_selections(&C_INFO,BList);

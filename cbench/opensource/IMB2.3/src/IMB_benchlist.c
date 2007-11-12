@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -120,14 +120,20 @@ if( !strcmp(Bname,"all") )
   IMB_i_alloc(List, Ndeflt+1,"List_Names");
   for ( n=0; n<Ndeflt; n++ )
      (*List)[n] = n;
+/* IMB_3.0
   (*List)[Ndeflt] = -1;
+*/
+  (*List)[Ndeflt] = LIST_END;
   }
 
 else
   {
   IMB_i_alloc(List, 2, "List_Names");
   IMB_get_def_index(*List, Bname);
+/* IMB_3.0
   (*List)[1]=-1;
+*/
+  (*List)[1]=LIST_END;
   }
 
 }
@@ -169,7 +175,10 @@ while( def_cases[*index] )
    free(TMP1); free(TMP2);
    }
 
+/* IMB_3.0
 if( ! def_cases[*index] ) *index=-1;
+*/
+if( ! def_cases[*index] ) *index=LIST_INVALID;
 }
       
 
@@ -237,11 +246,20 @@ Output variables:
  
  IMB_list_names(Bname, &List);
 
+/* IMB_3.0
  for( plc=0; List[plc]>=0 ; plc++ )
+*/
+ for( plc=0; List[plc]!=LIST_END ; plc++ )
  {
  Bmark = (*P_BList)+n_cases;
 
+/* IMB_3.0 */
+ if (  List[plc]>=0 ) {
  Bmark->name = IMB_str(def_cases[List[plc]]);
+ }
+ else {
+ Bmark->name = IMB_str(Bname);
+ }
  IMB_lwr(Bmark->name);
 
  Bmark->bench_comments = &NIL_COMMENT[0];
@@ -251,7 +269,9 @@ Output variables:
  
  IMB_set_bmark(Bmark);
 
+/* IMB_3.0
  if( Bmark->RUN_MODES[0].type == BTYPE_INVALID ) strcpy(Bmark->name,name);
+*/
  n_cases++;
 
  }
@@ -290,6 +310,8 @@ In/out variables:
 /****************************************************************
 Freeing of the Benchmark list
 *****************************************************************/
+/* IMB_3.0: take care of empty BList */
+if( *P_BList != (struct Bench*)NULL ){
 int i;
 i=0;
 while( (*P_BList)[i].name )
@@ -297,6 +319,7 @@ while( (*P_BList)[i].name )
   free ((*P_BList)[i++].name);
   }
 free(*P_BList);
+}
 }
 
 
@@ -357,6 +380,13 @@ while( BList[j].name )
   j++;
   }
 
+/* IMB_3.0 */
+if( ninvalid>0 )
+{
+fprintf(unit,"\n# List of valid benchmarks:\n#\n");
+int i=0;
+while( def_cases[i] ){fprintf(unit,"# %s\n",def_cases[i++]);}
+}
 
 if( ninvalid < j)
 {

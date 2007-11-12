@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -496,8 +496,11 @@ c_info->communicator= MPI_COMM_NULL;
 IMB_i_alloc(&c_info->g_ranks,c_info->w_num_procs,"Init_Pointers 1");
 IMB_i_alloc(&c_info->g_sizes,c_info->w_num_procs,"Init_Pointers 2");
 
-IMB_i_alloc(&c_info->reccnt,c_info->w_num_procs,"Init_Pointers 3");
-IMB_i_alloc(&c_info->displs,c_info->w_num_procs,"Init_Pointers 4");
+IMB_i_alloc(&c_info->sndcnt,c_info->w_num_procs,"Init_Pointers 3");
+IMB_i_alloc(&c_info->sdispl,c_info->w_num_procs,"Init_Pointers 4");
+
+IMB_i_alloc(&c_info->reccnt,c_info->w_num_procs,"Init_Pointers 5");
+IMB_i_alloc(&c_info->rdispl,c_info->w_num_procs,"Init_Pointers 6");
 
 #ifdef MPIIO
 c_info->filename = c_info->datarep = (char*)NULL;
@@ -573,7 +576,7 @@ maxlen = 1<<MAXMSGLOG;
 
   if(c_info->rank < 0 ) return;
 
-  if(!strcmp(Bmark->name,"Alltoall") )
+  if(!strcmp(Bmark->name,"Alltoall") || !strcmp(Bmark->name,"Alltoallv"))
     {
       s_len = c_info->num_procs*init_size;
       r_len = c_info->num_procs*init_size;
@@ -626,8 +629,11 @@ In/out variables:
   IMB_v_free((void**)&c_info->g_sizes);
   IMB_v_free((void**)&c_info->g_ranks);
 
+  IMB_v_free((void**)&c_info->sndcnt); 
+  IMB_v_free((void**)&c_info->sdispl);
+
   IMB_v_free((void**)&c_info->reccnt); 
-  IMB_v_free((void**)&c_info->displs);
+  IMB_v_free((void**)&c_info->rdispl);
 
   if( c_info->communicator != MPI_COMM_NULL && 
       c_info->communicator != MPI_COMM_SELF &&

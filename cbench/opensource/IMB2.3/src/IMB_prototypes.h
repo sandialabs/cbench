@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -65,6 +65,9 @@ void IMB_allreduce(struct comm_info* c_info, int size, int n_sample,
 void IMB_alltoall(struct comm_info* c_info, int size, int n_sample, 
                   MODES RUN_MODE, double* time);
 
+void IMB_alltoallv(struct comm_info* c_info, int size, int n_sample, 
+                   MODES RUN_MODE, double* time);
+
 void IMB_barrier(struct comm_info* c_info, int size, int n_sample, 
                  MODES RUN_MODE, double* time);
 
@@ -128,6 +131,7 @@ void IMB_ones_mput(struct comm_info* c_info, int s_num, int dest,
 void IMB_window(struct comm_info* c_info, int size, int n_sample, 
                 MODES RUN_MODE, double* time);
 
+void IMB_user_set_info(MPI_Info* opt_info);
 
 #endif
 
@@ -172,6 +176,7 @@ void IMB_iwrite_ij(struct comm_info* c_info, int size, POSITIONING pos,
                    BTYPES type, int i_sample, int j_sample, 
                    int time_inner, int do_ovrlp, double* time);
 
+void IMB_user_set_info(MPI_Info* opt_info);
 
 #endif
 
@@ -261,6 +266,9 @@ void IMB_end_msg(struct comm_info* c_info );
 void IMB_output(struct comm_info* c_info, struct Bench* Bmark, MODES BMODE, 
                 int header, int size, int n_sample, 
                 double *time);
+
+/* New in IMB_3.0 */
+void IMB_help();
 
 void IMB_display_times(struct Bench* Bmark, double* tlist, struct comm_info* c_info, 
                        int group, int n_sample, int size, 
@@ -362,7 +370,7 @@ void IMB_cmp_cat(struct comm_info *c_info, void* RECEIVED, int size,
                  int* lengths, int*ranks, int* Npos, 
                  int *faultpos, double* diff);
 
-void IMB_chk_contiguous(struct comm_info *c_info, int* displs, int* sizes, 
+void IMB_chk_contiguous(struct comm_info *c_info, int* rdispl, int* sizes, 
                         double*diff);
 
 void IMB_chk_distr(struct comm_info *c_info, int size, int n_sample, 

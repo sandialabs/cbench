@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -116,3 +116,5 @@ int AUX_LEN=0;
 int    do_nonblocking=0;
 double tCPU = 0.;    /* CPU time for overlap benchmarks */
 double MFlops = -1.;
+
+int mpi_thread_environment = MPI_THREAD_SINGLE;

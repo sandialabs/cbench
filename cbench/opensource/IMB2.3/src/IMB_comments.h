@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -109,11 +109,15 @@ char * Allgather_cmt[] =
    {
    NULL
    };
+char * Allgatherv_cmt[] =
+   {
+   NULL
+   };
 char * Alltoall_cmt[] =
    {
    NULL
    };
-char * Allgatherv_cmt[] =
+char * Alltoallv_cmt[] =
    {
    NULL
    };

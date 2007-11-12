@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2004 Intel Corporation.                                *
+ * Copyright (c) 2003-2006 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -70,7 +70,7 @@ For more documentation than found here, see
 
 
 
-char* VERSION="2.3";
+char* VERSION="3.0";
 
 #include <stdio.h>
 #include <time.h>
@@ -112,7 +112,7 @@ void IMB_general_info()
 
 
   fprintf(unit,"#---------------------------------------------------\n");
-  fprintf(unit,"# Date       : %s",asctime(localtime(&T)));
+  fprintf(unit,"# Date                  : %s",asctime(localtime(&T)));
 
   IMB_make_sys_info();
   fprintf(unit,"\n");
@@ -133,13 +133,32 @@ void IMB_make_sys_info()
 
 */
 {
+  int dont_care, mpi_subversion, mpi_version;
   struct utsname info;
   uname( &info );
+  dont_care = MPI_Get_version(&mpi_version,&mpi_subversion);
   
-  fprintf(unit,"# Machine    : %s"  ,info.machine);
-  fprintf(unit,"# System     : %s\n",info.sysname);
-  fprintf(unit,"# Release    : %s\n",info.release);
-  fprintf(unit,"# Version    : %s\n",info.version);
+  fprintf(unit,"# Machine               : %s\n",info.machine);
+  fprintf(unit,"# System                : %s\n",info.sysname);
+  fprintf(unit,"# Release               : %s\n",info.release);
+  fprintf(unit,"# Version               : %s\n",info.version);
+  fprintf(unit,"# MPI Version           : %-d.%-d\n",mpi_version,mpi_subversion);
+  fprintf(unit,"# MPI Thread Environment: ");
+
+  switch (mpi_thread_environment) {
+  case MPI_THREAD_SINGLE :
+    fprintf(unit,"MPI_THREAD_SINGLE\n");
+    break;
+  case MPI_THREAD_FUNNELED :
+    fprintf(unit,"MPI_THREAD_FUNNELED\n");
+    break;
+  case MPI_THREAD_SERIALIZED :
+    fprintf(unit,"MPI_THREAD_SERIALIZED\n");
+    break;
+  default :
+    fprintf(unit,"MPI_THREAD_MULTIPLE\n");
+    break;
+  }
 }
 
 void IMB_end_msg(struct comm_info* c_info )
