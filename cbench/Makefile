@@ -32,7 +32,7 @@ OPEN_SUBDIRS = opensource/b_eff opensource/mpi_latency \
                opensource/mpi_routecheck opensource/mpi_tokensmash \
                opensource/PMB2.2.1 opensource/presta1.2 \
                opensource/ior_bench opensource/iozone opensource/rotate \
-               opensource/HPLlinpack opensource/IMB2.3 opensource/osutests \
+               opensource/HPLlinpack opensource/IMB opensource/osutests \
                opensource/lanl  opensource/stab \
                opensource/perftest opensource/mpi_examples opensource/mpi_slowcpu
 
