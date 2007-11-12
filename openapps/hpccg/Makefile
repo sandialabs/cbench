@@ -1,5 +1,7 @@
 include ../../make.def
 
+export CFLAGS
+
 SRC=HPCCG-0.3
 TAR=$(SRC).tar.gz
 URL=http://www.cs.sandia.gov/~maherou/$(TAR)
@@ -21,7 +23,7 @@ $(TAR):
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
-	[ -d $(SRC) ] && $(MAKE) -C $(SRC) -f Makefile.cbench clean
+	[ -d $(SRC) ] && $(MAKE) -C $(SRC) -f Makefile.cbench clean || :
 
 distclean:
 	/bin/rm -rf $(SRC) $(TAR) src

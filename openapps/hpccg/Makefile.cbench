@@ -60,9 +60,10 @@ USE_MPI = -DUSING_MPI
 #    Typically some reasonably high level of optimization should be used to 
 #    enhance performance.
 
-CPP_OPT_FLAGS = $(OPTFLAGS)
+CPP_OPT_FLAGS = $(CFLAGS)
 
-CFLAGS = $(CPP_OPT_FLAGS)
+# get this from cbench's make.def
+#CFLAGS = $(CPP_OPT_FLAGS)
 
 #
 # 4) MPI library:
