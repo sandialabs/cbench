@@ -106,22 +106,54 @@ endif
 
 ###### BLAS library settings
 
-XERBLA = $(CBENCHOME)/opensource/HPLlinpack/xerbla.o
-ifndef RPATH
-  #RPATH = $(CBENCHOME)/restricted/HPLlinpack-gotopatch
-  RPATH = /projects/global/x86_64/libraries/goto_blas
-  RPATH = /projects/global/x86_64/libraries/acml3.6.0/ifort64_mp/lib
-  RPATH = /projects/global/x86_64/libraries/acml3.6.0/gnu64/lib
-  #RPATH = /projects/global/x86_64/libraries/acml3.6.0/gfortran64_mp/lib
-  RPATH = /projects/global/x86_64/libraries/cmkl-9.1_beta/lib/em64t
+ifndef XERBLA
+  XERBLA = $(CBENCHOME)/opensource/HPLlinpack/xerbla.o
 endif
+
+ifndef RPATH
+  RPATH = PLEASE_DEFINE_RPATH_IN_make.def
+  # some examples...
+  #RPATH = $(CBENCHOME)/restricted/HPLlinpack-gotopatch
+  #RPATH = /projects/global/x86_64/libraries/goto_blas
+  #RPATH = /projects/global/x86_64/libraries/acml3.6.0/ifort64_mp/lib
+  #RPATH = /projects/global/x86_64/libraries/acml3.6.0/gnu64/lib
+  #RPATH = /projects/global/x86_64/libraries/acml3.6.0/gfortran64_mp/lib
+  #RPATH = /projects/global/x86_64/libraries/cmkl-9.1_beta/lib/em64t
+endif
+
 ifndef BLASLIB
-  #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_prescott64p-r1.00 $(XERBLA) -lpthread
-  BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_opteronp $(XERBLA) -lpthread -lm
-  BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lacml $(XERBLA)   -lm
-  BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lmkl $(XERBLA) -lpthread  -lm
-  #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_core2p $(XERBLA) -lpthread -lm 
-  #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lacml -Wl,-rpath,/opt/pathscale/lib/2.1 -L/opt/pathscale/lib/2.1 -lmpath -lpathfortran -lpscrt -lg2c
+  ifdef MKL_LIB
+    BLASLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lmkl $(XERBLA) -lpthread  -lm
+  else
+    ifdef ACML_LIB
+      # dynamic
+      #BLASLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
+      # static
+      BLASLIB = $(ACML_LIB)/libacml.a
+    else
+      BLASLIB = PLEASE_DEFINE_BLASLIB_IN_make.def
+      # some examples...
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_prescott64p-r1.00 $(XERBLA) -lpthread
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_opteronp $(XERBLA) -lpthread -lm
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lacml $(XERBLA)   -lm
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lmkl $(XERBLA) -lpthread  -lm
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_core2p $(XERBLA) -lpthread -lm 
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lacml -Wl,-rpath,/opt/pathscale/lib/2.1 -L/opt/pathscale/lib/2.1 -lmpath -lpathfortran -lpscrt -lg2c
+    endif
+  endif
+endif
+
+ifndef LAPACKLIB
+  ifdef MKL_LIB
+    LAPACKLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lmkl_lapack
+  else
+    ifdef ACML_LIB
+      #LAPACKLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
+      LAPACKLIB = $(ACML_LIB)/libacml.a
+    else
+      LAPACKLIB = PLEASE_DEFINE_LAPACKLIB_IN_make.def
+    endif
+  endif
 endif
 
 
