@@ -87,6 +87,9 @@ if (!defined $testdir) {
 			'init' => 'xhpl_gen_init',
 			'innerloop' => 'xhpl_gen_innerloop',
 		},
+		'epetratest' => {
+			'innerloop' => 'trilinos_epetratest_gen_innerloop',
+		},
 	},
 	'testset' => {
 
@@ -180,8 +183,9 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				$outbuf =~ s/XHPL_BIN_HERE/$xhplbin/gs;
 				$outbuf =~ s/HPCC_BIN_HERE/$hpccbin/gs;
 
-				# run any custom generation inner loop work
-				my $ret = custom_gen_innerloop($outbuf,$numprocs,$ppn,$numnodes,
+				# run any custom generation inner loop work, passing a reference to $outbuf so custom
+				# innerloops can modify it
+				my $ret = custom_gen_innerloop(\$outbuf,$numprocs,$ppn,$numnodes,
 							$runtype,$default_walltime,$testset,$jobname,$ident,$job);
 				if ($ret) {
 					# custom_gen_innerloop returned some sort of error
@@ -229,7 +233,7 @@ sub custom_gen_init {
 
 
 sub custom_gen_innerloop {
-	my $outbuf = shift;
+	my $outbuf = shift;      # a *reference* to the actual $outbuf
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
@@ -276,7 +280,7 @@ sub xhpl_gen_init {
 
 
 sub xhpl_gen_innerloop {
-	my $outbuf = shift;
+	my $outbuf = shift;      # a *reference* to the actual $outbuf
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
@@ -325,6 +329,41 @@ sub xhpl_gen_innerloop {
 }
 
 
+sub trilinos_epetratest_gen_innerloop {
+	my $outbuf = shift;      # a *reference* to the actual $outbuf
+	my $numprocs = shift;
+	my $ppn = shift;
+	my $numnodes = shift;
+	my $runtype = uc shift;
+	my $walltime = shift;
+	my $testset = shift;
+	my $jobname = shift;
+	my $ident = shift;
+	my $job = shift;
+
+	debug_print(3,"DEBUG: entering trilinos_epetratest_gen_innerloop()\n");
+
+	# The epetra test program wants NumProcX and NumProcY parameters on the command line,
+	# with NumProcX * NumProcY == NP.  The examples on http://www.sandia.gov/benchmarks show
+	# that the factors should look like what HPL and HPCC use for P and Q values, so the
+	# compute_PQ() function can be used.
+	my ($X, $Y) = compute_PQ($numprocs);
+	if ($X == 0 or $Y == 0) {
+		print "Couldn't determine NumProcX and NumProcY for NP=$numprocs.  Skipping $jobname...\n";
+		rmdir "$testset_path\/$ident\/$jobname";
+		return 1;
+	}
+
+	# Epetra prefers X >= Y though
+	my $NUMPROCS_X = max($X,$Y);
+	my $NUMPROCS_Y = min($X,$Y);
+	$$outbuf =~ s/NUMPROCS_X_HERE/$NUMPROCS_X/gs;
+	$$outbuf =~ s/NUMPROCS_Y_HERE/$NUMPROCS_Y/gs;
+
+	return 0;
+}
+
+
 sub usage {
     print "USAGE: $0 \n";
     print "Cbench script to generate jobs in the $testset test set\n".
@@ -337,7 +376,7 @@ sub usage {
 		  "   --hpccbin        Use a non-default HPCC binary name\n".
           "   --maxprocs       The maximum number of processors to generate\n".
           "                    jobs for\n".
-          "   --maxprocs       The minimum number of processors to generate\n".
+          "   --minprocs       The minimum number of processors to generate\n".
           "                    jobs for\n".
           "   --procs          Only generate jobs for a single processor count\n".
           "   --runsizes       Comma separated list of run sizes, i.e. processor\n".
