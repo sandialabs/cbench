@@ -1,0 +1,5 @@
+# Trilinos Epetra test
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/trilinos_epetratest 700 700 NUMPROCS_X_HERE NUMPROCS_Y_HERE -m -h"
+
+cbench_run_cmd $CMD
