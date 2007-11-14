@@ -33,7 +33,14 @@ $BENCH_HOME = $ENV{CBENCHOME} ? $ENV{CBENCHOME} :
     "$ENV{HOME}\/cbench";
 require "cbench.pl";
 
+# enable/disable color support appropriately
+detect_color_support();
+
 use Getopt::Long;
+use Term::ANSIColor qw(:constants color);
+$Term::ANSIColor::AUTORESET = 1;
+
+my $testset = find_testset_identity($0);
 
 GetOptions( 'ident=s' => \$ident,
             'batch' => \$batch,
@@ -49,6 +56,7 @@ GetOptions( 'ident=s' => \$ident,
 			'repeat=i' => \$repeat,
             'delay=i' => \$delay,
             'polldelay=i' => \$polldelay,
+			'testset=s' => \$testset,
             'dryrun' => \$DRYRUN,
 			'debug:i' => \$DEBUG,
             'help' => \$help,
@@ -94,7 +102,6 @@ if (defined $throttledbatch) {
 $pwd = `pwd`;
 chomp $pwd;
 $bench_test = get_bench_test();
-$testset = 'TESTSET_NAME_HERE';
 
 # we may have multiple idents specified..
 my @identlist = split(',',$ident);
@@ -112,6 +119,7 @@ foreach my $i (@identlist) {
 
 sub usage {
     print "USAGE: $0\n" .
+          "    --testset <name>       Override the name of the testset (optional).\n".
           "    --batch                Submit batch jobs\n" .
           "    --interactive          Start interactive jobs\n" .
           "    --throttledbatch <num> Start batch jobs in a throttled mode where the\n" .

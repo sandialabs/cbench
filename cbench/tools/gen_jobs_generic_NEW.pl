@@ -42,10 +42,13 @@ $Term::ANSIColor::AUTORESET = 1;
 my $xhplbin = 'xhpl';
 my $hpccbin = 'hpcc';
 
+my $testset = find_testset_identity($0);
+
 # pass_through lets "non options" stay in ARGV w/o raising an error
 Getopt::Long::Configure("pass_through");
 
 GetOptions(
+
 	'ident=s' => \$ident,
 	'binident=s' => \$BINIDENT,
 	'binname=s' => \$binname,
@@ -57,6 +60,7 @@ GetOptions(
     'runsizes=s' => \$runsizes,
 	'testdir=s' => \$testdir,
 	'jobcbenchtest=s' => \$JOBCBENCHTEST,
+	'testset=s' => \$testset,
 	'debug:i' => \$DEBUG,
 	'help' => \$help,
 	'redundant' => \$redundant,
@@ -67,13 +71,12 @@ if (defined $help) {
 	exit;
 }
 
-$testset = find_testset_identity($0);
 $bench_test = get_bench_test();
 $testset_path = "$bench_test/$testset";
 $DEBUG and print "DEBUG: $bench_test $testset_path\n";
 
 (!defined $ident) and $ident = $cluster_name . "1";
-if (!defined $testdir) {
+if (!defined $testdir and $testset =~ /^io/) {
 	$testdir = "$testset_path/$ident/TMP";
 	print "$0: --testdir not specified, defaulting to $testdir\n";
 	mkdir "$testdir",0750;
@@ -367,6 +370,7 @@ sub trilinos_epetratest_gen_innerloop {
 sub usage {
     print "USAGE: $0 \n";
     print "Cbench script to generate jobs in the $testset test set\n".
+          "   --testset <name> Override the name of the testset (optional).\n".
           "   --ident          Identifying string for the test\n".
 		  "   --binident       Binary tree identifier\n".
 	#	  "   --binname        Use a non-default binary name\n".
