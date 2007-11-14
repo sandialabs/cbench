@@ -45,8 +45,19 @@ use Term::ANSIColor qw(:constants color);
 $Term::ANSIColor::AUTORESET = 1;
 
 my $num_data_columns = 2;
-my $testset = 'TESTSET_NAME_HERE';
+my $testset = find_testset_identity($0);
 my $xaxis_ppn = 0;
+
+# this is a string buffer to hold interesting details of what output_parse
+# was asked to do and what data it found. we'll use this later to possibly record
+# in gnuplot files used to generate plots to leave a trail of how and where
+# the data came from.
+my @invocation_data = ("\n\n# output_parse_generic.pl invocation and run data\n");
+my $datestamp = `date`;
+chomp $datestamp;
+push @invocation_data, "# invoked: $datestamp\n";
+# save the command line
+push @invocation_data, "# command line: $0 @ARGV\n";
 
 GetOptions( 'ident=s' => \$ident,
 			'debug:i' => \$DEBUG,
@@ -152,6 +163,10 @@ if (!chdir $testpath) {
 		"or add the --usecwd flag to process data from the current directory.\n";
 }
 
+# save what directory we actually parsed in
+push @invocation_data, "# dir parsed: $ENV{PWD}\n";
+
+# var for fstat data
 my $fstat = undef;
 
 # hash to hold all the raw data that is returned by the
@@ -540,27 +555,38 @@ if (defined $grepable) {
 if (defined $listfound) {
 	print GREEN "\nList of key stuff found during parsing:\n";
 	print GREEN "---------------------------------------\n";
+	my $tmp = "";
 	print "Test identifiers: ";
+	$tmp .= "# Test identifiers: ";
 	for $k (keys %data) {
 		print  "$k ";
+		$tmp .= "$k ";
 	}
 	print "\n";
 	print "Benchmarks: ";
+	$tmp .= "\n# Benchmarks: ";
 	for $k (keys %benchlist) {
 		print  "$k ";
+		$tmp .= "$k ";
 	}
 	print "\n";
 	print "Data metrics:\n";
+	$tmp .= "\n# Data metrics:\n";
 	foreach my $k (keys %metrics) {
 		($ktrim = $k) =~ s/DATA_//;
 		print "  \'$ktrim\' from benchmark \'$metrics{$k}\'\n";
+		$tmp .= "#  \'$ktrim\' from benchmark \'$metrics{$k}\'\n";
 	}
 	print "\n";
+	push @invocation_data, $tmp; 
 }
 
 print GREEN "\nParse Summary:\n--------------\n";
 print "Total Files Parsed = $total_files_parsed\n";
+push @invocation_data, "# Total Files Parsed = $total_files_parsed\n";
 print "Total Jobs Parsed = $total_jobs_parsed\n";
+push @invocation_data, "# Total Jobs Parsed = $total_jobs_parsed\n";
+
 print GREEN "\nJob Status Summary:\n-------------------\n";
 foreach $k (keys %statusdata) {
 	print "$k = $statusdata{$k}\n";
@@ -569,6 +595,7 @@ my $temp = 0;
 my $temp2 = $total_jobs_parsed - $statusdata{'NOTICE'};
 $temp = $statusdata{'PASSED'}/$temp2 unless ($total_jobs_parsed == 0);
 printf "Overall Job Success = %0.2f%%\n",$temp*100;
+push @invocation_data, sprintf "# Overall Job Success = %0.2f%%\n",$temp*100;
 
 # build a gnuplot if asked, but we can only do one gnuplot per invocation right now...
 (defined $gnuplot) and results_to_gnuplot(\%outhash) unless (defined $successstats);
@@ -1322,6 +1349,9 @@ sub results_to_gnuplot {
 		"set term png\n" .
 		"set output \"$testset.png\"\n" .
 		"replot\n" ;
+	
+	# record our nice invocation data stuff
+	print PLOT @invocation_data;
 	close(PLOT);
 
 	my $xrm = 
@@ -1338,6 +1368,7 @@ sub results_to_gnuplot {
 
 	# record the command we executed in the gnuplot command file for posterity
 	print CMD "\n\# gnuplot command line\n\# $cmd\n";
+	print CMD @invocation_data;
 	close(CMD);
 
 	(defined $DEBUG) and print "DEBUG:results_to_gnuplot(): $cmd\n";
