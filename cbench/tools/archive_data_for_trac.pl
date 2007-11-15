@@ -26,13 +26,13 @@
 use Getopt::Long;
 
 GetOptions(
-	'filebasename:s' => \$filebasename,
-	'urlbase:s' => \$urlbase,
-	'urldir:s' => \$urldir,
-	'destdir:s' => \$destdir,
-	'destbasename:s' => \$destbasename,
-	'indent:i' => \$indent,
-	'description:s' => \$description,
+	'filebasename=s' => \$filebasename,
+	'urlbase=s' => \$urlbase,
+	'urldir=s' => \$urldir,
+	'destdir=s' => \$destdir,
+	'destbasename=s' => \$destbasename,
+	'indent=i' => \$indent,
+	'description=s' => \$description,
 );
 
 (!defined $destdir) and $destdir = "$ENV{PWD}/tmp";
