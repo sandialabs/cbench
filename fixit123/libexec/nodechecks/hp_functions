@@ -46,6 +46,16 @@ psp_check_install() {
 		fi
 	done
 
+	# psp seems sane, but check for hponcfg util too
+	which hponcfg 2>&1 | grep -q 'no hponcfg'
+	if [ $? -eq 0 ]; then
+		echo_failure
+		echo "  WARNING: PSP install looks ok but couldn't find hponcfg."
+		echo "           Something is messed up. A node reinstall might"
+		echo "           be necessary."
+		return 1
+	fi
+
 	if [ $install_ok -eq 1 ]; then
 		echo_success
 		return 0
