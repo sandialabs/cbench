@@ -39,12 +39,15 @@ GetOptions(
 	'debug' => \$DEBUG,
 	'node=s' => \$node,
 	'step2pass=s' => \$step2pass,
+	'step3pass=s' => \$step3pass,
+	'step3tag=s' => \$step3tag,
 	'dryrun|dry-run'  => \$dryrun,
 );
 
 
 $BINDIR = "$ENV{FIXIT123_HOME}/bin";
 $LOGDIR = "$ENV{FIXIT123_DB_HOME}";
+$STEP3ADIR="$LOGDIR/step3a";
 $step2_logfile = "$LOGDIR/breakfix.log";
 $step3_logfile = "$LOGDIR/breakfix_step3.log";
 
@@ -54,20 +57,47 @@ my $be = Env::Bash->new( Source => ". $ENV{'FIXIT123_CBENCHTEST'}/cbench-init.sh
 $CBENCHOME = $be->CBENCHOME;
 $CBENCHTEST = $be->CBENCHTEST;
 
-(!defined $node) and die &usage();
 
 my $logmsg = '';
 if (defined $step2pass) {
-	$logmsg = sprintf("%s NODE %s => STEP2B PASSED, with manual intervention from poke_breakfix_data, %s\n", get_timestamp(), $node, $step2pass);
+	(!defined $node) and die &usage();
+
+	$logmsg = sprintf("%s NODE %s => STEP2B PASSED, manually via poke_breakfix_data, %s\n", get_timestamp(), $node, $step2pass);
 
     open (OUT,">>$step2_logfile") or die
 	    "Could not open $step2_logfile ($!)";
+}
+elsif (defined $step3pass) {
+	(! defined $step3tag) and 
+		die "--step3pass requires the --step3tag parameter";
+
+	$step3nodefile = "$STEP3ADIR\/$step3tag\.nodelist";
+
+	$logmsg = sprintf("%s NODE %s => STEP3B PASSED, manually via poke_breakfix_data, %s, tag was %s, READY for REINTEGRATION\n", get_timestamp(), $l, $step3pass, $step3tag);
+
+    open (OUT,">>$step3_logfile") or die
+	    "Could not open $step3_logfile ($!)";
+
+    open (IN,"<$step3nodefile") or die
+	    "Could not open $step3nodefile ($!)";
+    @nodebuf = <IN>;
+    close(IN);
+
 }
 
 # record the log message in the right breakfix log
 print "$logmsg";
 if (!$dryrun) {
-	printf OUT $logmsg;
+	if (defined $step2pass) {
+		printf OUT $logmsg;
+	}
+	elsif (defined $step3pass) {
+		foreach $l (@nodebuf) {
+			chomp $l;
+			$logmsg = sprintf("%s NODE %s => STEP3B PASSED, manually via poke_breakfix_data, %s, tag was %s, READY for REINTEGRATION\n", get_timestamp(), $l, $step3pass, $step3tag);
+			printf OUT $logmsg;
+		}
+	}
 
     close(OUT);
 	system("sync");
