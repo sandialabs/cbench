@@ -1965,7 +1965,7 @@ sub find_testset_identity {
 	}
 	else {
 		warning_print("Cannot determine testset identity.");
-		return "";
+		return "TESTSET";
 	}
 }
 
@@ -2005,7 +2005,7 @@ sub rsync_filelist {
 	
 	foreach $item (@$list) {
 		system("$cmd $BENCH_HOME\/$item $destpath\/\. 2>/dev/null");
-		$DEBUG and print "INSTALLING $BENCH_HOME\/$item to $destpath...\n";
+		debug_print(1,"DEBUG:rsync_filelist() syncing $BENCH_HOME\/$item to $destpath...");
 	}
 }
 
@@ -2043,6 +2043,26 @@ sub install_util_script {
 	system("/bin/chmod gu+x $dest");
 }
 
+# used to install things into testsets via symlinking to the top
+# of the cbench testing tree
+# params:
+# 1) source file
+# 2) destination file name
+sub testset_symlink_file {
+	my $src = shift;
+	my $dest = shift;
+
+	# if the symlink exists remove it first
+	if (-l "$dest") {
+		unlink "$dest";
+	}
+	elsif (-f "$dest") {
+		info_print("testset_symlink_install() $dest is not a symlink, we will not touch it");
+	}
+
+	system("/bin/ln -s ../$src $dest");
+}
+
 
 # make sure a directory exists in the BENCH_TEST area for the given
 # test set
@@ -2058,7 +2078,7 @@ sub mk_test_dir {
 sub get_bench_test {
 
 	if ($ENV{CBENCHTEST}) {
-		(defined $DEBUG and $DEBUG > 1) and print "DEBUG: found CBENCHTEST environment variable\n";
+		debug_print(2,"DEBUG: found CBENCHTEST environment variable\n");
 		return $ENV{CBENCHTEST};
 	}
 	else {
@@ -2155,7 +2175,7 @@ sub compute_PQ {
 	# is the proc count a perfect square?
 	if (($numproc_sqrt * $numproc_sqrt) == $numprocs) {
 		@PQ = ($numproc_sqrt, $numproc_sqrt);
-		(defined $DEBUG) and print "DEBUG: compute_PQ() @PQ\n";
+		debug_print(1,"DEBUG: compute_PQ() @PQ\n");
 		return @PQ;
 	}
 
@@ -2163,13 +2183,12 @@ sub compute_PQ {
 		$P = int($numprocs / $Q);
 		if (($P * $Q) == $numprocs) {
 			@PQ = ($P, $Q);
-			(defined $DEBUG) and print "DEBUG: compute_PQ() @PQ\n";
+			debug_print(1,"DEBUG: compute_PQ() @PQ\n");
 			return @PQ;
 		}
 	}
 
-	(defined $DEBUG) and print
-    	"compute_PQ() failed for numprocs=$numprocs\n";
+	debug_print(1,"compute_PQ() failed for numprocs=$numprocs\n");
 	return @PQ;
 }
 
@@ -2199,21 +2218,22 @@ sub debug_print {
 	my $level = shift;
 	my $msg = shift;
 
+	# a common pain is calling debug_print with newline in the string
+	# and then we add one here, so strip the ending one off
+	$msg =~ s/\n$//;
 	if (defined $DEBUG and $DEBUG >= $level) {
-		#print $msg;
-    	#print colored("WARNING: $_[0]\n", "yellow", "bold");
-    	print colored($msg, "magenta", "bold");
+    	print MAGENTA BOLD $msg,RESET,"\n";
 	}
 }
 
 # print out cbench warnings
 sub warning_print {
-    print colored("WARNING: $_[0]\n", "yellow", "bold");
+    print YELLOW BOLD "WARNING: $_[0]",RESET,"\n";
 }
 
 # print out cbench info messages
 sub info_print {
-    print colored("INFO: $_[0]\n", "blue", "bold");
+    print BLUE BOLD "INFO: $_[0]",RESET,"\n";
 }
 
 
