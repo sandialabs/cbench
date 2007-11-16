@@ -86,6 +86,9 @@ if (!defined $testdir and $testset =~ /^io/) {
 # custom generate processing control hash
 %custom_gen_hash = (
 	'benchmark' => {
+		'npb' => {
+			'init' => 'npb_gen_init',
+		},
 		'xhpl' => {
 			'init' => 'xhpl_gen_init',
 			'innerloop' => 'xhpl_gen_innerloop',
@@ -95,12 +98,18 @@ if (!defined $testdir and $testset =~ /^io/) {
 		},
 	},
 	'testset' => {
-
+		'npb' => {
+			'joblist' => 'npb_gen_joblist',
+			'innerloop' => 'npb_gen_innerloop',
+		},
 	},
 );
 
-%templates = ();
+# find and read in the job templates for the testset
+my %templates = ();
 build_job_templates($testset,\%templates);
+# by default the list of jobs is the list of templates found
+my @job_list = keys %templates;
 
 #print Dumper(%custom_gen_hash);
 #print Dumper(%templates);
@@ -145,7 +154,12 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 		(defined $procs_cmdline) and ($numprocs != $procs_cmdline) and next;
 
 		# iterate over the job templates we need to process
-		foreach $job (sort keys %templates) {
+		foreach $job (custom_gen_joblist($ppn,$numprocs)) {
+			# most job templates correspond directly with the name of the job
+			my $job_template = $job;
+			# NPB is slightly different
+			$job_template = 'npb';
+
 			# figure out how many nodes we need based on the number of
 			# procs and ppn
 			$numnodes = calc_num_nodes($numprocs,$ppn);
@@ -175,7 +189,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				my $captype = uc $runtype;
 
 				# prime the output buffers with the appopriate template
-				$outbuf = $templates{$job}{$runtype};
+				$outbuf = $templates{$job_template}{$runtype};
 
 				# here we do all the standard substitutions
 				$outbuf = std_substitute($outbuf,$numprocs,$ppn,$numnodes,
@@ -212,6 +226,23 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 					`/bin/chmod gu+x $testset_path\/$ident\/$jobname\/$outfile`;
 			}
 		}
+	}
+}
+
+
+sub custom_gen_joblist {
+	my $ppn = shift;
+	my $numprocs = shift;
+
+	# run any specific custom job list subroutine
+	if (exists $custom_gen_hash{testset}{$testset}{joblist}) {
+		debug_print(2,"DEBUG:custom_gen_joblist() calling $custom_gen_hash{testset}{$testset}{joblist}\n");
+		my $funcname = "$custom_gen_hash{testset}{$testset}{joblist}";
+		*func = \&$funcname;
+		return func($ppn,$numprocs);
+	}
+	else {
+		return @job_list;
 	}
 }
 
@@ -257,6 +288,92 @@ sub custom_gen_innerloop {
 		return func($outbuf,$numprocs,$ppn,$numnodes,
 			$runtype,$default_walltime,$testset,$jobname,$ident,$job);
 	}
+
+	# specific generate stuff to run in the inner most generate loop based on testset
+	if (exists $custom_gen_hash{testset}{$testset}{innerloop}) {
+		debug_print(2,"DEBUG:custom_gen_innerloop() calling $custom_gen_hash{testset}{$testset}{innerloop} \n");
+		my $funcname = "$custom_gen_hash{testset}{$testset}{innerloop}";
+		*func = \&$funcname;
+		return func($outbuf,$numprocs,$ppn,$numnodes,
+			$runtype,$default_walltime,$testset,$jobname,$ident,$job);
+	}
+}
+
+sub npb_gen_init {
+	my $testset = shift;
+
+	debug_print(3,"DEBUG: entering npb_gen_init()\n");
+
+	# The list of NAS codes to build. The IS (integer sort) and 
+	# EP (embarrasingly parallel) benchmarks are really not workloads
+	# we care about.
+	my @codes = ('cg','ft','sp','bt','mg','lu');
+
+	# The list of NAS code classes (which correspond to how much memory
+	# a NAS code uses and how much work is done) to generate.
+	# class A and W are too small for us to really care about
+	my @classes = ('B', 'C', 'D');
+
+	@npb_job_list = ();
+
+	foreach my $c (@codes) {
+		foreach my $m (@classes) {
+			push @npb_job_list, "$c$m";	
+		}
+	}
+	debug_print(3,"DEBUG:npb_gen_init() joblist=".join(',',@npb_job_list));
+}
+
+sub npb_gen_joblist {
+	my $ppn = shift;
+	my $numprocs = shift;
+
+	debug_print(3,"DEBUG: entering npb_gen_joblist($ppn,$numprocs)\n");
+
+	# npb job list will be different depending on the number of processors
+	# we are generating for... so we have to cull the list each time
+	my @tmplist = ();
+	foreach my $job (@npb_job_list) {
+		my ($code) = $job =~ /^(\S+)[ABCD]$/;
+
+		# NAS benchmarks only run on a perfect square number of
+		# processors or a power of two number of procs (depending
+		# on the benchmark).  Filter out all other run sizes.
+		if ($code =~ /sp|bt/) {
+			# perfect square codes
+			next unless perfect_square($numprocs);
+		}
+		else {
+			# power of two codes
+			next unless power_of_two($numprocs);
+		}
+		push @tmplist, $job;
+	}
+
+	debug_print(3,"DEBUG:npb_gen_joblist() joblist=".join(',',@tmplist));
+	return @tmplist;
+}
+
+sub npb_gen_innerloop {
+	my $outbuf = shift;      # a *reference* to the actual $outbuf
+	my $numprocs = shift;
+	my $ppn = shift;
+	my $numnodes = shift;
+	my $runtype = uc shift;
+	my $walltime = shift;
+	my $testset = shift;
+	my $jobname = shift;
+	my $ident = shift;
+	my $job = shift;
+
+	debug_print(3,"DEBUG: entering npb_gen_innerloop($job)\n");
+
+	my ($code,$class) = $job =~ /^(\S+)([ABCD])$/;
+	my $npbname = "$code\.$class\.$numprocs";
+	debug_print(3,"DEBUG:npb_gen_innerloop() $npbname\n");
+	$$outbuf =~ s/NPB_HERE/$npbname/gs;
+
+	return 0;
 }
 
 
