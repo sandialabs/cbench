@@ -28,10 +28,12 @@
 # testset
 
 # need to know where everything cbench lives!
-use lib ($ENV{CBENCHOME} ? $ENV{CBENCHOME} : "$ENV{HOME}\/cbench");
-$BENCH_HOME = $ENV{CBENCHOME} ? $ENV{CBENCHOME} :
-    "$ENV{HOME}\/cbench";
+BEGIN {
+	die "Please define CBENCHOME!\n" if !defined($ENV{CBENCHOME});
+}
+use lib $ENV{CBENCHOME};
 require "cbench.pl";
+$CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
 # enable/disable color support appropriately
 detect_color_support();
@@ -42,25 +44,31 @@ $Term::ANSIColor::AUTORESET = 1;
 
 my $testset = find_testset_identity($0);
 
+# hash to hold data for the more complicated job start modes
+my %optdata = ();
+$optdata{commandline} = "$0 @ARGV";
+$optdata{CBENCHOME} = $CBENCHOME;
+
 GetOptions( 'ident=s' => \$ident,
-            'batch' => \$batch,
-            'interactive' => \$inter,
-            'throttledbatch=i' => \$throttledbatch,
-            'serialbatch' => \$serialbatch,
-            'waitall' => \$waitall,
-            'match=s' => \$match,
-            'minprocs=i' => \$minprocs,
-            'maxprocs=i' => \$maxprocs,
-			'procs=i' => \$procs,
-			'batchargs=s' => \$batchargs,
-			'repeat=i' => \$repeat,
-            'delay=i' => \$delay,
-            'polldelay=i' => \$polldelay,
-			'testset=s' => \$testset,
-            'dryrun' => \$DRYRUN,
-			'debug:i' => \$DEBUG,
-            'help' => \$help,
-          );
+		'batch' => \$batch,
+		'interactive' => \$inter,
+		'throttledbatch=i' => \$throttledbatch,
+		'serialbatch' => \$serialbatch,
+		'combobatch:s' => \$combobatch,
+		'waitall' => \$waitall,
+		'match=s' => \$match,
+		'minprocs=i' => \$minprocs,
+		'maxprocs=i' => \$maxprocs,
+		'procs=i' => \$procs,
+		'batchargs=s' => \$batchargs,
+		'repeat=i' => \$repeat,
+		'delay=i' => \$delay,
+		'polldelay=i' => \$polldelay,
+		'testset=s' => \$testset,
+		'dryrun' => \$DRYRUN,
+		'debug:i' => \$DEBUG,
+		'help' => \$help,
+);
 
 $minprocs=1 unless $minprocs;
 if (defined $help) {
@@ -68,11 +76,13 @@ if (defined $help) {
     exit;
 }
 
+$optdata{testset} = $testset;
+
 (!defined $ident) and $ident = $cluster_name . "1";
 (defined $serialbatch) and $throttledbatch = 1;
 
-if (!defined $batch and !defined $inter and !defined $throttledbatch) {
-    die "--batch or --interactive or --throttledbatch parameter required\n";
+if (!defined $batch and !defined $inter and !defined $throttledbatch and !defined $combobatch) {
+    die "--batch, --interactive, --throttledbatch, --serialbatch, or --combobatch  parameter required\n";
 }
 
 if (defined $waitall and !defined $throttledbatch) {
@@ -94,14 +104,35 @@ if (defined $procs) {
 (defined $inter) and $start_method  = 'interactive';
 if (defined $throttledbatch) {
 	$start_method  = 'throttledbatch';
+	$optdata{throttled_jobwidth} = $throttledbatch;
 	(defined $waitall) and $start_method .= "-waitall";
 	$SIG{USR1} = sub { $main::DEBUG++; };
 	$SIG{USR2} = sub { $main::DEBUG--; };
 }
 
-$pwd = `pwd`;
+# prime some directory related stuff we'll need soon
+my $pwd = `pwd`;
 chomp $pwd;
-$bench_test = get_bench_test();
+my $bench_test = get_bench_test();
+$optdata{CBENCHTEST} = $bench_test;
+$optdata{origpwd} = $pwd;
+
+# combination batch preparation
+if (defined $combobatch) {
+	$start_method  = 'combobatch';
+	# check to see if user passed an identifier for the combo batch job files
+	if (length $combobatch < 2) {
+		$optdata{comboident} = 'combobatch';
+	}
+	else {
+		$optdata{comboident} = $combobatch;
+	}
+
+	# make sure combo test ident directory exists
+	$optdata{comboident_path} = "$bench_test\/$testset\/$optdata{comboident}";
+	(! -d "$optdata{comboident_path}") and mkdir "$optdata{comboident_path}",0750;
+}
+
 
 # we may have multiple idents specified..
 my @identlist = split(',',$ident);
@@ -111,7 +142,8 @@ foreach my $i (@identlist) {
 	chdir $testpath;
 
 	print "Starting jobs for test identifier \'$i\':\n";
-	start_jobs($start_method,$match,$delay,$polldelay,$maxprocs,$minprocs,$repeat,$batchargs,$throttledbatch);
+	$optdata{ident} = $i;
+	start_jobs($start_method,$match,$delay,$polldelay,$maxprocs,$minprocs,$repeat,$batchargs,\%optdata);
 
 	chdir $pwd;
 }

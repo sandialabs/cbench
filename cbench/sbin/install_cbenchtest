@@ -42,8 +42,8 @@ GetOptions(
 	'debug=i' => \$DEBUG,
 );
 
-(!defined $testset and !defined $allsets) and do {
-	print "--testset or --allsets paramter is required\n";
+(!defined $testtop and !defined $testset and !defined $allsets) and do {
+	print "--testtop or --testset or --allsets paramter is required\n";
 	usage();
 	exit 1;
 };

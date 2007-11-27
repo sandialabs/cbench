@@ -641,51 +641,67 @@ sub build_job_templates {
 	# i.e. 'bandwidth', 'xhpl', and BINARYNAME is the name of the specific
 	# benchmark to be run
 	my @temp = `/bin/ls -1 $testset_path\/$testset\_*\.in`;
+	
+	# we also want to build the internal Cbench "job" used by the combination
+	# batch (--combobatch start_jobs mode)
+	push @temp, `/bin/ls -1 $bench_test\/templates/combobatch.in`;
 
 	foreach (@temp) {
 		chomp $_;
-		(/(\S+)\/($testset)_(\S+)\.in/) or next;
-
-		# start building the job templates
-		$templates->{"$3"}{'batch'} = $batch_header;
-		$templates->{"$3"}{'interactive'} = $interactive_header;
-
-		# add the common header
-		$templates->{"$3"}{'batch'} .= "\n######## Cbench $bench_test\/common_header.in ########\n";
-		$templates->{"$3"}{'batch'} .= $common_header;
-		$templates->{"$3"}{'interactive'} .= "\n######## Cbench $bench_test\/common_header.in ########\n";
-		$templates->{"$3"}{'interactive'} .= $common_header;
+		my $jobname = "";
+		my $jobfile = "";
+		if (/(\S+)\/($testset)_(\S+)\.in/) {
+			$jobname = $3;
+			$jobfile = "$testset_path\/$testset\_$jobname.in";
+		}
+		elsif (/combobatch.in/) {
+			$jobname = "combobatch";
+			$jobfile = "$bench_test\/templates/combobatch.in";
+		}
+		else {
+			next;
+		}
 
 		# read in the job template so we can add it
-		$file = "$testset_path\/$2\_$3.in";
-		open (IN,"<$file") or die
-			"Could not open $file ($!)";
+		open (JOBFILEIN,"<$jobfile") or die
+			"Could not open $jobfile ($!)";
 		undef $/;
-		$job_template = <IN>;
-		close(IN);
+		$job_template = <JOBFILEIN>;
+		close(JOBFILEIN);
 		$/ = "\n";
 
-		# continue building the job templates
-		$templates->{"$3"}{'batch'} .= "\n######## Cbench $file ########\n";
-		$templates->{"$3"}{'batch'} .= $job_template;
-		$templates->{"$3"}{'interactive'} .= "\n######## Cbench $file ########\n";
-		$templates->{"$3"}{'interactive'} .= $job_template;
 
-		if ($DEBUG and $DEBUG < 2) {
-			print "DEBUG: found and processed job template $2\_$3.in\n";
+		# start building the job templates
+		$templates->{$jobname}{'batch'} = $batch_header;
+		$templates->{$jobname}{'interactive'} = $interactive_header;
+
+		# add the common header
+		$templates->{$jobname}{'batch'} .= "\n######## Cbench $bench_test\/common_header.in ########\n";
+		$templates->{$jobname}{'batch'} .= $common_header;
+		$templates->{$jobname}{'interactive'} .= "\n######## Cbench $bench_test\/common_header.in ########\n";
+		$templates->{$jobname}{'interactive'} .= $common_header;
+
+		# continue building the job templates
+		$templates->{$jobname}{'batch'} .= "\n######## Cbench $jobfile ########\n";
+		$templates->{$jobname}{'batch'} .= $job_template;
+		$templates->{$jobname}{'interactive'} .= "\n######## Cbench $jobfile ########\n";
+		$templates->{$jobname}{'interactive'} .= $job_template;
+
+		if ($DEBUG and $DEBUG < 3) {
+			print "DEBUG: found and processed job template $testset\_$jobname.in\n";
 		}
-		elsif ($DEBUG > 1) {
-			print "DEBUG:  batch job template $2\_$3.in\n" .
+		elsif ($DEBUG > 2) {
+			print "DEBUG:  batch job template $testset\_$jobname.in\n" .
 				"====================================================\n".
-				$templates->{"$3"}{'batch'} .
+				$templates->{$jobname}{'batch'} .
 				"====================================================\n";
 		}
 
 		# add the common footer
-		$templates->{"$3"}{'batch'} .= "\n######## Cbench $bench_test\/common_footer.in ########\n";
-		$templates->{"$3"}{'batch'} .= $common_footer;
-		$templates->{"$3"}{'interactive'} .= "\n######## Cbench $bench_test\/common_footer.in ########\n";
-		$templates->{"$3"}{'interactive'} .= $common_footer;
+		$templates->{$jobname}{'batch'} .= "\n######## Cbench $bench_test\/common_footer.in ########\n";
+		$templates->{$jobname}{'batch'} .= $common_footer;
+		$templates->{$jobname}{'interactive'} .= "\n######## Cbench $bench_test\/common_footer.in ########\n";
+		$templates->{$jobname}{'interactive'} .= $common_footer;
 
 	}
 }
@@ -705,17 +721,20 @@ sub start_jobs {
 	my $minprocs = shift;
 	my $repeat = shift;
 	my $batchargs = shift;
-	my $throttledbatch_num = shift;
+	my $optdata = shift; # optional, additional option data starting modes might need
 
-	(defined $DEBUG) and print
-		"DEBUG:start_jobs() method=$start_method delay=$delay repeat=$repeat ".
-		"max=$maxprocs min=$minprocs polldelay=$poll_delay match=\'$match\'\n";
+	debug_print(1,"DEBUG:start_jobs() method=$start_method delay=$delay repeat=$repeat ".
+		"max=$maxprocs min=$minprocs polldelay=$poll_delay match=\'$match\'\n");
 
 	my %scripts = ();
 	my %bench_list = ();
 	my $total_jobs = 0;
 	my @buf;
 	my $cmd;
+	my $maxprocs_scanned = 0;
+	my $maxppn_scanned = 0;
+	# we'll have to adjust when the 10000 core chips come :)
+	my $minppn_scanned = 9999; 
 
 	# get a master list of potential job scripts to execute
 	$cmd = '/bin/ls -d1 *-?ppn-*';
@@ -734,7 +753,7 @@ sub start_jobs {
 		next unless ($i =~ /$matchstr/i);
 
 		# number of processors in the job
-		my ($bench,$ppn,$num_proc) = ($i =~ /^(\S+)\-(\S+)\-(\d+)$/);
+		my ($bench,$ppn,$num_proc) = ($i =~ /^(\S+)\-(\S+)ppn\-(\d+)$/);
 		$bench_list{$bench} = 1;
 
         # don't go over max number of procs as configured in cluster.def
@@ -742,62 +761,37 @@ sub start_jobs {
 
         # if $maxprocs is defined, don't run jobs bigger than that
 		if (defined $maxprocs and $num_proc > $maxprocs) {
-			(defined $DEBUG) and 
-				print "Jobname $i (numprocs=$num_proc) exceeds max number of processes to use ($maxprocs)\n";
+			debug_print(1,
+				"DEBUG: Jobname $i (numprocs=$num_proc) exceeds max number of processes to use ($maxprocs)\n");
 			next;
 		}
         # if $minprocs is defined, don't run jobs smaller than that
 		if (defined $minprocs and $num_proc < $minprocs) {
-			(defined $DEBUG) and 
-				print "Jobname $i (numprocs=$num_proc) cedes min number of processes to use ($minprocs)\n";
+			debug_print(1,
+				"DEBUG: Jobname $i (numprocs=$num_proc) cedes min number of processes to use ($minprocs)\n");
 			next;
 		}
 
 		$scripts{$i} = $repeat;
 		$total_jobs += $repeat;
+		($num_proc > $maxprocs_scanned) and $maxprocs_scanned = $num_proc;
+		($ppn > $maxppn_scanned) and $maxppn_scanned = $ppn;
+		($ppn < $minppn_scanned) and $minppn_scanned = $ppn;
 	}
 
+	debug_print(1,"DEBUG:start_jobs() total_jobs=$total_jobs maxprocs_scanned=$maxprocs_scanned maxppn_scanned=$maxppn_scanned minppn_scanned=$minppn_scanned\n");
+
 	if (defined $DEBUG and $DEBUG > 1) {
-		print "DEBUG:start_jobs() total_jobs=$total_jobs\n";
 		print "DEBUG:start_jobs() Dump of \%bench_list:\n";
 		print Dumper (%bench_list);
 		print "DEBUG:start_jobs() Dump of \%scripts:\n";
 		print Dumper (%scripts);
 	}
-
-	if ($start_method !~ /throttled/) {
-		for my $iter (1..$repeat) {
-			foreach $i (sort sort_by_numprocs keys(%scripts)) {
-				# chdir into the job's directory
-				(! -d $i) and next;
-				$DEBUG and print "DEBUG:start_jobs() chdir $i\n";
-				chdir $i;
-
-				my $stamp = get_timestamp();
-				print "Starting jobname $i ($stamp)...\n";
-				if ($start_method =~ /batch/) {
-					my $cmd = batch_submit_cmdbuild();
-					$cmd .= "$batchargs $i\.pbs";
-					$DEBUG and print "DEBUG:start_jobs() cmd=$cmd\n";
-					system($cmd) unless $DRYRUN;
-				}
-				else {
-					my $cmd = "./$i\.sh";
-					$DEBUG and print "DEBUG:start_jobs() cmd=$cmd\n";
-					system($cmd) unless $DRYRUN;
-				}
-
-				chdir $pwd;
-
-				# be nice to the system and wait a sec
-				sleep $delay unless $DRYRUN;
-			}
-		}
-	}
-	else {
+   
+	if ($start_method =~ /throttled/) {
 		(defined $DRYRUN) and $poll_delay = 5;
 		my $stamp = get_timestamp();
-		print "($stamp) Intiating Throttled Batch mode with $throttledbatch_num concurrent jobs:\n";
+		print "($stamp) Intiating Throttled Batch mode with $$optdata{throttled_jobwidth} concurrent jobs:\n";
 		print "($stamp) Total jobs to submit = $total_jobs\n";
 		my $start = time;
 		
@@ -830,7 +824,7 @@ sub start_jobs {
 			# matching the $regex.  All that to say, the total of jobs we are
 			# interested in tracking.
 			my $num = $jobs{'TOTAL'};
-			my $delta = $throttledbatch_num - $num;
+			my $delta = $$optdata{throttled_jobwidth} - $num;
 
 			# generate the throttled batch status line
 			my $runtime = (time() - $start) / 60;
@@ -839,7 +833,7 @@ sub start_jobs {
 			
 			# figure out if we have submitting work to do
 			if ($delta <= 0) {
-				print "($stamp) At least $throttledbatch_num jobs already running/queued...\n";
+				print "($stamp) At least $$optdata{throttled_jobwidth} jobs already running/queued...\n";
 				# sleep until next poll cycle
 				sleep $poll_delay;
 				next;
@@ -965,6 +959,126 @@ sub start_jobs {
 			}
 		}
 	}
+	elsif ($start_method =~ /combobatch/) {
+		# combination batch mode
+		#print Dumper (%$optdata);
+
+		# get into the combobatch test ident dir because we want to
+		# build and submit jobs from here
+		debug_print(2,"DEBUG:start_jobs(combo) chdir $$optdata{comboident_path}\n");
+		chdir $$optdata{comboident_path};
+
+		#
+		# build the batch script we'll use to combine the multiple Cbench jobs
+		# into a single batch job
+
+		# find and read in the job templates. we don't really care about the job
+		# templates
+		my %templates = ();
+		build_job_templates($$optdata{testset},\%templates);
+
+		# init the buffer that will become the actual script
+		my $outbuf = $templates{combobatch}{batch};
+
+		# figure out how many nodes we'll actually need to contain the job
+		# with the largest number of processors
+		my $numnodes = calc_num_nodes($maxprocs_scanned,$minppn_scanned);
+
+		# build a unique name for the combo job script
+		my @combofiles = `ls -1 combobatch-????.pbs 2>&1`;
+		my $maxnum = 0;
+		for (@combofiles) {
+			(/no such file/) and last;
+			chomp $_;
+			my ($num) = $_ =~ /^combobatch-(\d+)\.pbs$/;
+			if ($num > $maxnum) {
+				$maxnum = $num;
+			}
+			debug_print(3,"DEBUG:start_jobs(combo) $_, $num, $maxnum\n");
+		}
+		$maxnum++;
+		my $jobname = sprintf "combobatch-%04d",$maxnum;
+
+		# build the detail of the invocation data we'll tuck away in the 
+		# batch script we are building
+		my $timestamp = `/bin/date 2>&1`;
+		chomp $timestamp;
+		my $combodetails = "\n# timestamp: $timestamp\n";
+		$combodetails .= "# commandline: $$optdata{commandline}\n".
+		"# CBENCHOME: $$optdata{CBENCHOME}\n".
+		"# CBENCHTEST: $$optdata{CBENCHTEST}\n".
+		"# combobatch ident: $$optdata{comboident}\n".
+		"# combobatch jobname: $jobname\n".
+		"# maxnodes required: $numnodes\n".
+		"# maxprocs_scanned: $maxprocs_scanned\n".
+		"# maxppn_scanned: $maxppn_scanned\n".
+		"# minppn_scanned: $minppn_scanned\n".
+		"# total jobs matched: $total_jobs\n".
+		"#\n";
+		debug_print(2,"DEBUG:start_jobs(combo) combodetails=\n$combodetails");
+
+		# here we do all the standard substitutions
+		$outbuf = std_substitute($outbuf,$maxprocs_scanned,$minppn_scanned,$numnodes,
+					'batch',$default_walltime,$$optdata{testset},$jobname,$ident,'combobatch');
+
+		# custom substitutions
+		$outbuf =~ s/COMBOBATCH_DETAILS_HERE/$combodetails/gs;
+		$outbuf =~ s/CBENCHOME_HERE/$$optdata{CBENCHOME}/gs;
+		$outbuf =~ s/CBENCHTEST_HERE/$$optdata{CBENCHTEST}/gs;
+		$outbuf =~ s/MAXPROCS_HERE/$maxprocs/gs;
+		$outbuf =~ s/MINPROCS_HERE/$minprocs/gs;
+		$outbuf =~ s/REPEAT_HERE/$repeat/gs;
+		$outbuf =~ s/MATCH_HERE/\'$match\'/gs;
+
+		# write out the batch script for the combined batch run
+		my $outfile = "$$optdata{comboident_path}\/$jobname\.pbs";
+		debug_print(1,"DEBUG:start_jobs(combo) outfile=$outfile");
+		open (OUT,">$outfile") or die
+			"Could not write $outfile ($!)";
+		print OUT $outbuf;
+		close(OUT);
+
+		# so now we have our batch script, submit it....
+		my $stamp = get_timestamp();
+		print "Starting combination batch job $jobname ($stamp)...\n";
+		my $cmd = batch_submit_cmdbuild();
+		$cmd .= "$batchargs $jobname\.pbs";
+		debug_print(1, "DEBUG:start_jobs(combo) cmd=$cmd\n");
+		system($cmd) unless $DRYRUN;
+
+		chdir $$optdata{origpwd};
+	}
+	else {
+		# plain old batch or interactive start mode
+		for my $iter (1..$repeat) {
+			foreach $i (sort sort_by_numprocs keys(%scripts)) {
+				# chdir into the job's directory
+				(! -d $i) and next;
+				debug_print(2,"DEBUG:start_jobs() chdir $i\n");
+				chdir $i;
+
+				my $stamp = get_timestamp();
+				print "Starting jobname $i ($stamp)...\n";
+				if ($start_method =~ /batch/) {
+					my $cmd = batch_submit_cmdbuild();
+					$cmd .= "$batchargs $i\.pbs";
+					debug_print(1, "DEBUG:start_jobs() cmd=$cmd\n");
+					system($cmd) unless $DRYRUN;
+				}
+				else {
+					my $cmd = "./$i\.sh";
+					debug_print(1, "DEBUG:start_jobs() cmd=$cmd\n");
+					system($cmd) unless $DRYRUN;
+				}
+
+				chdir $pwd;
+
+				# be nice to the system and wait a sec
+				sleep $delay unless $DRYRUN;
+			}
+		}
+	}
+
 }
 
 sub sort_by_numprocs {
