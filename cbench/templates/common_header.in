@@ -3,6 +3,6 @@
 # We don't want to assume that the batch system or whatever will
 # put us in the directory we want to be in for the job. So, we
 # make sure we are where we expect to be.
-cd TESTSET_PATH_HERE/IDENT_HERE/JOBNAME_HERE
+cd "TESTSET_PATH_HERE/IDENT_HERE/JOBNAME_HERE"
 
 
