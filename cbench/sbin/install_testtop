@@ -71,6 +71,12 @@ rsync_filelist(\@files,"$bench_test/sbin");
 );
 rsync_filelist(\@files,"$bench_test/tools");
 
+# sync all of templates to CBENCHTEST/templates
+@files = (
+	"templates/*",
+);
+rsync_filelist(\@files,"$bench_test/templates");
+
 # create an init files that can be sourced
 my $cbinitfile="$bench_test/cbench-init";
 open (CBINIT, ">$cbinitfile.sh") or die "Can't create CBENCH INIT FILE $cbinitfile.sh $!";
