@@ -163,7 +163,9 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 			# most job templates correspond directly with the name of the job
 			my $job_template = $job;
 			# NPB is slightly different
-			$job_template = 'npb';
+			if ($testset eq "npb") {
+				$job_template = 'npb';
+			}
 
 			# figure out how many nodes we need based on the number of
 			# procs and ppn
