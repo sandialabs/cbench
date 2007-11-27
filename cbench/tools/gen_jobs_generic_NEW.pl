@@ -25,10 +25,12 @@
 # Generic Cbench *_gen_jobs.pl utility template script
 
 # need to know where everything cbench lives!
-use lib ($ENV{CBENCHOME} ? $ENV{CBENCHOME} : "$ENV{HOME}\/cbench");
-$BENCH_HOME = $ENV{CBENCHOME} ? $ENV{CBENCHOME} :
-    "$ENV{HOME}\/cbench";
+BEGIN {
+	die "Please define CBENCHOME!\n" if !defined($ENV{CBENCHOME});
+}
+use lib $ENV{CBENCHOME};
 require "cbench.pl";
+$CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
 # enable/disable color support appropriately
 detect_color_support();
@@ -108,6 +110,9 @@ if (!defined $testdir and $testset =~ /^io/) {
 # find and read in the job templates for the testset
 my %templates = ();
 build_job_templates($testset,\%templates);
+# delete the Cbench internal combobatch "job" since we won't use
+# it in this context
+delete $templates{combobatch};
 # by default the list of jobs is the list of templates found
 my @job_list = keys %templates;
 
@@ -214,7 +219,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				($runtype eq 'batch') and $outfile = "$jobname\.pbs";
 				($runtype eq 'interactive') and $outfile = "$jobname\.sh";
 
-				($DEBUG) and print "Writing $captype script for $jobname\n";
+				debug_print(2,"DEBUG: Writing $captype script for $jobname\n");
 
 				# write out the generated job file
 				open (OUT,">$testset_path\/$ident\/$jobname\/$outfile") or die
