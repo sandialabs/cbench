@@ -71,7 +71,7 @@ rsync_filelist(\@files,$testset_path);
 # install templated utility scripts
 install_util_script("tools/start_jobs_jobdirs.pl","$testset_path/lammps\_start_jobs.pl","$testset");
 install_util_script("tools/lammps_gen_jobs.pl","$testset_path/lammps\_gen_jobs.pl","$testset");
-#install_util_script("tools/output_parse_generic.pl","$testset_path/$testset\_output_parse.pl","$testset");
+install_util_script("tools/output_parse_generic.pl","$testset_path/$testset\_output_parse.pl","$testset");
 install_lammps_files("$testset_path/bench/",$testset); 
 
 # Copy the LAMMPS input and data files to $CBENCHTEST/lammps/bench
