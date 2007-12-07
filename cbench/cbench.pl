@@ -212,6 +212,30 @@ sub mpiexec_joblaunch_cmdbuild {
 	return $cmd;
 }
 
+sub slurm_joblaunch_cmdbuild {
+	my $numprocs = shift;
+	my $ppn = shift;
+	my $numnodes = shift;
+
+	my $cmd;
+	if (length $joblaunch_cmd > 1) {
+		$cmd = $joblaunch_cmd;
+	}
+	else {
+		$cmd = "srun";
+	}
+
+	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
+	# if we use nolocal, and fail to specify extra job nodes, set it
+#	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
+
+#XXX fixme -- tell srun which MPI we're using?
+	#$cmd .= " -n $numprocs --ntasks-per-node $ppn --mpi=openmpi ";
+	$cmd .= " -n $numprocs --ntasks-per-node $ppn ";
+
+	return $cmd;
+}
+
 # routine used to describe what standard file descriptor(s) mpiexec
 # writes its rank-to-node mapping information too
 sub mpiexec_ranktonode_files {
@@ -459,6 +483,42 @@ sub pbspro_query {
 	return %jobdata;
 }
 
+
+###########################################################
+# Support for the "slurm" batch system
+#
+sub slurm_batchsubmit_cmdbuild {
+	my $cmd;
+	if (length $batch_cmd > 1) {
+		$cmd = $batch_cmd;
+	}
+	else {
+		$cmd = "sbatch";
+	}
+
+	(length $batch_extraargs > 1) and $cmd .= " $batch_extraargs";
+
+	# make slurm's output filename look like PBS's
+	$cmd .= " --output='slurm.o\%j'";
+
+	return "$cmd ";
+}
+
+sub slurm_nodespec_build {
+	# a reference to an array of nodes
+	my $nodearray = shift;
+
+# XXX needs attention -- slurm has different options for a nodelist (-w) vs a node count (-N)
+print STDERR "slurm_nodespec_build(): nodearray = \n";
+print STDERR Dumper($nodearray);
+#die;
+	return join(',', @$nodearray);
+}
+
+sub slurm_query {
+	my $regex = shift;
+	die "Error: UNIMPLEMENTED slurm_query() ...";
+}
 
 ###########################################################
 # Support for the "torque" batch system
@@ -1985,6 +2045,7 @@ sub std_substitute {
 	$string =~ s/BENCHMARK_NAME_HERE/$benchmark/gs;
 	$string =~ s/IDENT_HERE/$ident/gs;
 	$string =~ s/TORQUE_NODESPEC_HERE/$numnodes\:ppn\=$procs_per_node/gs;
+	$string =~ s/SLURM_NODESPEC_HERE/$numnodes/gs;
 	$temp =join(',',@memory_util_factors);
 	$string =~ s/MEM_UTIL_FACTORS_HERE/$temp/gs;
 
