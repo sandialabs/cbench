@@ -377,12 +377,13 @@ for $testid (keys %data) {
 					}
 
 					if ($k =~ /^DATA/) {
-						$metrics{$k} = $bench;
-
 						my $metric = $k;
 						$metric =~ s/DATA_//;
+						(defined $metricstr and ($metric !~ /$matchstr/)) and next;
+
+						$metrics{$k} = $bench;
+
 						if (defined $dplot) {
-							(defined $metricstr and ($metric !~ /$matchstr/)) and next;
 							next unless ($dplotparams[0] == $np);
 							my $tag = "$testid\-$bench\-$ppn\-$np\-$metric";
 							#print "$tag $k\n";
@@ -622,10 +623,17 @@ push @invocation_data, sprintf "# Overall Job Success = %0.2f%%\n",$temp*100;
 
 # this is the guts of the output file parsing
 sub parse_output_file {
+	my $filename = $_;
+
 	(defined $DEBUG and $DEBUG > 3) and print "DEBUG:parse_output_file: $File::Find::name\n";
 
-    if ($File::Find::name =~ /(\S+)\-(\d)ppn.*\.o(\d+)$/) {
+	if ($filename =~ /\.o(\d+)$/) {
 		# Found an output file for stdout for a job.
+
+	    debug_print(3,"DEBUG:parse_output_file: MATCHED $filename\n");
+
+		my $jobid = $1;
+		my ($bench, $extra, $jobname);
 
         # Extract information we want from the name of the file we
         # are going to parse. We can do this because the file name
@@ -633,8 +641,6 @@ sub parse_output_file {
         # embedded information for us.
         my @patharray = split '/',$File::Find::name;
         my $stdout_file = $patharray[$#patharray];
-		my ($bench, $extra, $jobid) = $stdout_file =~ /(\S+)\-\dppn\-\d+[\.]*([pbs]*)\.o(\d+)/;
-        my ($jobname) = $stdout_file =~ /(\S+\-\dppn\-\d+)\../;
 
 		# fileid just helps us with debug and status output
 		my $fileid = '';
@@ -663,8 +669,6 @@ sub parse_output_file {
 		(! -f $stdout_file) and next;
 
 		(defined $DEBUG and $DEBUG == 1) and print "DEBUG:parse_output_file() examining $stdout_file ident=$testident\n";
-		(defined $DEBUG and $DEBUG > 1) and print
-			"DEBUG:parse_output_file() bench=$bench extra=$extra jobid=$jobid ident=$testident stdoutfile=$stdout_file\n";
 
 		(defined $collapse) and $testident = $collapse;
 
@@ -704,6 +708,9 @@ sub parse_output_file {
         # parse the jobname to get important characteristics of the job
         ($bench, $ppn, $np) = ($jobname =~ /^(\S+)\-(\d)ppn[\-|\.](\d+)$/);
         $ppnstr = $ppn . "ppn";
+
+		(defined $DEBUG and $DEBUG > 1) and print
+			"DEBUG:parse_output_file() bench=$bench extra=$extra jobid=$jobid ident=$testident stdoutfile=$stdout_file\n";
 
 		(defined $minprocs and $np < $minprocs) and next;
 		(defined $maxprocs and $np > $maxprocs) and next;
@@ -776,7 +783,8 @@ sub parse_output_file {
         	# open and slurp the output file
 			my @txtbuf;
 			open_and_slurp($file,\@txtbuf) or do {
-            	print "parse_output_file() Could not open $file for read ($!)\n";
+				# FIXME: this probably should be printed for non-STDERR files?
+				debug_print(1,"parse_output_file() Could not open $file for read ($!)\n");
 				next;
 			};
 
@@ -785,7 +793,7 @@ sub parse_output_file {
 			$files_sucked_in{$f} = \@txtbuf;
 
 			$total_files_parsed++;
-        
+
         	(defined $DEBUG and $DEBUG > 1) and print
             	"DEBUG:parse_output_file() Reading file $file,job $jobname,ident $testident " .
             	"(np=$np ppn=$ppn benchmark=$bench)\n";
@@ -886,7 +894,8 @@ sub parse_output_file {
 					# open and slurp the output file
 					my @txtbuf;
 					open_and_slurp($file,\@txtbuf) or do {
-						print "parse_output_file() Could not open $file for read ($!)\n";
+                        # FIXME: this probably should be printed for STDOUT files
+						debug_print(1,"parse_output_file() Could not open $file for read ($!)\n");
 						next;
 					};
 
@@ -1408,6 +1417,7 @@ sub cleanup_output_hash {
 
 			}
 			elsif (defined $metricstr and ($outhash->{'0'}{$job} !~ /$matchstr/)) {
+				die "Do we need this block anymore?";
 				# remove the metric if the --metric param was specified and
 				# the metric name does not pass the regex
 				delete $outhash->{$np}{$job};
@@ -1424,6 +1434,7 @@ sub cleanup_output_hash {
 			next;
 		}
 		elsif (defined $metricstr and ($outhash->{'0'}{$job} !~ /$matchstr/)) {
+			die "Do we need this block anymore?";
 			delete $outhash->{'0'}{$job};		
 		}
 	}
