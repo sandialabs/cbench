@@ -367,6 +367,13 @@ define do-uninstall
    done
 endef
 
+define do-lammps-install
+	@echo "---------------------------------------------------------"; \
+	echo "----- Installing \"lammps\" test set"; \
+	echo "---------------------------------------------------------"; \
+	$(BENCH_HOME)/sbin/install_lammps; 
+endef
+
 # Installation variables
 bin_dir = $(BENCH_HOME)/bin
 hwtest_bin_dir = $(bin_dir)/hwtests
