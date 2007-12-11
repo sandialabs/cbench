@@ -117,8 +117,8 @@ updatecbench:
 	@sbin/update_util_scripts
 
 # compile and install LAMMPS
-installlammps: install 
-	@sbin/install_lammps
+lammps: install 
+	$(do-lammps-install)
 
 #cbench-tests-rpm: 
 
