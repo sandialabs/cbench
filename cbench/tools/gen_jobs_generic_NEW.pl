@@ -44,13 +44,12 @@ $Term::ANSIColor::AUTORESET = 1;
 my $xhplbin = 'xhpl';
 my $hpccbin = 'hpcc';
 
-my $testset = find_testset_identity($0);
+my $testset;
 
 # pass_through lets "non options" stay in ARGV w/o raising an error
 Getopt::Long::Configure("pass_through");
 
 GetOptions(
-
 	'ident=s' => \$ident,
 	'binident=s' => \$BINIDENT,
 	'binname=s' => \$binname,
@@ -66,11 +65,23 @@ GetOptions(
 	'debug:i' => \$DEBUG,
 	'help' => \$help,
 	'redundant' => \$redundant,
+	'joblaunch_extraargs=s' => \$joblaunchargs,
 );
 
 if (defined $help) {
 	usage();
 	exit;
+}
+
+if (!defined $testset) {
+	$testset = find_testset_identity($0);
+}
+
+if (defined $joblaunchargs) {
+	# override the cluster.def setting
+	debug_print(3,
+		"Old joblaunch_extraargs = \"$joblaunch_extraargs\", New joblaunch_extraargs = \"$joblaunchargs\"");
+	$joblaunch_extraargs = $joblaunchargs;
 }
 
 $bench_test = get_bench_test();
@@ -518,5 +529,6 @@ sub usage {
 		  "                           a different path where the jobs are run, like a \n".
 		  "                           lightweight initramfs Linux node for instance\n".
 		  "   --redundant      Generate redundant ppn/np combinations (not on by default)\n".
+		  "   --joblaunch_extraargs <args>  Override the joblaunch_extraargs setting in cluster.def\n".
 		  "   --debug <level>  Turn on debugging at the specified level\n";
 }
