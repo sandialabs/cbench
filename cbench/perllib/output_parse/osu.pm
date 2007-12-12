@@ -103,7 +103,10 @@ sub parse {
 	my $numlines = scalar @$txtbuf; 
 
     my $status = 'NOTSTARTED';
+	# default metric
 	my $metric = 'unidir_bw';
+	# defatul MULTIDATA hash key,correlates with the default metric
+	my $multidata_key = 'MULTIDATA:msgsize:unidir_bw:MB:MB/s';
 	my $max = 0;
 	my $msgrate = 0;
     foreach my $l (@{$txtbuf}) {
@@ -112,21 +115,24 @@ sub parse {
 			($test =~ /Bidirectional/) and $metric = 'bidir_bw';
 			($test =~ /Latency/) and $metric = 'latency';
 			$status = 'STARTED';
+			$multidata_key = "MULTIDATA:msgsize:$metric:MB:MB/s";
 		}
 		
     	if ($l =~ /^(\d+)\s+(\d+\.\d+)/) {
 			($metric eq 'latency' and $1 == 0) and $data{$metric} = $2;
 			$max = main::max($max,$2);
-			$msgrate = main::max($msgrate,$2/$1) unless ($metric eq 'latency');
+			#$msgrate = main::max($msgrate,$2/$1) unless ($metric eq 'latency');
 			$status = 'FOUNDDATA';
 			($1 == 4194304) and $status = 'COMPLETED';
+			# record the msgsize vs latency/bandwidth MULTIdata
+			$data{$multidata_key}{$1} = $2;
     	}
 	}
 
 	if ($status =~ /COMPLETED/) {
 		$data{'STATUS'} = "PASSED";
 		($metric ne 'latency') and $data{$metric} = $max;
-		($metric ne 'latency') and $data{'message_rate'} = $max;
+		#($metric ne 'latency') and $data{'message_rate'} = $max;
 	}
 	else {
 		$data{'STATUS'} = "ERROR($status)";
@@ -187,7 +193,7 @@ This routine is optional.
 sub alias_spec {
 	my $self = shift;
 
-	return "(osubw|osubibw)";
+	return "(osubw|osubibw|osumsgrate)";
 }
 
 ###############################################################
