@@ -81,6 +81,11 @@ our %parse_filters = (
 	#MX: assertion: <<Bailing out>>  failed at line 1125, file ./../mx__lib.c
 	'MX: assertion: <<Bailing out>>  failed at line 1125, file ./../mx__lib.c' =>
 		'MYRINET MX ASSERTION: <<Bailing out>>',
+	
+	# /var/spool/pbs/mom_priv/prologue: line 20: /apps/joblogs/352539.tbird-admin2: No such file or directory
+	#cp: cannot create regular file `/apps/jobscripts/352539.tbir.SC': Permission denied
+	#'No such file or directory' => 'No such file or directory',
+	#'Permission denied' => 'Permission denied',
 );
 
 
