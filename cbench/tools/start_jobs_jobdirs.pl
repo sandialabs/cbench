@@ -60,6 +60,7 @@ GetOptions( 'ident=s' => \$ident,
 		'minprocs=i' => \$minprocs,
 		'maxprocs=i' => \$maxprocs,
 		'procs=i' => \$procs,
+		'batch_extraargs=s' => \$batchargs,
 		'batchargs=s' => \$batchargs,
 		'repeat=i' => \$repeat,
 		'delay=i' => \$delay,
@@ -179,8 +180,9 @@ sub usage {
 		  "    --procs <num>          Shortcut to set --minprocs and --maxprocs to the\n".
 		  "                           same value, i.e. to run jobs with only a single\n".
 		  "                           number of processors (not a range)\n".
-          "    --batchargs 'string'   Pass these arguments on the commandline when\n".
-          "                           batch jobs are started\n".
+          "    --batch_extraargs 'string'   Pass these arguments on the commandline when\n".
+          "                                 batch jobs are started\n".
+          "    --batchargs 'string'   Same as --batch_extraargs\n".
 		  "    --repeat <num>         Start the set of jobs specified <num> times\n" .
           "    --delay <num>          The number of seconds to sleep between jobs\n" .
           "    --polldelay <num>      The number of seconds to sleep between polls of\n" .
