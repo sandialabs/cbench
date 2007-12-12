@@ -1,0 +1,8 @@
+# bandwidth_osubw job template
+# Uses the OSU message rate test
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/osu_mbw_mr"
+
+cbench_run_cmd $CMD
+
