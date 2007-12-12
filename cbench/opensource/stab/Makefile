@@ -8,20 +8,21 @@ INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
 
-default: $(SRC) .patched
+default: .patched
 
 $(SRC): $(TAR)
 	[ -d $(SRC) ] || tar zxf $(TAR) && rm -f .patched
 	ln -sf $(SRC) src
+	@touch $(SRC)
 
-.patched:
+.patched: $(SRC)
 	for patch in *.patch ; do \
            cd $(SRC); \
            echo "Applying patch [ $$patch ]"; \
            patch -p1 <../$$patch; \
            cd - ; \
         done
-	-touch .patched
+	@touch .patched
 
 clean distclean:
 	/bin/rm -rf $(SRC) .patched src
