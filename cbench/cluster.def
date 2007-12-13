@@ -80,7 +80,7 @@ $extra_job_nodes = 0;
 #
 # NOTE: This is not necessarily the name of the job launching binary,
 #       just the name of a configuration.
-$joblaunch_method = "mpiexec";
+$joblaunch_method = "openmpi";
 
 # optional parameter to specify the exact binary, including path,
 # used for job launching
