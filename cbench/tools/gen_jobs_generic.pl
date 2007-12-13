@@ -229,7 +229,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				}
 
 				# build the filename
-				($runtype eq 'batch') and $outfile = "$jobname\.pbs";
+				($runtype eq 'batch') and $outfile = "$jobname\.$batch_extension";
 				($runtype eq 'interactive') and $outfile = "$jobname\.sh";
 
 				debug_print(2,"DEBUG: Writing $captype script for $jobname\n");

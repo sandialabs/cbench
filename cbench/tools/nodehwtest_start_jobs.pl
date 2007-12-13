@@ -243,7 +243,7 @@ if (defined $batch) {
 		# make sure the node wasn't excluded
 		($nodehash{$node} == 0xdead) and next;
 
-		# get clean pbs job template
+		# get clean batch job template
 		$outbuf = $outbuf_clean;
 
 		# build the string that we will put into the batch template
@@ -270,7 +270,7 @@ if (defined $batch) {
 			$default_walltime,$testset,$jobname);
 
 		# write out the generated job file
-		$outfile = "nhwt\-$node\.pbs";
+		$outfile = "nhwt\-$node\.$batch_extension";
 		open (OUT,">$testset_path\/$ident\/$outfile") or die
 			"Could not write $testset_path\/$ident\/$outfile ($!)";
 		print OUT $outbuf;

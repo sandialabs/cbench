@@ -161,7 +161,7 @@ foreach $ppn (keys %max_ppn_procs) {
 					$outbuf =~ s/NPB_HERE/$npbname/gs;
 
 					# build the filename
-					($runtype eq 'batch') and $outfile = "$jobname\.pbs";
+					($runtype eq 'batch') and $outfile = "$jobname\.$batch_extension";
 					($runtype eq 'interactive') and $outfile = "$jobname\.sh";
 
 					($DEBUG) and print "Writing $captype script for $jobname\n";

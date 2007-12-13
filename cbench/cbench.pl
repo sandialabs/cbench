@@ -70,6 +70,16 @@ rotate
 	3025,3072,3100,3136,3200,3249,3300,3364,3400,3481,3500,3600,3700,
 	3721,3800,3840,3844,3900,3969,4000,4096);
 
+# Determine the file extension that should be used for batch scripts
+if (defined $batch_method) {
+	my $funcname = "$batch_method\_batch_extension";
+	*func = \&$funcname;
+	$batch_extension = func();
+	if (!defined $batch_extension) {
+		warning_print("Couldn't determine batch job script extension.  Defaulting to \".pbs\"");
+		$batch_extension = "pbs";
+	}
+}
 
 ###########################################################
 #
@@ -483,6 +493,10 @@ sub pbspro_query {
 	return %jobdata;
 }
 
+sub pbspro_batch_extension {
+	return "pbs";
+}
+
 
 ###########################################################
 # Support for the "slurm" batch system
@@ -518,6 +532,10 @@ print STDERR Dumper($nodearray);
 sub slurm_query {
 	my $regex = shift;
 	die "Error: UNIMPLEMENTED slurm_query() ...";
+}
+
+sub slurm_batch_extension {
+	return "slurm";
 }
 
 ###########################################################
@@ -604,6 +622,10 @@ sub torque_query {
 	}
 
 	return %jobdata;
+}
+
+sub torque_batch_extension {
+	return "pbs";
 }
 
 ##########################################################
@@ -806,7 +828,7 @@ sub start_jobs {
 	# parse the list of potential job scripts to execute
 	foreach my $i (@buf) {
 		chomp $i;
-		$i =~ s/\.pbs|\.sh//;
+		$i =~ s/\.$batch_extension|\.sh//;
 
 		# process the filename based on regex in $match
 		my $matchstr = "$match";
@@ -952,7 +974,7 @@ sub start_jobs {
 				$stamp = get_timestamp();
 				print "($stamp) Starting jobname $i ...\n";
 				my $cmd = batch_submit_cmdbuild();
-				$cmd .= "$batchargs $i\.pbs";
+				$cmd .= "$batchargs $i\.$batch_extension";
 				(defined $DEBUG) and print "DEBUG:start_jobs(throttled) cmd=$cmd\n";
 				system($cmd) unless $DRYRUN;
 				chdir $pwd;
@@ -1045,12 +1067,12 @@ sub start_jobs {
 		my $numnodes = calc_num_nodes($maxprocs_scanned,$minppn_scanned);
 
 		# build a unique name for the combo job script
-		my @combofiles = `ls -1 combobatch-????.pbs 2>&1`;
+		my @combofiles = `ls -1 combobatch-????.$batch_extension 2>&1`;
 		my $maxnum = 0;
 		for (@combofiles) {
 			(/no such file/) and last;
 			chomp $_;
-			my ($num) = $_ =~ /^combobatch-(\d+)\.pbs$/;
+			my ($num) = $_ =~ /^combobatch-(\d+)\.$batch_extension$/;
 			if ($num > $maxnum) {
 				$maxnum = $num;
 			}
@@ -1091,7 +1113,7 @@ sub start_jobs {
 		$outbuf =~ s/MATCH_HERE/\'$match\'/gs;
 
 		# write out the batch script for the combined batch run
-		my $outfile = "$$optdata{comboident_path}\/$jobname\.pbs";
+		my $outfile = "$$optdata{comboident_path}\/$jobname\.$batch_extension";
 		debug_print(1,"DEBUG:start_jobs(combo) outfile=$outfile");
 		open (OUT,">$outfile") or die
 			"Could not write $outfile ($!)";
@@ -1102,7 +1124,7 @@ sub start_jobs {
 		my $stamp = get_timestamp();
 		print "Starting combination batch job $jobname ($stamp)...\n";
 		my $cmd = batch_submit_cmdbuild();
-		$cmd .= "$batchargs $jobname\.pbs";
+		$cmd .= "$batchargs $jobname\.$batch_extension";
 		debug_print(1, "DEBUG:start_jobs(combo) cmd=$cmd\n");
 		system($cmd) unless $DRYRUN;
 
@@ -1121,7 +1143,7 @@ sub start_jobs {
 				print "Starting jobname $i ($stamp)...\n";
 				if ($start_method =~ /batch/) {
 					my $cmd = batch_submit_cmdbuild();
-					$cmd .= "$batchargs $i\.pbs";
+					$cmd .= "$batchargs $i\.$batch_extension";
 					debug_print(1, "DEBUG:start_jobs() cmd=$cmd\n");
 					system($cmd) unless $DRYRUN;
 				}

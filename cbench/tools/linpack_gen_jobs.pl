@@ -175,7 +175,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				$outbuf =~ s/XHPL_BIN_HERE/$xhplbin/gs;
 
 				# build the filename
-				($runtype eq 'batch') and $outfile = "$jobname\.pbs";
+				($runtype eq 'batch') and $outfile = "$jobname\.$batch_extension";
 				($runtype eq 'interactive') and $outfile = "$jobname\.sh";
 
 				($DEBUG) and print "Writing $captype script for $jobname\n";
