@@ -846,6 +846,10 @@ sub parse_output_file {
 				
 				next;
 			}
+			elsif ($k =~ /MULTIDATA/) {
+				# do nothing yet.....
+				next;
+			}
 
 			# otherwise this is a key with a datapoint. if the datapoint
 			# is 'NODATA', there is no good data...
