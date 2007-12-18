@@ -252,6 +252,7 @@ if (defined $batch) {
 		$nodespec = batch_nodespec_build(\@nodearray); 
 		# update the batch job file with the nodespec
 		$outbuf =~ s/TORQUE_NODESPEC_HERE/$nodespec/gs;
+		$outbuf =~ s/SLURM_NODESPEC_HERE/-w $nodespec/gs;
 
 		# updated the batch job template with possible preamble stuff
 		if (defined $preamble) {

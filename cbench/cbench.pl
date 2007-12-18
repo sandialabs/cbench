@@ -237,10 +237,11 @@ sub slurm_joblaunch_cmdbuild {
 
 	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 	# if we use nolocal, and fail to specify extra job nodes, set it
-#	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
+	#FIXME - does slurm support this?
+	#$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
 
-#XXX fixme -- tell srun which MPI we're using?
-	#$cmd .= " -n $numprocs --ntasks-per-node $ppn --mpi=openmpi ";
+	#FIXME - how should we handle each MPI-specific launch style under slurm?
+	# see: https://computing.llnl.gov/linux/slurm/quickstart.html#mpi
 	$cmd .= " -n $numprocs --ntasks-per-node $ppn ";
 
 	return $cmd;
@@ -522,10 +523,6 @@ sub slurm_nodespec_build {
 	# a reference to an array of nodes
 	my $nodearray = shift;
 
-# XXX needs attention -- slurm has different options for a nodelist (-w) vs a node count (-N)
-print STDERR "slurm_nodespec_build(): nodearray = \n";
-print STDERR Dumper($nodearray);
-#die;
 	return join(',', @$nodearray);
 }
 
@@ -2067,7 +2064,7 @@ sub std_substitute {
 	$string =~ s/BENCHMARK_NAME_HERE/$benchmark/gs;
 	$string =~ s/IDENT_HERE/$ident/gs;
 	$string =~ s/TORQUE_NODESPEC_HERE/$numnodes\:ppn\=$procs_per_node/gs;
-	$string =~ s/SLURM_NODESPEC_HERE/$numnodes/gs;
+	$string =~ s/SLURM_NODESPEC_HERE/-N $numnodes/gs;
 	$temp =join(',',@memory_util_factors);
 	$string =~ s/MEM_UTIL_FACTORS_HERE/$temp/gs;
 
