@@ -2,11 +2,10 @@
 #
 ############ Cbench slurm_header.in ######################
 #SBATCH -t WALLTIME_HERE
-#SBATCH -N SLURM_NODESPEC_HERE
-#HIDESBATCH --mpi=openmpi
-#HIDESBATCH -w SLURM_NODESPEC_HERE
+#SBATCH SLURM_NODESPEC_HERE
 #
 # other attributes you might use but are hidden from slurm processing
+#HIDESBATCH --mpi=openmpi
 #HIDESBATCH -p somepartition
 #HIDESBATCH --comment="some comment"
 #HIDESBATCH --cpus-per-task=<ncpus>
