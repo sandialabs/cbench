@@ -3,7 +3,7 @@
 # NOTE: bash syntax is used here
 
 CMD="JOBLAUNCH_CMD_HERE$LAMMPSDIR/src/lmp_$LAMMPSMACHINE"
-STDIN_FILE="$LAMMPSDIR/bench/in.chain"
+STDIN_FILE="$CBENCHTEST/lammps/bench/in.chain"
 
 cbench_run_cmd $CMD
 
