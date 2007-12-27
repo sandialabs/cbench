@@ -135,7 +135,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 
 				# here we do all the standard substitutions
 				$outbuf = std_substitute($outbuf,$numprocs,$ppn,$numnodes,
-							$jobname,$runtype,$default_walltime,$testset,$jobname,$ident);
+							$runtype,$default_walltime,$testset,$jobname,$ident);
 
 				# build the filename
 				($runtype eq 'batch') and $outfile = "$jobname\.$batch_extension";
