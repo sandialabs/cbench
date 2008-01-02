@@ -9,13 +9,18 @@ SFSTUFF=$HOME/tracstuff/sf
 mkdir -p $TMP
 rm -rf $TMP/*
 
-svnadmin create $TMP/SVN
+# create empty SVN
+#svnadmin create $TMP/SVN
+mkdir -p $TMP/SVN
+rsync -a --exclude mylogs --exclude hooks --exclude dav $SRC/SVNnew/ $TMP/SVN/.
 
 # build a TRAC site image for sf
 rsync --exclude trac.db* --exclude trac.log -a $SRC/TRAC $TMP/.
 /bin/rm -f $TMP/TRAC/plugins/TracWebAdmin* $TMP/TRAC/plugins/TracAccountManager* $TMP/TRAC/plugins/graphviz*
 /bin/rm -rf $TMP/TRAC/.python-eggs
 sqlite $SRC/TRAC/db/trac.db .dump | sqlite3 $TMP/TRAC/db/trac.db
+#/home/groups/c/cb/cbench-sf/tracinstall/bin/trac-admin $TMP/TRAC upgrade
+
 cp $SFSTUFF/trac.ini $TMP/TRAC/conf/.
 
 cd $TMP

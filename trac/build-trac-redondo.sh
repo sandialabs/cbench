@@ -2,7 +2,7 @@
 
 
 TRACURL=http://ftp.edgewall.com/pub/trac
-TRAC=trac-0.10.3.1
+TRAC=trac-0.10.4
 CLEARURL=http://www.clearsilver.net/downloads
 CLEAR=clearsilver-0.10.4
 SQLITEURL=http://www.sqlite.org
