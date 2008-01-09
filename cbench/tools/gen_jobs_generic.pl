@@ -115,6 +115,10 @@ if (!defined $testdir and $testset =~ /^io/) {
 			'joblist' => 'npb_gen_joblist',
 			'innerloop' => 'npb_gen_innerloop',
 		},
+        'lammps' => {
+            'init' => 'lammps_gen_init',
+            'innerloop' => 'lammps_gen_innerloop',
+        },
 	},
 );
 
@@ -501,6 +505,33 @@ sub trilinos_epetratest_gen_innerloop {
 	return 0;
 }
 
+sub lammps_gen_init {
+    # check for LAMMPS-specific environment variables
+    $ENV{LAMMPSDIR} or die "Error: Must set LAMMPSDIR environment variable to install LAMMPS (see doc/INSTALL)\n";
+    $ENV{LAMMPSMACHINE} or die "Error: Must set LAMMPSMACHINE environment variable to install LAMMPS (see doc/INSTALL)\n";
+}
+
+sub lammps_gen_innerloop {
+	my $outbuf = shift;      # a *reference* to the actual $outbuf
+	my $numprocs = shift;
+	my $ppn = shift;
+	my $numnodes = shift;
+	my $runtype = uc shift;
+	my $walltime = shift;
+	my $testset = shift;
+	my $jobname = shift;
+	my $ident = shift;
+	my $job = shift;
+
+	debug_print(3,"DEBUG: entering custom_lammps_innerloop()\n");
+
+	debug_print(3,"DEBUG: copying files to: $testset_path\/$ident\/$jobname\n");
+
+    #copy modified lammps in.* files to each jobdir
+    lammps_copy_files("$testset_path\/$ident\/$jobname", $job);
+
+    return 0;
+}
 
 sub usage {
     print "USAGE: $0 \n";
