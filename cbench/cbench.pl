@@ -120,7 +120,7 @@ sub openmpi_joblaunch_cmdbuild {
 	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
 
 	if ($openmpi12_stuff) {
-		$cmd .= " -npernode $ppn";
+		($max_nodes > 1) and ($cmd .= " -npernode $ppn");
 	}
 	else {
 		($ppn == 1) and $cmd .= " -bynode";
