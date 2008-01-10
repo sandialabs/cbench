@@ -97,6 +97,7 @@ sub parse {
 	my @bufrefs = @_;
 
 	my %data;
+	my %multidata;
 
 	# process all the lines in the STDOUT buffer
 	my $txtbuf = $bufrefs[0];
@@ -159,6 +160,7 @@ sub parse {
 			$testname = $1;
 			$parse_state = 1;
             $tests{$testname} = 1;
+			main::debug_print(2,"DEBUG:imb:testname=$testname parse_state=1");
 		}
 		elsif ($parse_state == 1 and $l =~ /processes = (\d+)\s*/) {
 			# found the process count for the test, ignore tests
@@ -167,7 +169,7 @@ sub parse {
 			if ($1 == $main::np or ($1 == 2 and $testname =~ /Ping/)) {
 				($testname =~ /Ping/) and $parse_state = 2;
 				($testname =~ /Sendrecv|Exchange/) and $parse_state = 3;
-				($testname =~ /Allreduce|Reduce|Reduce_scatter|Allgather|Allgatherv|Alltoall|Bcast/)
+				($testname =~ /Allreduce|Reduce|Reduce_scatter|Allgather|Alltoall|Bcast/)
 					and $parse_state = 4;
 				($testname =~ /Barrier/) and $parse_state = 5;
 			}
@@ -179,60 +181,52 @@ sub parse {
 				"DEBUG:imb: parse_state=$parse_state\n";
 		}
 		elsif ($parse_state == 2) {
+			# ignore the #bytes #repetitions lines
 			($l =~ /\#bytes\s+\#repetitions/) and next;
-			$l =~ /\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/;
 
-			# we want the zero byte latencies
-			($1 != 0) and next;
-			$data{"ave_$testname"} = $3;
-			$status = 'FOUNDDATA';	
+			# if that's the end of the data, reset the state machine
+			($l =~ /^$/) and ($parse_state = 0);
 
-			# that's all the data we need, reset the state machine
-			$parse_state = 0;
-		}
-		elsif ($parse_state == 3) {
-			($l =~ /\#bytes\s+\#repetitions/) and next;
-			$l =~ /\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/;
-
-			if ($1 == 8192) {
-				$data{"ave_$testname"} = $6;
+			# otherwise parse valid lines
+			if ($l =~ /\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/) {
+				$multidata{$testname}{$1} = $3;
 				$status = 'FOUNDDATA';	
 			}
+		}
+		elsif ($parse_state == 3) {
+			# ignore the #bytes #repetitions lines
+			($l =~ /\#bytes\s+\#repetitions/) and next;
 
-			# we ideally want the bandwidth at 4MB (just seems the most stressful...)
-			($1 != 4194304) and next;
+			# if that's the end of the data, reset the state machine
+			($l =~ /^$/) and ($parse_state = 0);
 
-			$data{"ave_$testname"} = $6;
-			$status = 'FOUNDDATA';	
-
-			# that's all the data we need, reset the state machine
-			$parse_state = 0;
+			# otherwise parse valid lines
+			if ($l =~ /\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/) {
+				$multidata{$testname}{$1} = $6;
+				$status = 'FOUNDDATA';	
+			}
 		}
 		elsif ($parse_state == 4) {
+			# ignore the #bytes #repetitions lines
 			($l =~ /\#bytes\s+\#repetitions/) and next;
+			# ignore this too
 			($l =~ /Attention, msg size/) and next;
-			$l =~ /\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/;
-
-			# we want the elapsed time at 8K message sizes, that's arbirarily picked
-			($1 != 8192) and next;
-			$data{"ave_$testname"} = $5;
-			$status = 'FOUNDDATA';	
-
-			(defined $main::DEBUG and $main::DEBUG > 2) and print
-				"DEBUG:imb: parse_state=$parse_state $status\n";
-
-			# that's all the data we need, reset the state machine
-			$parse_state = 0;
+			
+			# otherwise parse valid lines
+			if ($l =~ /\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/) {
+				$multidata{$testname}{$1} = $5;
+				$status = 'FOUNDDATA';	
+			}
 		}
 		elsif ($parse_state == 5) {
+			# ignore the #bytes #repetitions lines
 			($l =~ /\#repetitions/) and next;
-			$l =~ /\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/;
 
-			$data{"ave_$testname"} = $4;
-			$status = 'FOUNDDATA';	
-
-			# that's all the data we need, reset the state machine
-			$parse_state = 0;
+			# otherwise parse valid lines
+			if ($l =~ /\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/) {
+				$multidata{$testname}{$1} = $4;
+				$status = 'FOUNDDATA';	
+			}
 		}
 	}
 
@@ -241,9 +235,7 @@ sub parse {
     foreach my $k (keys %tests) {
     	if ($tests{$k} == 0) {
 			$error = 1;
-            
-			(defined $main::DEBUG and $main::DEBUG > 2) and print
-				"DEBUG:imb: MISSINGDATA for $k $tests{$k}\n";
+			main::debug_print(2,"DEBUG:imb: MISSINGDATA for $k $tests{$k}");
         }
     }
     
@@ -253,6 +245,54 @@ sub parse {
 	else {
 		$data{'STATUS'} = "ERROR($status)";
         defined $main::diagnose and main::print_job_err($fileid,'ERROR',$status);
+	}
+
+	# we have all the raw data, now just put it in the final hash data
+	# structure
+	foreach my $k (keys %multidata) {
+		my $multidata_key = "MULTIDATA:$k\_msgsize:latency:bytes:usec";
+		($k =~ /SendRecv|Exchange/) and $multidata_key = "MULTIDATA:$k\_msgsize:bandwidth:bytes:MB/s";
+
+		# innermost loop temp variables for max/min stuff
+		my $lastbytes = 0;
+		my $lastval = 0;
+
+		foreach my $bytes (sort {$a <=> $b} keys %{$multidata{$k}}) {
+			if ($k =~ /Ping/) {
+				# PingPong and PingPing 
+				# we want 0 byte timing data
+				($bytes == 0) and ($data{"ave_$k"} = $lastval = $multidata{$k}{$bytes});
+
+				#save the MULTIDATA stuff going back to the core parser
+				$data{$multidata_key}{$1} = $multidata{$k}{$bytes};
+			}
+			elsif ($k =~ /Sendrecv|Exchange/) {
+				# SendRecv, Exchange
+				# we want the bandwidth from the biggest buffer we can get
+				$lastbytes = $bytes;
+				$lastval = main::max($lastval,$multidata{$k}{$bytes});
+
+				#save the MULTIDATA stuff going back to the core parser
+				$data{$multidata_key}{$1} = $multidata{$k}{$bytes};
+			}
+			elsif ($k =~ /Barrier/) {
+				# Barrier
+				# only a single value to grab
+				$data{"ave_$k"} = $lastval = $multidata{$k}{$bytes};
+
+				#save the MULTIDATA stuff going back to the core parser
+				$data{$multidata_key}{$1} = $multidata{$k}{$bytes};
+			}
+			elsif ($k =~ /Allreduce|Reduce|Reduce_scatter|Allgather|Alltoall|Bcast/) {
+				# all the collective tests
+				# we would like latencies of 8K messages (arbitrary choice), but
+				# we at least want a value if one exists
+				($bytes > 8192) and next;
+				$lastval = $multidata{$k}{$bytes};
+				main::debug_print(3,"DEBUG:imb: grabbed $bytes val for $k");
+			}
+		}
+		$data{"ave_$k"} = $lastval;
 	}
 
 	return \%data;
@@ -353,6 +393,7 @@ sub _init {
 		'ave_Allgather' => 'us',
 		'ave_Allgatherv' => 'us',
 		'ave_Alltoall' => 'us',
+		'ave_Alltoallv' => 'us',
 		'ave_Bcast' => 'us',
 		'ave_Barrier' => 'us',
 	);
