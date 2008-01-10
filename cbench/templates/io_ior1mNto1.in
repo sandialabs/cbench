@@ -12,10 +12,10 @@ mkdir -p $TESTDIR
 PSFILE=`/bin/mktemp $TESTDIR/posix.nto1.XXXXXX`
 PPFILE=`/bin/mktemp $TESTDIR/posix.nton.XXXXXX`
 
-echo "Nto1 file: $PSFILE"
-echo "NtoN files: $PPFILE"
-echo "TESTDIR: $TESTDIR"
-echo
+cbench_echo "Nto1 file: $PSFILE"
+cbench_echo "NtoN files: $PPFILE"
+cbench_echo "TESTDIR: $TESTDIR"
+cbench_echo
 
 # n-to-one file pattern
 CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/IOR.posix -a POSIX $ALLARGS -o $PSFILE"
