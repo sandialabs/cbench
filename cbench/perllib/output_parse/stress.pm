@@ -106,7 +106,8 @@ sub parse {
 	my $found_endrecord = 0;
     foreach my $l (@{$txtbuf}) {
         ($l =~ /All to All non-blocking/) and $status = 'STARTED';
-		
+        ($l =~ /CBENCH NOTICE/) and $status = $l;
+
     	if ($l =~ /stress runs.*\[(\d+\.\d+)\s+MB\/s\s+aggregate\]/) {
 			$data{'ave_alltoall'} = $1;
 			$status = 'FOUNDDATA';
@@ -118,6 +119,14 @@ sub parse {
 
 	if ($found_endrecord) {
 		$data{'STATUS'} = "PASSED";
+	}
+	elsif ($status =~ /CBENCH NOTICE/) {
+		# this means the job was not an error, but did not
+		# run because the benchmark does not support running
+		# on an odd number of processors
+		$data{'STATUS'} = 'NOTICE';
+		(my $tmp = $status) =~ s/CBENCH NOTICE://;
+		defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
 	}
 	else {
 		$data{'STATUS'} = "ERROR($status)";

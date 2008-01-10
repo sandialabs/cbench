@@ -111,12 +111,24 @@ sub parse {
 			if ($l =~ /b_eff\S*\s+=\s+([0-9]+\.[0-9]+)\s+MB\/s\s+=\s+([0-9]+\.[0-9]+)\s+.*/) {
 				$data{'bidir_bw'} = $1;
 			}
+			elsif ($l =~ /ERROR - this benchmark needs at least two parallel MPI processe/) {
+				# ERROR - this benchmark needs at least two parallel MPI processes. You have started only 1 process
+				$status = "CBENCH NOTICE: Needs at least two MPI processes";
+			}
 
 		}
 	}
 
 	if ($status =~ /COMPLETED/) {
 		$data{'STATUS'} = "PASSED";
+	}
+	elsif ($status =~ /CBENCH NOTICE/) {
+		# this means the job was not an error, but did not
+		# run because the benchmark does not support running
+		# on an odd number of processors
+		$data{'STATUS'} = 'NOTICE';
+		(my $tmp = $status) =~ s/CBENCH NOTICE://;
+		defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
 	}
 	else {
 		$data{'STATUS'} = "ERROR($status)";

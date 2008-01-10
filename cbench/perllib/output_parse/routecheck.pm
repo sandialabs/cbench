@@ -103,11 +103,13 @@ sub parse {
 	my $numlines = scalar @$txtbuf; 
 
     my $status = 'NOTSTARTED';
-	my $found_endrecord = 0;
     my $dealers = 0;
     foreach my $l (@{$txtbuf}) {
         ($l =~ /Timing resolution/) and $status = 'STARTED';
 		
+		($l =~ /This program requires more than 1 process/) and
+			($status = "CBENCH NOTICE: Needs at least two MPI processes");
+
     	if ($l =~ /dealer node is now rank\s+(\d+)/) {
 			$dealers++;
         }
@@ -123,6 +125,14 @@ sub parse {
 
 	if ($status =~ /COMPLETED/ and $dealers == $main::np) {
 		$data{'STATUS'} = "PASSED";
+	}
+	elsif ($status =~ /CBENCH NOTICE/) {
+		# this means the job was not an error, but did not
+		# run because the benchmark does not support running
+		# on an odd number of processors
+		$data{'STATUS'} = 'NOTICE';
+		(my $tmp = $status) =~ s/CBENCH NOTICE://;
+		defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
 	}
 	else {
 		$data{'STATUS'} = "ERROR($status)";

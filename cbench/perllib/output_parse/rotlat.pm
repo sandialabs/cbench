@@ -108,21 +108,32 @@ sub parse {
         ($l =~ /rotate 0/) and $status = 'STARTED';
 		($l =~ /Min Link/) and $found_endrecord = 1 and
 			$status = 'COMPLETED';
+		($l =~ /Must use at least 2 processes/) and
+			($status = "CBENCH NOTICE: Needs at least two MPI processes");
+
 		$found_endrecord or next;
 		
     	if ($l =~ /Min Link.*\:\s+(\d+\.\d+)\s+.*/) {
 			$data{'min_latency'} = $1;
     	}
-    	if ($l =~ /Max Link.*\:\s+(\d+\.\d+)\s+.*/) {
+    	elsif ($l =~ /Max Link.*\:\s+(\d+\.\d+)\s+.*/) {
 			$data{'max_latency'} = $1;
     	}
-    	if ($l =~ /Average Link .*\:\s+(\d+\.\d+)\s+.*/) {
+    	elsif ($l =~ /Average Link .*\:\s+(\d+\.\d+)\s+.*/) {
 			$data{'ave_latency'} = $1;
     	}
 	}
 
 	if ($status =~ /COMPLETED/) {
 		$data{'STATUS'} = "PASSED";
+	}
+	elsif ($status =~ /CBENCH NOTICE/) {
+		# this means the job was not an error, but did not
+		# run because the benchmark does not support running
+		# on an odd number of processors
+		$data{'STATUS'} = 'NOTICE';
+		(my $tmp = $status) =~ s/CBENCH NOTICE://;
+		defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
 	}
 	else {
 		$data{'STATUS'} = "ERROR($status)";

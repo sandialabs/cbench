@@ -154,13 +154,19 @@ sub parse {
             	$tests{$1} = 0;
             }
         }
-		#elsif ($parse_state == 0 and $l =~ /Benchmarking (\S+)\s*/) {
-		elsif ($l =~ /Benchmarking (\S+)\s*/) {
+		elsif ($parse_state == 0 and $l =~ /Benchmarking (\S+)\s*/) {
 			# found the start of a new benchmark table
 			$testname = $1;
 			$parse_state = 1;
             $tests{$testname} = 1;
-			main::debug_print(2,"DEBUG:imb:testname=$testname parse_state=1");
+			main::debug_print(2,"DEBUG:imb: testname=$testname parse_state=1");
+		}
+		elsif ($l =~ /\!\!\s+Benchmark (\S+) invalid for 1 process/) {
+			$status = "CBENCH NOTICE: Some IMB tests cannot run on 1 process";
+			$parse_state = 999;
+            $tests{$1} = 999;
+			main::debug_print(2,"DEBUG:imb: $1 cannot run with 1 process, ".
+				"parse_state=$parse_state");
 		}
 		elsif ($parse_state == 1 and $l =~ /processes = (\d+)\s*/) {
 			# found the process count for the test, ignore tests
@@ -212,6 +218,9 @@ sub parse {
 			# ignore this too
 			($l =~ /Attention, msg size/) and next;
 			
+			# if that's the end of the data, reset the state machine
+			($l =~ /^$/) and ($parse_state = 0);
+
 			# otherwise parse valid lines
 			if ($l =~ /\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/) {
 				$multidata{$testname}{$1} = $5;
@@ -221,6 +230,9 @@ sub parse {
 		elsif ($parse_state == 5) {
 			# ignore the #bytes #repetitions lines
 			($l =~ /\#repetitions/) and next;
+
+			# if that's the end of the data, reset the state machine
+			($l =~ /^$/) and ($parse_state = 0);
 
 			# otherwise parse valid lines
 			if ($l =~ /\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/) {
@@ -239,7 +251,17 @@ sub parse {
         }
     }
     
-	if ($status =~ /FOUNDDATA/ and !$error) {
+	main::debug_print(2,"DEBUG:imb: status=$status, error=$error");
+
+	if ($status =~ /CBENCH NOTICE/) {
+		# this means the job was not an error, but did not
+		# run because the benchmark does not support running
+		# on an odd number of processors
+		$data{'STATUS'} = 'NOTICE';
+		(my $tmp = $status) =~ s/CBENCH NOTICE://;
+		defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
+	}
+	elsif ($status =~ /FOUNDDATA/ and !$error) {
 		$data{'STATUS'} = "PASSED";
 	}
 	else {
