@@ -2245,13 +2245,19 @@ sub install_util_script {
 sub testset_symlink_file {
 	my $src = shift;
 	my $dest = shift;
+	my $force = shift;
 
 	# if the symlink exists remove it first
 	if (-l "$dest") {
 		unlink "$dest";
 	}
-	elsif (-f "$dest") {
+	elsif (-f "$dest" and !$force) {
 		info_print("testset_symlink_install() $dest is not a symlink, we will not touch it");
+		return;
+	}
+	elsif (-f "$dest" and $force) {
+		info_print("testset_symlink_install() $dest is not a symlink and FORCE specified, removing it");
+		unlink "$dest";
 	}
 
 	system("/bin/ln -s ../$src $dest");

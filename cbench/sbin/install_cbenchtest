@@ -35,10 +35,13 @@ $CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
 use Getopt::Long;
 
+my $force = 0;
+
 GetOptions(
 	'testset=s' => \$testset,	
 	'testtop|top' => \$testtop,	
 	'allsets' => \$allsets,
+	'force' => \$force,
 	'debug=i' => \$DEBUG,
 );
 
@@ -170,9 +173,9 @@ foreach my $set (@testset_list) {
 	mk_test_dir($set,$bench_test);
 
 	# symlink install the core test harness scripts
-	testset_symlink_file("tools/start_jobs_jobdirs.pl","$testset_path/$set\_start_jobs.pl");
-	testset_symlink_file("tools/gen_jobs_generic_NEW.pl","$testset_path/$set\_gen_jobs.pl");
-	testset_symlink_file("tools/output_parse_generic.pl","$testset_path/$set\_output_parse.pl");
+	testset_symlink_file("tools/start_jobs_jobdirs.pl","$testset_path/$set\_start_jobs.pl",$force);
+	testset_symlink_file("tools/gen_jobs_generic.pl","$testset_path/$set\_gen_jobs.pl",$force);
+	testset_symlink_file("tools/output_parse_generic.pl","$testset_path/$set\_output_parse.pl",$force);
 
 	if (!$skel) {
 		# symlink install the core templates used by the testset
@@ -181,14 +184,14 @@ foreach my $set (@testset_list) {
 			($file =~ /no such/i) and next;
 			chomp $file;
 			my ($filename) = $file =~ /\/(\S+)$/;
-			testset_symlink_file("$file","$testset_path/$filename");
+			testset_symlink_file("$file","$testset_path/$filename",$force);
 		}
 
 		# symlink install atypical files
 		if (exists $special_testset_files{$set}) {
 			foreach my $file (@{$special_testset_files{$set}{symlink}}) {
 				my ($filename) = $file =~ /\/(\S+)$/;
-				testset_symlink_file("$file","$testset_path/$filename");
+				testset_symlink_file("$file","$testset_path/$filename",$force);
 			}
 		}
 	}
@@ -204,7 +207,7 @@ foreach my $set (@testset_list) {
 				chomp $file;
 				my ($filename) = $file =~ /\/(\S+)$/;
 				print "  Found job template \'$filename\' for testset ".uc($set).", installing...\n";
-				testset_symlink_file("$file","$testset_path/$filename");
+				testset_symlink_file("$file","$testset_path/$filename",$force);
 			}
 		}
 	}
