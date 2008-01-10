@@ -75,6 +75,14 @@ my $core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency
 			"templates/xhpl_dat.in",
 			"templates/hpccinf_txt.in",
 		],
+		'rsync' => {
+			"opensource/NPB/bin/" => "bin/npb/",
+		},
+	},
+	'npb' => {
+		'rsync' => {
+			"opensource/NPB/bin/" => "bin/npb/",
+		},
 	},
 	'shakedown' => {
 		'symlink' => [
@@ -188,10 +196,19 @@ foreach my $set (@testset_list) {
 		}
 
 		# symlink install atypical files
-		if (exists $special_testset_files{$set}) {
+		if (exists $special_testset_files{$set}{symlink}) {
 			foreach my $file (@{$special_testset_files{$set}{symlink}}) {
 				my ($filename) = $file =~ /\/(\S+)$/;
 				testset_symlink_file("$file","$testset_path/$filename",$force);
+			}
+		}
+
+		# rsync requested files
+		if (exists $special_testset_files{$set}{rsync}) {
+			foreach my $file (keys %{$special_testset_files{$set}{rsync}}) {
+				my $cmd = "rsync -a $CBENCHOME/$file $bench_test/$special_testset_files{$set}{rsync}{$file}";
+				debug_print(1,"DEBUG: $cmd");
+				system($cmd);
 			}
 		}
 	}

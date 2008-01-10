@@ -95,9 +95,8 @@ install uninstall: default
 
 # install the Cbench testing tree (CBENCHTEST variable must be set)
 installtests: install
-	@sbin/install_cbenchtest --testtop
+	@sbin/install_cbenchtest --testtop --allsets
 	$(do-compiled-bin-installs)
-	@sbin/install_cbenchtest --all
 
 # just install compiled binaries in to the Cbench testing tree
 installcbenchbins: install
@@ -113,8 +112,7 @@ installcbench: domostall
 
 # just update the Cbench testing tree scripts
 updatecbench: 
-	@sbin/install_cbenchtest --testtop
-	@sbin/install_cbenchtest --all
+	@sbin/install_cbenchtest --testtop --allsets
 
 # compile and install LAMMPS
 installlammps: install 
@@ -165,9 +163,8 @@ doitall:
 	$(MAKE) standaloneinstall
 
 itests:
-	@sbin/install_cbenchtest --testtop
+	@sbin/install_cbenchtest --testtop --allsets
 	$(do-compiled-bin-installs)
-	@sbin/install_cbenchtest --all
 
 ifndef BINIDENT
   DEST = $(BENCH_TEST)/bin
@@ -176,6 +173,5 @@ else
 endif
 
 itests-with-ident:
-	@sbin/install_cbenchtest --testtop
+	@sbin/install_cbenchtest --testtop --allsets
 	$(do-compiled-bin-installs-binident)
-	@sbin/install_cbenchtest --all
