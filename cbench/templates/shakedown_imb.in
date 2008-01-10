@@ -20,8 +20,6 @@ if [ ! -f ./lengths ]; then
 512
 1024
 2048
-4096
-8192
 EOF
 
 fi
