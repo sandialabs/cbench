@@ -89,7 +89,7 @@ $testset_path = "$bench_test/$testset";
 $DEBUG and print "DEBUG: $bench_test $testset_path\n";
 
 (!defined $ident) and $ident = $cluster_name . "1";
-if (!defined $testdir and $testset =~ /^io/) {
+if (!defined $testdir and $testset =~ /^io|shakedown/) {
 	$testdir = "$testset_path/$ident/TMP";
 	print "$0: --testdir not specified, defaulting to $testdir\n";
 	mkdir "$testdir",0750;
