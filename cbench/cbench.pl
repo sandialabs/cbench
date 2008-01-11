@@ -2608,7 +2608,6 @@ sub install_lammps_files {
 # for certain LAMMPS jobs
 #
 sub lammps_file_substitute {
-	#my $data_file_dest = shift;
 	my $lammps_bench = "$ENV{CBENCHTEST}/lammps/bench";
 
 	#LAMMPS benchmark/example codes requiring data files are:
@@ -2619,6 +2618,8 @@ sub lammps_file_substitute {
 	for my $code_name (@codes) {
 		my $input_file = "$lammps_bench/in.$code_name";
 
+		debug_print(3,"DEBUG: lammps_file_substitute for $input_file\n");
+
 		#check for and open data file; skip if not present
 		(-e $input_file) and open(IN, "<$input_file") or next;
 		
@@ -2627,8 +2628,7 @@ sub lammps_file_substitute {
 		my $string = <IN>;
 		close(IN);
 		$/ = "\n";
-		#$string =~ s/^read_data.*\n/"read_data\t\t$data_file_dest\/data.$codename\n"/gs;
-		$string =~ s/read_data.*data.$code_name\n/read_data\t$lammps_bench\/data.$code_name\n/gs;
+		$string =~ s/read_data.*data/read_data\t$lammps_bench\/data/gs;
 
 		#overwrite in.$codename with new file
 		open(OUT, ">$input_file");
@@ -2641,25 +2641,23 @@ sub lammps_copy_files {
 	my $input_file_dest = shift;
 	my $code_name = shift;
 	my $lammps_bench = "$ENV{CBENCHTEST}/lammps/bench";
-	
-#	 my @codes = qw/rhodo rhodo.scaled chute chute.scaled chain chain.scaled meam meam.shear rigid peptide micelle/;
 
-#	 for my $code_name (@codes) {
-		 my $input_file = "$lammps_bench/in.$code_name";
+	my $input_file = "$lammps_bench/in.$code_name";
 
-		 #check for input file; skip if not present
-		 (-e $input_file) or die("Could not locate $input_file: $?\n");
+	debug_print(3, "DEBUG: lammps_copy_file for $input_file\n");
 
-		 #copy the in.whatever file to the new jobdir
-		 system("cp $input_file $input_file_dest") == 0 or die("Could not copy $input_file: $?\n");
+	#check for input file; skip if not present
+	(-e $input_file) or print "Could not locate $input_file: $?\n" and next;
 
-		 #check for scaled version of input deck
-		 if ( -e "$lammps_bench/in.$code_name.scaled" ) {
-			 $input_file = "$lammps_bench/in.$code_name.scaled";
+	#copy the in.whatever file to the new jobdir
+	system("cp $input_file $input_file_dest") == 0 or die("Could not copy $input_file: $?\n");
 
-			 system("cp $input_file $input_file_dest") == 0 or die("Could not copy $input_file: $?\n");
-		 }
-	#}
+	#check for scaled version of input deck
+	if ( -e "$lammps_bench/in.$code_name.scaled" ) {
+		$input_file = "$lammps_bench/in.$code_name.scaled";
+
+		system("cp $input_file $input_file_dest") == 0 or die("Could not copy $input_file: $?\n");
+	}
 }
 
 1;
