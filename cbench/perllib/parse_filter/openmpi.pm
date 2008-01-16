@@ -90,6 +90,10 @@ our %parse_filters = (
 	'\[(\S+)\:\S+\] \*\*\* (MPI_.*)$' =>
 		'OMPI says on node $1 \'$2\'',
 
+	# [sn405:29687] Error in mx_open_endpoint (error Failure querying MX driver(wrong driver?))
+	'\[(\S+)\:\S+\] Error in mx_open_endpoint (\(.*\))' =>
+		'OMPI says on node $1 \'Error in mx_open_endpoint $2\'',
+
 );
 
 1;
