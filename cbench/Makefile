@@ -146,6 +146,9 @@ apps_release: distclean
 restricted_release: distclean
 	export cbench_rev=`grep Version VERSION | awk -F ': ' '{print $$2}'`; tar cfvz cbench_restricted_release_$$cbench_rev\.tar.gz * --exclude cbench*.tar.gz --exclude CVS --exclude .svn --exclude *.o --exclude bin 
 
+no_exports_restricted_release: distclean
+	export cbench_rev=`grep Version VERSION | awk -F ': ' '{print $$2}'`; tar cfvz cbench_restricted_release_exportsok_$$cbench_rev\.tar.gz * --exclude cbench*.tar.gz --exclude CVS --exclude .svn --exclude *.o --exclude bin --exclude EXPORT-RESTRICTED 
+
 #
 # backdoor shorcuts for developers...
 #
