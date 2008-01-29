@@ -227,9 +227,9 @@ ifeq ($(ARCH),alpha)
   MPILIB = -lmpichgm
 endif
 
-# add cbench mpi opt flags if defined
-ifdef CBENCH_MPIOPTFLAGS
-	OPTFLAGS=$(CBENCH_MPIOPTFLAGS)
+# add cbench opt flags if defined
+ifdef CBENCH_OPTFLAGS
+	OPTFLAGS=$(CBENCH_OPTFLAGS)
 endif
 
 
