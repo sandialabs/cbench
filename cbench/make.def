@@ -171,6 +171,7 @@ ifeq ($(ARCH),x86_64)
   COMMON_FLAGS = 
   CFLAGS = -B
   OPTFLAGS = -O3 -fastsse
+  #OPTFLAGS = -O3 -fastsse -Mautoinline=levels:3
   MPILIB =
   endif
 
