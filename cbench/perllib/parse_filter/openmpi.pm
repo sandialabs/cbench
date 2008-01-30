@@ -94,6 +94,11 @@ our %parse_filters = (
 	'\[(\S+)\:\S+\] Error in mx_open_endpoint (\(.*\))' =>
 		'OMPI says on node $1 \'Error in mx_open_endpoint $2\'',
 
+	#[en65:07751] [0,1,15]-[0,1,14] mca_oob_tcp_peer_try_connect: connect to 10.100.128.225:35152 failed: Software caused connection abort (103)
+	#[en65:07751] [0,1,15]-[0,1,14] mca_oob_tcp_peer_try_connect: connect to 10.100.128.225:35152 failed, connecting over all interfaces failed!
+	'\[(\S+)\:\S+\].*(mca_oob_tcp_peer_try_connect:\s+connect to (\S+) failed:.*)$' =>
+		'OMPI says on node $1 \'$2\'',
+
 );
 
 1;
