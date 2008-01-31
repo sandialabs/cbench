@@ -9,6 +9,7 @@
 #include "memory.h"
 
 #include <asm/page.h>
+#include <sys/user.h>
 
 
 /* The verbose global from memtst_main.c */
