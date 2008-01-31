@@ -68,12 +68,33 @@ ifeq ($(COMPILER),intel32)
   PLAINCXX = icpc
   NOOPT_FLAGS = -O0
 endif
+# default gcc assumes gcc4 + gfortran
 ifeq ($(COMPILER),gcc)
+  FORT = gfortran
+  PLAINF77 = gfortran
+  PLAINCC = gcc
+  PLAINCXX = gcc
+  NOOPT_FLAGS = -O0
+  # NPB uses the next two variables
+  # FIXME: need to check this out on 32-bit systems..
+  ifeq ($(ARCH),x86_64)
+  FMPI_LIB = /usr/lib64/libg2c.so.0
+  else
+  FMPI_LIB = /usr/lib/libg2c.so.0
+  endif
+  F_LIB = $(FMPI_LIB)
+endif
+# for the gcc3 type systems w/o gcc4 capabilities
+ifeq ($(COMPILER),gcc3)
   FORT = g77
   PLAINF77 = g77
   PLAINCC = gcc
   PLAINCXX = gcc
   NOOPT_FLAGS = -O0
+  # NPB uses the next two variables
+  # FIXME: need to check this out on 32-bit systems..
+#  FMPI_LIB = -L/usr/lib64 -L/usr/lib -lg2c
+#  F_LIB = $(FMPI_LIB)
 endif
 ifeq ($(COMPILER),pgi)
   FORT = pgf77
@@ -238,8 +259,7 @@ endif
 
 CFLAGS += $(OPTFLAGS) $(COMMON_FLAGS)
 FFLAGS += $(OPTFLAGS) $(COMMON_FLAGS)
-LIBS = $(MPILIB)
-#FMPI_LIB = /usr/lib64/libg2c.so.0
+LIBS = $(MPILIB) 
 
 
 .SUFFIXES: .o .c .f .f90
