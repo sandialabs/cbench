@@ -6,7 +6,7 @@ INSTALLTARGETS = src/runin/memtst
 default: all
 
 all:
-	$(MAKE) -C src CC=$(PLAINCC) CLINKER='$(PLAINCC) $(LDFLAGS)' $@
+	$(MAKE) -C src CC=$(PLAINCC) CLINKER='$(PLAINCC) $(LDFLAGS)' CFLAGS='$(CFLAGS)' MEMTST_CFLAGS='$(CFLAGS) $(NOUNROLL_FLAGS)' $@
 
 clean:
 	$(MAKE) -C src dist-clean
