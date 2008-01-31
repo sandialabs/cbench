@@ -172,4 +172,4 @@ endif
 itests itests-with-ident:
 	@sbin/install_cbenchtest --testtop
 	$(do-compiled-bin-installs-binident)
-	@sbin/install_cbenchtest --testtop --allsets --bindir $(BINDIR)
+	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
