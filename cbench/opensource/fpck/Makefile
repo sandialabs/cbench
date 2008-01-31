@@ -1,6 +1,6 @@
 include ../../make.def
 
-CFLAGS = $(COMMON_FLAGS) -O1 -W -Wall
+CFLAGS = $(COMMON_FLAGS) -O1
 
 EXEC = fpck
 OBJS = fpck.o meminfo.o
