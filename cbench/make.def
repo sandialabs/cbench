@@ -60,6 +60,7 @@ ifeq ($(COMPILER),intel)
   PLAINCC = icc
   PLAINCXX = icpc
   NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
 endif
 ifeq ($(COMPILER),intel32)
   FORT = ifort
@@ -67,6 +68,7 @@ ifeq ($(COMPILER),intel32)
   PLAINCC = icc
   PLAINCXX = icpc
   NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
 endif
 # default gcc assumes gcc4 + gfortran
 ifeq ($(COMPILER),gcc)
@@ -91,6 +93,7 @@ ifeq ($(COMPILER),gcc3)
   PLAINCC = gcc
   PLAINCXX = gcc
   NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
   # NPB uses the next two variables
   # FIXME: need to check this out on 32-bit systems..
 #  FMPI_LIB = -L/usr/lib64 -L/usr/lib -lg2c
@@ -102,6 +105,7 @@ ifeq ($(COMPILER),pgi)
   PLAINCC = pgcc
   PLAINCXX = pgcc
   NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -Mnounroll
 endif
 ifeq ($(COMPILER),pathscale)
   FORT = pathf90
@@ -109,6 +113,7 @@ ifeq ($(COMPILER),pathscale)
   PLAINCC = pathcc
   PLAINCXX = pathcc
   NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
 endif
 
 # we should know our compilers now
