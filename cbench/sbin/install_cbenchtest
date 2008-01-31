@@ -36,12 +36,14 @@ $CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 use Getopt::Long;
 
 my $force = 0;
+my $bindir = 'bin';
 
 GetOptions(
 	'testset=s' => \$testset,	
 	'testtop|top' => \$testtop,	
 	'allsets' => \$allsets,
 	'force' => \$force,
+	'bindir=s' => \$bindir,
 	'debug=i' => \$DEBUG,
 );
 
@@ -76,12 +78,12 @@ my $core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency
 			"templates/hpccinf_txt.in",
 		],
 		'rsync' => {
-			"opensource/NPB/bin/" => "bin/npb/",
+			"opensource/NPB/bin/" => "$bindir/npb/",
 		},
 	},
 	'npb' => {
 		'rsync' => {
-			"opensource/NPB/bin/" => "bin/npb/",
+			"opensource/NPB/bin/" => "$bindir/npb/",
 		},
 	},
 	'shakedown' => {
@@ -207,6 +209,8 @@ foreach my $set (@testset_list) {
 		if (exists $special_testset_files{$set}{rsync}) {
 			foreach my $file (keys %{$special_testset_files{$set}{rsync}}) {
 				my $cmd = "rsync -a $CBENCHOME/$file $bench_test/$special_testset_files{$set}{rsync}{$file}";
+				(! -d "$bench_test/$special_testset_files{$set}{rsync}{$file}") and
+					system("mkdir -p $bench_test/$special_testset_files{$set}{rsync}{$file}");
 				debug_print(1,"DEBUG: $cmd");
 				system($cmd);
 			}
@@ -239,5 +243,7 @@ sub usage {
 		  "                      list of testset names\n".
 		  "   --allsets          Install all the supported Cbench testsets\n".
 		  "   --testtop          Install the top of the Cbench testing tree\n".
+		  "   --bindir <name>    Name of the binary directory in the Cbench test\n".
+		  "                      tree, e.g. --bindir bin.gcc\n".
           "   --debug <level>    Turn on debugging at the specified level\n";
 }

@@ -162,16 +162,14 @@ doitall:
 	$(MAKE) standalone
 	$(MAKE) standaloneinstall
 
-itests:
-	@sbin/install_cbenchtest --testtop --allsets
-	$(do-compiled-bin-installs)
-
 ifndef BINIDENT
-  DEST = $(BENCH_TEST)/bin
+  BINDIR = bin
 else
-  DEST=$(BENCH_TEST)/bin.$(BINIDENT)
+  BINDIR = bin.$(BINIDENT)
 endif
+  DEST = $(BENCH_TEST)/$(BINDIR)
 
-itests-with-ident:
-	@sbin/install_cbenchtest --testtop --allsets
+itests itests-with-ident:
+	@sbin/install_cbenchtest --testtop
 	$(do-compiled-bin-installs-binident)
+	@sbin/install_cbenchtest --testtop --allsets --bindir $(BINDIR)
