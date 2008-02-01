@@ -18,12 +18,20 @@ $(MPIDIR)/config/suitedef:
 $(SERDIR)/config/suitedef:
 	./gen_suitedef --nasdir $(SERDIR) --serial
 
-serial: $(SRC) .patched $(SERDIR)/config/suitedef
+serial:
+	$(MAKE) serial_real
+	-touch serial
+
+mpi:
+	$(MAKE) mpi_real
+	-touch mpi
+
+serial_real: $(SRC) .patched $(SERDIR)/config/suitedef
 	@ if [ ! -d bin ] ; then mkdir bin ; fi
 	cd $(SERDIR)/config; ln -sf ../../../make.def .
 	$(MAKE) CC=$(PLAINCC) F77=$(PLAINF77) F90=$(PLAINF90) -C $(SERDIR) suite
 
-mpi: $(SRC) .patched $(MPIDIR)/config/suitedef
+mpi_real: $(SRC) .patched $(MPIDIR)/config/suitedef
 	@ if [ ! -d bin ] ; then mkdir bin ; fi
 	cd $(MPIDIR)/config; ln -sf ../../../make.def .
 	$(MAKE) -C $(MPIDIR) suite
@@ -32,11 +40,11 @@ clean: cleanserial cleanmpi
 
 cleanserial:
 	$(MAKE) -C $(SERDIR) clean; /bin/rm -f $(SERDIR)/config/suite.def
-	/bin/rm -f bin/*.[ABCDSW]
+	/bin/rm -f bin/*.[ABCDSW] serial
 
 cleanmpi:
 	$(MAKE) -C $(MPIDIR) clean; /bin/rm -f $(MPIDIR)/config/suite.def
-	/bin/rm -f bin/*.[ABCDSW].*
+	/bin/rm -f bin/*.[ABCDSW].* mpi
 
 install uninstall:
 	$(do-$@)
@@ -55,4 +63,4 @@ $(SRC): $(TAR)
 	-touch .patched
 
 distclean:
-	/bin/rm -rf $(SRC) .patched src bin
+	/bin/rm -rf $(SRC) .patched src bin serial mpi
