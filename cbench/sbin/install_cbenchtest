@@ -187,9 +187,12 @@ foreach my $set (@testset_list) {
 	testset_symlink_file("tools/gen_jobs_generic.pl","$testset_path/$set\_gen_jobs.pl",$force);
 	testset_symlink_file("tools/output_parse_generic.pl","$testset_path/$set\_output_parse.pl",$force);
 
-	# one special case for starjobs scripts
+	# nodehwtest testset still has some necessarily unique scripts
 	($set == 'nodehwtest') and 
 		testset_symlink_file("tools/nodehwtest_start_jobs.pl","$testset_path/$set\_start_jobs.pl",$force);
+	($set == 'nodehwtest') and 
+		testset_symlink_file("tools/nodehwtest_output_parse.pl","$testset_path/$set\_start_jobs.pl",$force);
+
 	if (!$skel) {
 		# symlink install the core templates used by the testset
 		my @files = `cd $CBENCHOME; ls -1 templates/$set\_*.in 2>&1`;
