@@ -191,7 +191,7 @@ foreach my $set (@testset_list) {
 	($set eq 'nodehwtest') and 
 		testset_symlink_file("tools/nodehwtest_start_jobs.pl","$testset_path/$set\_start_jobs.pl",$force);
 	($set eq 'nodehwtest') and 
-		testset_symlink_file("tools/nodehwtest_output_parse.pl","$testset_path/$set\_start_jobs.pl",$force);
+		testset_symlink_file("tools/nodehwtest_output_parse.pl","$testset_path/$set\_output_parse.pl",$force);
 
 	if (!$skel) {
 		# symlink install the core templates used by the testset
