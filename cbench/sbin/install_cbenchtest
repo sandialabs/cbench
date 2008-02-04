@@ -188,9 +188,9 @@ foreach my $set (@testset_list) {
 	testset_symlink_file("tools/output_parse_generic.pl","$testset_path/$set\_output_parse.pl",$force);
 
 	# nodehwtest testset still has some necessarily unique scripts
-	($set == 'nodehwtest') and 
+	($set eq 'nodehwtest') and 
 		testset_symlink_file("tools/nodehwtest_start_jobs.pl","$testset_path/$set\_start_jobs.pl",$force);
-	($set == 'nodehwtest') and 
+	($set eq 'nodehwtest') and 
 		testset_symlink_file("tools/nodehwtest_output_parse.pl","$testset_path/$set\_start_jobs.pl",$force);
 
 	if (!$skel) {
