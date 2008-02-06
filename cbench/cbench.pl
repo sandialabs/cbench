@@ -816,7 +816,7 @@ sub start_jobs {
 	my $minppn_scanned = 9999; 
 
 	# get a master list of potential job scripts to execute
-	$cmd = '/bin/ls -d1 *-?ppn-*';
+	$cmd = '/bin/ls -d1 *-*ppn-*';
 	@buf = `$cmd 2>&1`;
 
 	my $pwd = `pwd`;
