@@ -5,4 +5,7 @@
 # make sure we are where we expect to be.
 cd "TESTSET_PATH_HERE/IDENT_HERE/JOBNAME_HERE"
 
+# set OMP_NUM_THREADS appropriate to the job
+export OMP_NUM_THREADS=NUM_THREADS_PER_PROCESS_HERE
+cbench_echo "Cbench OMP_NUM_THREADS: $OMP_NUM_THREADS"
 

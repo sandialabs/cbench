@@ -60,6 +60,7 @@ GetOptions( 'ident=s' => \$ident,
 		'minprocs=i' => \$minprocs,
 		'maxprocs=i' => \$maxprocs,
 		'procs=i' => \$procs,
+		'nodes=i' => \$nodes,
 		'batch_extraargs=s' => \$batchargs,
 		'batchargs=s' => \$batchargs,
 		'repeat=i' => \$repeat,
@@ -100,7 +101,7 @@ if (defined $procs) {
 	$minprocs = $procs;
 	$maxprocs = $procs;
 }
-
+(defined $nodes) and $optdata{numnodes} = $nodes;
 (defined $batch) and $start_method  = 'batch';
 (defined $inter) and $start_method  = 'interactive';
 if (defined $throttledbatch) {
@@ -180,6 +181,7 @@ sub usage {
 		  "    --procs <num>          Shortcut to set --minprocs and --maxprocs to the\n".
 		  "                           same value, i.e. to run jobs with only a single\n".
 		  "                           number of processors (not a range)\n".
+		  "    --nodes <num>          Only start jobs that use the specified number of nodes\n".
           "    --batch_extraargs 'string'   Pass these arguments on the commandline when\n".
           "                                 batch jobs are started\n".
           "    --batchargs 'string'   Same as --batch_extraargs\n".

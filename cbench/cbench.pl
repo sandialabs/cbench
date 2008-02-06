@@ -838,6 +838,20 @@ sub start_jobs {
         # don't go over max number of procs as configured in cluster.def
         ($num_proc > $max_procs) and next;
 
+		# if the --nodes parameter was given, filter jobs that don't meet
+		# the specified number of nodes
+		if (exists $$optdata{numnodes}) {
+			my $numnodes = calc_num_nodes($num_proc,$ppn);
+			if ($numnodes != $$optdata{numnodes}) {
+				debug_print(1,"DEBUG: Jobname $i (numnodes=$numnodes) doesn't".
+					" match number of nodes required ($$optdata{numnodes})\n");
+				next;
+			}
+
+			debug_print(1,"DEBUG: Jobname $i (numnodes=$numnodes) matches ".
+				"number of nodes required ($$optdata{numnodes})\n");
+		}
+
         # if $maxprocs is defined, don't run jobs bigger than that
 		if (defined $maxprocs and $num_proc > $maxprocs) {
 			debug_print(1,
@@ -2060,6 +2074,11 @@ sub std_substitute {
 	$string =~ s/NUM_PROCS_HERE/$numprocs/gs;
 	$string =~ s/NUM_NODES_HERE/$numnodes/gs;
 	$string =~ s/NUM_PPN_HERE/$ppn/gs;
+	# calc the threads per mpi process for the job
+	# we by default assume we want to utilize all cores on a node
+	# which we can get from procs_per_node in cluster.def
+	$temp = $procs_per_node / $ppn;
+	$string =~ s/NUM_THREADS_PER_PROCESS_HERE/$temp/gs;
 	$string =~ s/JOBNAME_HERE/$jobname/gs;
 	$string =~ s/BENCHMARK_NAME_HERE/$benchmark/gs;
 	$string =~ s/IDENT_HERE/$ident/gs;
