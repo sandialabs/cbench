@@ -645,20 +645,12 @@ sub parse_output_file {
 		# fileid just helps us with debug and status output
 		my $fileid = '';
 
-		# if the Cbench jobs are contained inside directories, like linpack,
-		# the test ident is in a slightly different place in the path string
+		# Cbench jobs are all contained inside directories now
 		my $testident;
 		#print "DEBUG: ". scalar @patharray ." path components\n";
-		if (scalar @patharray == 4) {
-        	$testident = $patharray[$#patharray-2];
-			(defined $meta) and $fileid = "$metaset\/";
-			$fileid .= "$testident\/$patharray[$#patharray-1]\/$patharray[$#patharray]";
-		}
-		else {
-        	$testident = $patharray[$#patharray-1];
-			(defined $meta) and $fileid = "$metaset\/";
-			$fileid .= "$testident\/$patharray[$#patharray]";
-		}
+		$testident = $patharray[$#patharray-2];
+		(defined $meta) and $fileid = "$metaset\/";
+		$fileid .= "$testident\/$patharray[$#patharray-1]\/$patharray[$#patharray]";
 
 		$total_files_examined++;
 		(! defined $DEBUG and ($total_files_examined % 50) == 0) and print ".";
@@ -706,7 +698,7 @@ sub parse_output_file {
 		(defined $DEBUG) and print "DEBUG:parse_output_file() PARSEing $stdout_file ident=$testident\n";
 
         # parse the jobname to get important characteristics of the job
-        ($bench, $ppn, $np) = ($jobname =~ /^(\S+)\-(\d)ppn[\-|\.](\d+)$/);
+        ($bench, $ppn, $np) = ($jobname =~ /^(\S+)\-(\d+)ppn[\-|\.](\d+)$/);
         $ppnstr = $ppn . "ppn";
 
 		(defined $DEBUG and $DEBUG > 1) and print
