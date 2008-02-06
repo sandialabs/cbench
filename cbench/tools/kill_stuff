@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+
+use Getopt::Long;
+GetOptions(
+	'match=s' => \$match,
+);
+
+if (! defined $match) {
+	print "NEED --match parameter\n";
+	exit;
+}
+
+@ps = `ps wax`;
+
+foreach (@ps) {
+	/kill_stuff|ntpd|portmap|rpc.statd|udevd|mingetty|pbs_mom|sshd|\[.*\]/ and next;
+	next unless /$match/;
+	#print "$_";
+	($pid, $state, $name) = /^\s*(\d+)\s+\S+\s+(\S+)\s+\S+\s+(.*)$/;	
+	print "kill $pid ($state) ($name)\n";
+	system("kill -9 $pid &");
+}

@@ -183,9 +183,9 @@ foreach my $set (@testset_list) {
 	mk_test_dir($set,$bench_test);
 
 	# symlink install the core test harness scripts
-	testset_symlink_file("tools/start_jobs_jobdirs.pl","$testset_path/$set\_start_jobs.pl",$force);
-	testset_symlink_file("tools/gen_jobs_generic.pl","$testset_path/$set\_gen_jobs.pl",$force);
-	testset_symlink_file("tools/output_parse_generic.pl","$testset_path/$set\_output_parse.pl",$force);
+	testset_symlink_file("tools/cbench_start_jobs.pl","$testset_path/$set\_start_jobs.pl",$force);
+	testset_symlink_file("tools/cbench_gen_jobs.pl","$testset_path/$set\_gen_jobs.pl",$force);
+	testset_symlink_file("tools/cbench_output_parse.pl","$testset_path/$set\_output_parse.pl",$force);
 
 	# nodehwtest testset still has some necessarily unique scripts
 	($set eq 'nodehwtest') and 

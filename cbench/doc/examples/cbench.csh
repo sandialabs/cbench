@@ -12,3 +12,6 @@ setenv BLASLIB "-Wl,-rpath,$RPATH -L$RPATH -lgoto -lpthread -lm"
 #setenv LAPACKLIB "-L/path/to -lLAPACK"
 #setenv CBENCH_OPTFLAGS "-O1 -xP"
 
+# add the Cbench tools directory to the path to pickup
+# cbench commands more easily
+setenv PATH $PATH:$CBENCHOME/tools

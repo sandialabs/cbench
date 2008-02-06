@@ -12,3 +12,6 @@ export BLASLIB="-Wl,-rpath,$RPATH -L$RPATH -lgoto -lpthread -lm"
 #export LAPACKLIB="-L/path/to -lLAPACK"
 #export CBENCH_OPTFLAGS="-O1 -xP"
 
+# add the Cbench tools directory to the path to pickup
+# cbench commands more easily
+export PATH=$PATH:$CBENCHOME/tools
