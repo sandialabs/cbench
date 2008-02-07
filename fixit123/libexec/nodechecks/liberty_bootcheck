@@ -101,10 +101,10 @@ fi
 
 
 if [ $CAPROLE = "worker" ]; then
-	check_kernel_version 2.6.9-55.EL_lustre.1.4.11smp
+	check_kernel_version 2.6.9-55.EL_lustre-1.4.11smp
 	if [ $? -ne 0 ]; then
 		#failed
-		updated_kernel_version 2.6.9-55.EL_lustre.1.4.11smp
+		updated_kernel_version 2.6.9-55.EL_lustre-1.4.11smp
 	fi
 	check_for_mount /home
 	check_for_mount /projects
