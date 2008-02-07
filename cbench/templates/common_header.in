@@ -1,5 +1,11 @@
 # NOTE: bash syntax is used here
 
+# spit out some other useful Cbench specific details of this job
+cbench_echo "Cbench test identifier: IDENT_HERE"
+cbench_echo "Cbench CBENCHTEST: CBENCHTEST_HERE"
+cbench_echo "Cbench job path: TESTSET_PATH_HERE/IDENT_HERE/JOBNAME_HERE"
+cbench_echo "Cbench job script: TESTSET_PATH_HERE/IDENT_HERE/JOBNAME_HERE/JOBSCRIPT_HERE"
+
 # We don't want to assume that the batch system or whatever will
 # put us in the directory we want to be in for the job. So, we
 # make sure we are where we expect to be.

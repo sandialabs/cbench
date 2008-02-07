@@ -2080,6 +2080,7 @@ sub std_substitute {
 	$temp = $procs_per_node / $ppn;
 	$string =~ s/NUM_THREADS_PER_PROCESS_HERE/$temp/gs;
 	$string =~ s/JOBNAME_HERE/$jobname/gs;
+	$string =~ s/JOBSCRIPT_HERE/$jobname\.$batch_extension/gs;
 	$string =~ s/BENCHMARK_NAME_HERE/$benchmark/gs;
 	$string =~ s/IDENT_HERE/$ident/gs;
 	$string =~ s/TORQUE_NODESPEC_HERE/$numnodes\:ppn\=$procs_per_node/gs;
