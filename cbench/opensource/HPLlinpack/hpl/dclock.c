@@ -172,7 +172,7 @@ double TCLOCK( void ) {
  * gets CPU time in seconds
  *------------------------------------------------*/
 
-double DSECND() {
+__attribute__((weak)) double DSECND() {
    static int first = 1;
    static double freq;
 
