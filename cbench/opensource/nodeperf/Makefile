@@ -1,15 +1,12 @@
 include ../../make.def
 
-# kind of a hack, but we need $BLASLIB...
-LAdir = $(BENCH_HOME)/opensource/HPLlinpack
-XERBLA =
 SRC = nodeperf.c nodeperf2.c xerbla.c dclock.c
 OBJS = xerbla.o dclock.o
 
 OPFLAGS += -g
 
 INSTALLDIR = $(bin_dir)
-INSTALLTARGETS = nodeperf nodeperf2 nodeperf2-nompi
+INSTALLTARGETS = nodeperf2-nompi nodeperf nodeperf2 
 
 default: $(INSTALLTARGETS)
 
@@ -25,8 +22,11 @@ nodeperf2: $(SRC) $(OBJS)
 nodeperf2-nompi: $(SRC) $(OBJS)
 	$(PLAINCC) $(OPTFLAGS) -DNOMPI -o $@ nodeperf2.c $(OBJS) $(BLASLIB)
 
+xerbla.o:
+	$(PLAINCC) $(OPTFLAGS) -c xerbla.c
+
 dclock.o: dclock.c
-	$(CC) $(OPTFLAGS) -D_LINUX -D_GCC_ -DGETCPUFREQUENCY=get_frequency -DDSECND=dsecnd_ -c dclock.c
+	$(PLAINCC) $(OPTFLAGS) -D_LINUX -D_GCC_ -DGETCPUFREQUENCY=get_frequency -DDSECND=dsecnd_ -c dclock.c
 
 %.o: %.c
 	$(CC) $(OPTFLAGS) -c $<
