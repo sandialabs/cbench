@@ -58,6 +58,7 @@ $Term::ANSIColor::AUTORESET = 1;
 my $num_data_columns = 2;
 my $testset = find_testset_identity($0);
 my $xaxis_ppn = 0;
+my $xaxis_ppn_nodeview = 0;
 
 # this is a string buffer to hold interesting details of what output_parse
 # was asked to do and what data it found. we'll use this later to possibly record
@@ -96,8 +97,11 @@ GetOptions( 'ident=s' => \$ident,
 			'exclude=s' => \$exclude,
 			'minprocs=i' => \$minprocs,
 			'maxprocs=i' => \$maxprocs,
-			'collapse:s' => \$collapse,
 			'procs=i' => \$procs,
+			'minnodes=i' => \$minnodes,
+			'maxnodes=i' => \$maxnodes,
+			'nodes=i' => \$nodes,
+			'collapse:s' => \$collapse,
 			'dplot=s' => \$dplot,
 			'statsmode|statistics' => \$statsmode,
 			'mean|meandata|average' => \$mean,
@@ -110,6 +114,7 @@ GetOptions( 'ident=s' => \$ident,
 			'grepable' => \$grepable,
 			'testset=s' => \$testset,
 			'xaxis_ppn' => \$xaxis_ppn,
+			'xaxis_ppn_nodeview' => \$xaxis_ppn_nodeview, 
 );
 
 if (defined $help) {
@@ -143,7 +148,9 @@ if (defined $dplot) {
 	(defined $DEBUG) and print "DEBUG:dplotparams=@dplotparams\n";
 }
 
+($xaxis_ppn_nodeview) and $xaxis_ppn=1;
 (defined $procs) and ($maxprocs = $procs and $minprocs = $procs);
+(defined $nodes) and ($maxnodes = $nodes and $minnodes = $nodes);
 
 my $normalize_const = 1;
 if (defined $normalize) {
@@ -369,7 +376,14 @@ for $testid (keys %data) {
 			$benchlist{$bench} = 1;
 			for $np (keys %{$data{$testid}{$ppn}{$bench}}) {
 				for $k (keys %{$data{$testid}{$ppn}{$bench}{$np}}) {
-					if ($xaxis_ppn) {
+					if ($xaxis_ppn_nodeview) {
+						# store data for use when ppn is on the x-axis
+						my $ppn_num = $ppn;
+						$ppn_num =~ s/ppn//;
+						my $tmpnodes = calc_num_nodes($np,$ppn_num);
+						$ppndata{$testid}{"$tmpnodes"."node"}{$bench}{$ppn_num} = $data{$testid}{$ppn}{$bench}{$np};
+					}
+					elsif ($xaxis_ppn) {
 						# store data for use when ppn is on the x-axis
 						my $ppn_num = $ppn;
 						$ppn_num =~ s/ppn//;
@@ -704,8 +718,14 @@ sub parse_output_file {
 		(defined $DEBUG and $DEBUG > 1) and print
 			"DEBUG:parse_output_file() bench=$bench extra=$extra jobid=$jobid ident=$testident stdoutfile=$stdout_file\n";
 
+		# filter out based on the --minprocs/--maxprocs flags
 		(defined $minprocs and $np < $minprocs) and next;
 		(defined $maxprocs and $np > $maxprocs) and next;
+		# filter out based on the --minnodes/--maxnodes flags
+		my $numnodes = calc_num_nodes($np,$ppn);
+		(defined $minnodes and $numnodes < $minnodes) and next;
+		(defined $maxnodes and $numnodes > $maxnodes) and next;
+		
 
 		# the default parse module to use for parsing this benchmark is the
 		# module that matches the benchmark name
@@ -1735,6 +1755,10 @@ sub usage {
 			"                    less than or equal to this parameter\n".
 			"   --procs <num>    Only parse jobs who's number of processors is\n".
 			"                    equal to the specified parameter\n".
+			"   --minnodes <num>\n".
+			"   --maxnodes <num>\n".
+			"   --nodes <num>    Same as --maxprocs, --minprocs, --procs but with number\n".
+			"                    of nodes\n".
 			"   --listfound      Print out a list of the key stuff that the output parse\n".
 			"                    work found like test identifiers, data metrics, etc.\n".
 			"   --grepable       Output gathered test data in a grep friendly format\n".
@@ -1747,6 +1771,10 @@ sub usage {
 			"                     and use the currend working directory\n".
 			"   --numcolumns <num>  Number of columns used for text output of parsed data.\n".
 			"                       The default is 2.\n".
-			"   --xaxis_ppn       Put PPN on the x-axis\n".
+			"   --xaxis_ppn          Put PPN on the x-axis and organize the data series\n".
+			"                        with a number of process centric view\n".
+			"   --xaxis_ppn_nodeview Put PPN on the x-axis but organize the data series\n".
+			"                        with a node centric view as opposed to a number of \n".
+			"                        processes centric view\n".
             "   --debug <level>  turn on debugging at the specified level\n";
 }
