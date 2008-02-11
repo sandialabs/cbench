@@ -134,6 +134,8 @@ if (defined $collapse and $collapse eq '') {
 # if stats mode is requested, force a change in behavior from what may have
 # been specified on the command line
 if (defined $statsmode or defined $grepable) {
+	(defined $gnuplot) and warning_print("--gnuplot cannot be used with --statsmode,".
+		" ignoring --gnuplot");
 	undef $mean;
 	undef $max;
 	undef $min;
