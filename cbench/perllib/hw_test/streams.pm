@@ -125,7 +125,13 @@ sub run {
 				"DEBUG:$shortpackage\.run() doing SMALL mode runs\n";			
 		@binlist = `cd $path;ls stream-big-*`;
 	}
-	
+
+	# since streams can be compiled with OpenMP support we want to
+	# set the OMP_NUM_THREADS to the total processing core count
+	# that we detect to run openmp compiled streams binaries optimally
+	my $numcpus = main::linux_num_cpus();
+	$ENV{'OMP_NUM_THREADS'} = $numcpus;
+
 	for my $i (1..$iterations) {
 		for	(@binlist) {
 			chomp $_;

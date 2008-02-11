@@ -137,15 +137,14 @@ sub run {
 		$useable = $useable / 2;
 		$opts = "-s $useable";
 	}
-
-	my $numcpus = main::linux_num_cpus();
 	
 	# since nodeperf can link with optimized BLAS libs and the libs
 	# usually get the best performance using multiple threads within
 	# the lib as opposed to multiple process instances of nodeperf,
 	# we will assume that we only need to start one instance of
 	# nodeperf
-	$ENV{'OMP_NUM_CPUS'} = $numcpus;
+	my $numcpus = main::linux_num_cpus();
+	$ENV{'OMP_NUM_THREADS'} = $numcpus;
 	for my $i (1..$iterations) {
 		for	(@binlist) {
 			chomp $_;
