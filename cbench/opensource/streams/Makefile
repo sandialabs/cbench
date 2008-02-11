@@ -15,6 +15,9 @@ endif
 ifeq ($(COMPILER),gcc)
   EXECS += stream-gcc-c stream-gcc2-c stream-gcc3-c stream-gcc4-c stream-gcc5-c stream-gcc6-c
 endif
+ifeq ($(COMPILER),pgi)
+  EXECS += stream-pgi-c stream-pgi2-c stream-pgi-f stream-pgi2-f stream-pgi3-f stream-pgi-openmp-f stream-pgi2-openmp-f stream-pgi3-openmp-f stream-pgi-openmp-c stream-pgi2-openmp-c stream-pgi3-openmp-c
+endif
 
 MPICH_CH = ch_shmem
 ifeq ($(CBENCH_STANDALONE),yes)
@@ -39,9 +42,6 @@ stream2-f: stream2.f mysecond.o
 stream-mpi: stream_mpi.f $(MYSECOND)
 	$(F77) $(FFLAGS) -o $@ $^
 
-stream-mpi-openmp: stream_mpi.f $(MYSECOND)
-	$(F77) $(FFLAGS) -openmp -o $@ $^
-
 stream-mpi.$(MPICH_CH): stream-mpi
 	/bin/mv -f  stream-mpi stream-mpi.$(MPICH_CH)
 
@@ -51,7 +51,7 @@ stream-big-c: stream_big.c
 stream-big-f: stream_big.f mysecond.o
 	$(F77) $(FFLAGS) -o $@ $^ -lm
 
-# stream binary optimized for GCC
+# stream binary optimized for GCC compilers
 stream-gcc-c: stream_big.c
 	$(PLAINCC) $(COMMON_FLAGS) -O3 -mtune=nocona -o $@ $^ -lm
 stream-gcc2-c: stream_big.c
@@ -66,7 +66,7 @@ stream-gcc6-c: stream_big.f mysecond.o
 	gfortran $(COMMON_FLAGS) -O3 -mtune=nocona -o $@ $^ -lm
 
 
-# stream binaries optimized for Intel
+# stream binaries optimized for Intel compilers
 stream-intel-c: stream_big.c
 	$(PLAINCC) $(COMMON_FLAGS) -O3 -axP -ip -fno-alias -o $@ $^ -lm
 stream-intel2-c: stream_big.c
@@ -76,13 +76,39 @@ stream-intel-f: stream_big.f mysecond.o
 stream-intel2-f: stream_big.f mysecond.o
 	$(PLAINF77) $(COMMON_FLAGS) -O3 -axW -ip -fno-alias -o $@ $^ -lm
 stream-intel-openmp-f: stream.f mysecond.o
-	$(PLAINF77) $(COMMON_FLAGS) -openmp -o $@ $^ -lm
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -ip -openmp -o $@ $^ -lm
 stream-intel2-openmp-f: stream_big.f mysecond.o
-	$(PLAINF77) $(COMMON_FLAGS) -openmp -o $@ $^ -lm
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -ip -openmp -o $@ $^ -lm
 stream-intel-openmp-c: stream.c
-	$(PLAINCC) $(COMMON_FLAGS) -openmp -o $@ $^ -lm
+	$(PLAINCC) $(COMMON_FLAGS) -O3 -ip -openmp -o $@ $^ -lm
 stream-intel2-openmp-c: stream_big.c
-	$(PLAINCC) $(COMMON_FLAGS) -openmp -o $@ $^ -lm
+	$(PLAINCC) $(COMMON_FLAGS) -O3 -ip -openmp -o $@ $^ -lm
+
+# stream binaries optimized for PGI compilers
+stream-pgi-c: stream_big.c
+	$(PLAINCC) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -tp=x64 -o $@ $^ 
+stream-pgi2-c: stream_big.c
+	$(PLAINCC) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -tp=k8-64e -o $@ $^ 
+stream-pgi-f: stream_big.f mysecond.o
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -tp=x64 -o $@ $^ -lm
+stream-pgi2-f: stream_big.f mysecond.o
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -tp=k8-64e -o $@ $^ -lm
+stream-pgi3-f: stream_big.f mysecond.o
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -tp=barcelona-64 -Msmartalloc -o $@ $^ -lm
+stream-pgi-openmp-f: stream.f mysecond.o
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp -o $@ $^ -lm
+stream-pgi2-openmp-f: stream_big.f mysecond.o
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp -o $@ $^ -lm
+stream-pgi3-openmp-f: stream_big.f mysecond.o
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp=numa -o $@ $^ -lm
+stream-pgi-openmp-c: stream.c
+	$(PLAINCC) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp -o $@ $^ 
+stream-pgi2-openmp-c: stream_big.c
+	$(PLAINCC) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp -o $@ $^ 
+stream-pgi3-openmp-c: stream_big.c
+	$(PLAINCC) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp=numa -o $@ $^ -lm
+
+
 
 
 mysecond.o: mysecond.c
