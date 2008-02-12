@@ -59,7 +59,7 @@ endif
 # Global *link time* flags. Flags for increasing maximum executable 
 # size usually go here. 
 #---------------------------------------------------------------------------
-FLINKFLAGS = $(COMMON_FLAGS)
+FLINKFLAGS = $(COMMON_FLAGS) $(OPTFLAGS)
 
 
 #---------------------------------------------------------------------------
@@ -109,7 +109,7 @@ endif
 # Global *link time* flags. Flags for increasing maximum executable 
 # size usually go here. 
 #---------------------------------------------------------------------------
-CLINKFLAGS = $(COMMON_FLAGS)
+CLINKFLAGS = $(COMMON_FLAGS) $(OPTFLAGS)
 
 
 #---------------------------------------------------------------------------
