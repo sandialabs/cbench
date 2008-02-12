@@ -60,6 +60,9 @@ endif
 # size usually go here. 
 #---------------------------------------------------------------------------
 FLINKFLAGS = $(COMMON_FLAGS) $(OPTFLAGS)
+ifeq ($(COMPILER),pgi)
+FLINKFLAGS += -lpgftnrtl -lpgc
+endif
 
 
 #---------------------------------------------------------------------------
