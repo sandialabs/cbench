@@ -66,6 +66,7 @@ GetOptions(
 	'help' => \$help,
 	'redundant' => \$redundant,
 	'joblaunch_extraargs=s' => \$joblaunchargs,
+	'memory_util_factors|mem_factors=s' => \$new_memory_util_factors,
 );
 
 if (defined $help) {
@@ -75,6 +76,12 @@ if (defined $help) {
 
 if (!defined $testset) {
 	$testset = find_testset_identity($0);
+}
+
+if (defined $new_memory_util_factors) {
+	@memory_util_factors = split(',',$new_memory_util_factors);
+	debug_print(1,"DEBUG: overriding memory_util_factors array from command line ".
+		"with @memory_util_factors");
 }
 
 if (defined $joblaunchargs) {
@@ -561,5 +568,8 @@ sub usage {
 		  "                           lightweight initramfs Linux node for instance\n".
 		  "   --redundant      Generate redundant ppn/np combinations (not on by default)\n".
 		  "   --joblaunch_extraargs <args>  Override the joblaunch_extraargs setting in cluster.def\n".
+		  "   --memory_util_factors  Override the cluster.def \@memory_util_factors array.\n".
+		  "                          For example:\n".
+		  "                            --memory_util_factors 0.10,0.77,0.85\n".  
 		  "   --debug <level>  Turn on debugging at the specified level\n";
 }
