@@ -115,6 +115,9 @@ GetOptions( 'ident=s' => \$ident,
 			'testset=s' => \$testset,
 			'xaxis_ppn' => \$xaxis_ppn,
 			'xaxis_ppn_nodeview' => \$xaxis_ppn_nodeview, 
+			'speedup' => \$speedup,
+			'parallelefficiency|peff' => \$paralleleff,
+			'scaledparallelefficiency|speff' => \$scaledpeff,
 );
 
 if (defined $help) {
@@ -154,15 +157,23 @@ if (defined $dplot) {
 (defined $procs) and ($maxprocs = $procs and $minprocs = $procs);
 (defined $nodes) and ($maxnodes = $nodes and $minnodes = $nodes);
 
+# deal with normalization options
+(defined $speedup) and ($normalize = 'minprocdata');
+(defined $paralleleff) and ($normalize = 'numprocs');
+(defined $scaledpeff) and ($normalize = 'minprocdata');
 my $normalize_const = 1;
+my $normalize_dyn = "9999999999999";
 if (defined $normalize) {
 	if ($normalize =~ /const/) {
 		my @tmp = split('=',$normalize);
 		$normalize_const = $tmp[1];
-		(defined $DEBUG) and print "DEBUG:normalize by constant = $normalize_const\n";
+		debug_print(1, "DEBUG:normalize by constant = $normalize_const\n");
 	}
 	elsif ($normalize =~ /numprocs/) {
-		(defined $DEBUG) and print "DEBUG:normalize by number of procs\n";
+		debug_print(1, "DEBUG:normalize by number of procs\n");
+	}
+	elsif ($normalize =~ /minprocdata/) {
+		debug_print(1, "DEBUG:normalize by the datapoint for min process count found\n");
 	}
 }
 
@@ -480,6 +491,7 @@ for $testid (keys %data) {
 				} 
 
 				my $found_some_data = 0;
+				my $first_np_loop_trip = 1;
             	for $np (sort {$a <=> $b} (keys %{$data{$testid}{$ppn}{$bench}}) ) {
                 	if (exists $data{$testid}{$ppn}{$bench}{$np}{'PASSED'} and
 						$data{$testid}{$ppn}{$bench}{$np}{'PASSED'} >= 1 and
@@ -489,6 +501,18 @@ for $testid (keys %data) {
 						$found_some_data = 1;
 						my $statvar = Statistics::Descriptive::Full->new();
 						$statvar->add_data(@{$data{$testid}{$ppn}{$bench}{$np}{$rawmetric}});
+
+						# if we are trying to normalize by the data found for 1 mpi
+						# process we need to look for that and tuck it away
+						if (defined $normalize and $normalize =~ /minprocdata/) {
+							if ($first_np_loop_trip) {
+								my $num = $statvar->mean();
+								debug_print(2,"DEBUG: found minprocdata normalize data, ".
+									"$testid-$ppn-$bench-$np $metric = $num");
+								$normalize_dyn = $num;
+								$first_np_loop_trip = 0;
+							}
+						}
 
 						if (defined $mean) {
 							my $num = $statvar->mean();
@@ -551,6 +575,12 @@ for $testid (keys %data) {
 					}
 				}
 				$column1 += 3;
+
+				# reset the $normalize_data value if we are doing the 
+				# minprocdata normalization, because this will change with
+				# each metric, benchmark, etc....
+				(defined $normalize and $normalize =~ /minprocdata/) and 
+					$normalize_dyn = "9999999999999";
         	}
 		}
     }
@@ -1292,6 +1322,9 @@ sub results_to_gnuplot {
 	if (defined $normalize) {
 		($normalize =~ /numprocs/) and $units .= " / Num Processors";
 		($normalize =~ /const/) and $units .= " / $normalize_const";
+		($normalize =~ /minprocdata/) and $units = "Speedup";
+		($paralleleff) and $units = "Parallel Efficiency";
+		($scaledpeff) and $units = "Scaled Parallel Efficiency";
 	}
 
 	my $xstring = $xaxis_ppn ? "PPN" : "Number of Processors";
@@ -1670,6 +1703,12 @@ sub normalize_value {
 	if ($normalize =~ /const/) {
 		return ($val / $normalize_const);
 	}
+	elsif (defined $scaledpeff and $normalize =~ /minprocdata/) {
+		return ($val / ($np*$normalize_dyn));
+	}
+	elsif ($normalize =~ /minprocdata/) {
+		return ($val / $normalize_dyn);
+	}
 	elsif ($normalize =~ /numprocs/) {
 		return ($val / $np);
 	}
@@ -1736,6 +1775,18 @@ sub usage {
 			"   --normalize <option>   Normalize data in various ways:\n".
 			"               numprocs     normalize by the number of processors\n". 
 			"               const=NUM    normalize by the constant value NUM\n".
+			"               minprocdata  normalize each data series by the data found\n".
+			"                            by the parser at the smallest process count for\n".
+			"                            that data series. For example, if there is a \n".
+			"                            data point at 1 process for a data series, that\n".
+			"                            data point is used to normalize all the data\n".
+			"                            parsed for the series.\n".
+			"   --speedup        Normalize the data to generate speedup information for\n".
+			"                    each data series.  This is equivalent to the --normalize\n".
+			"                    \'minprocdata\' option\n".
+			"   --paralleleff    Normalize the data to show parallel efficiency. This is\n".
+			"                    equivalent to the --normalize \'numprocs\' option\n".
+			"   --scaledparalleleff  Massage the data to show scaled parallel effiency\n".
 			"   --nodata         Don't print out the data tables, just errors\n".
 			"   --filestats      Print out output file info from stat()\n".
             "   --diagnose       Include more data concerning errors and\n".
