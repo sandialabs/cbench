@@ -406,7 +406,7 @@ sub xhpl_gen_init {
 
 	# if we are generating for the shakedown testset, we use low
 	# memory utilization setup for Linpack to speed the testing up
-	if ($testset == "shakedown") {
+	if ($testset eq "shakedown") {
 		@memory_util_factors = (0.45);
 	}
 
