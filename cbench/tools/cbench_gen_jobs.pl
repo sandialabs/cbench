@@ -113,6 +113,10 @@ if (!defined $testdir and $testset =~ /^io|shakedown/) {
 			'init' => 'xhpl_gen_init',
 			'innerloop' => 'xhpl_gen_innerloop',
 		},
+		'hpcc' => {
+			'init' => 'hpcc_gen_init',
+			'innerloop' => 'hpcc_gen_innerloop',
+		},
 		'epetratest' => {
 			'innerloop' => 'trilinos_epetratest_gen_innerloop',
 		},
@@ -405,6 +409,75 @@ sub npb_gen_innerloop {
 	return 0;
 }
 
+sub hpcc_gen_init {
+	my $testset = shift;
+
+	debug_print(3,"DEBUG: entering hpcc_gen_init()\n");
+
+	# if we are generating for the shakedown testset, we use low
+	# memory utilization setup for Linpack to speed the testing up
+	if ($testset eq "shakedown") {
+		@memory_util_factors = (0.45);
+	}
+
+	# read in the hpcc hpccinf.txt config file generation template
+	$file = "$bench_test\/$testset\/hpccinf_txt.in";
+	open (INFILE,"<$file") or die
+		"ERROR:hpcc_gen_init() Could not open $file ($!)";
+	undef $/;
+	$hpccinf_txt = <INFILE>;
+	close(INFILE);
+	$/ = "\n";
+}
+
+sub hpcc_gen_innerloop {
+	my $outbuf = shift;      # a *reference* to the actual $outbuf
+	my $numprocs = shift;
+	my $ppn = shift;
+	my $numnodes = shift;
+	my $runtype = uc shift;
+	my $walltime = shift;
+	my $testset = shift;
+	my $jobname = shift;
+	my $ident = shift;
+	my $job = shift;
+
+	debug_print(3,"DEBUG: entering hpcc_gen_innerloop()\n");
+
+	# We try generating the hpccinf.txt file first so that we can
+	# abort properly if compute_PQ() fails w/o writing any
+	# files.
+	#
+	# now we need to generate the hpccinf.txt file for this job. First,
+	# we need to figure out the N, P, and Q parameters for this
+	# particular job. N is computed based on the total memory available
+	# per processor and a memory utlization factor (or array of factors
+	# which will generate multiple N values for HPL.dat). P and Q are
+	# computed based on the heuristic that HPL "likes" a P:Q ratio
+	# of 1:k with k in [1..3].
+	my ($P, $Q) = compute_PQ($numprocs);
+	if ($P == 0 or $Q == 0) {
+		warning_print("No files generated for hpcc $jobname\n");
+		rmdir "$testset_path\/$ident\/$jobname";
+		return 1;
+	}
+	my @Nvals = compute_N($numprocs,$ppn);
+	my $num_Nvals = @Nvals;
+	$datbuf = $hpccinf_txt;
+	$datbuf =~ s/HPCC_NUM_N_HERE/$num_Nvals/gs;
+	$datbuf =~ s/HPCC_N_HERE/@Nvals/gs;
+	$datbuf =~ s/HPCC_P_HERE/$P/gs;
+	$datbuf =~ s/HPCC_Q_HERE/$Q/gs;
+
+	# write out the generated hpccinf.txt file
+	my $full_test_path = "$testset_path\/$ident\/$jobname\/hpccinf.txt";
+	open (OUTFILE,">$full_test_path") or die
+		"Could not write $full_test_path ($!)";
+	print OUTFILE $datbuf;
+	close(OUTFILE);
+
+	return 0;
+}
 
 sub xhpl_gen_init {
 	my $testset = shift;
