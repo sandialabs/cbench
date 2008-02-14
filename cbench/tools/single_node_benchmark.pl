@@ -533,7 +533,7 @@ if ($tests =~ /npb/ and $run) {
 
 	# generate the test identifier for our npb testing runs
 	my $cmd = "$bench_test/npb/npb_gen_jobs.pl --ident ".$identbase.
-		" --maxprocs $numcores --binident $binident";
+		" --maxprocs $numcores --binident $binident --redundant";
 	runcmd("$cmd",'npb');
 
 	# do our npb testing runs starting with the biggest memory runs first,
