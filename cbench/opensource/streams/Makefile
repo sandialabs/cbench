@@ -16,7 +16,7 @@ ifeq ($(COMPILER),gcc)
   EXECS += stream-gcc-c stream-gcc2-c stream-gcc3-c stream-gcc4-c stream-gcc5-c stream-gcc6-c
 endif
 ifeq ($(COMPILER),pgi)
-  EXECS += stream-pgi-c stream-pgi2-c stream-pgi-f stream-pgi2-f stream-pgi3-f stream-pgi-openmp-f stream-pgi2-openmp-f stream-pgi3-openmp-f stream-pgi-openmp-c stream-pgi2-openmp-c stream-pgi3-openmp-c
+  EXECS += stream-pgi-c stream-pgi2-c stream-pgi-f stream-pgi2-f stream-pgi3-f stream-pgi-openmp-f stream-pgi2-openmp-f stream-pgi3-openmp-f stream-pgi-openmp-c stream-pgi2-openmp-c stream-pgi3-openmp-c stream-pgi4-openmp-c stream-pgi4-openmp-f
 endif
 
 MPICH_CH = ch_shmem
@@ -101,12 +101,18 @@ stream-pgi2-openmp-f: stream_big.f mysecond.o
 	$(PLAINF77) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp -o $@ $^ -lm
 stream-pgi3-openmp-f: stream_big.f mysecond.o
 	$(PLAINF77) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp=numa -o $@ $^ -lm
+#  LLNL streams setup
+stream-pgi4-openmp-f: stream_big.f mysecond.o
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -fastsse -Msmart -Mcache_align -Mvect=sse -Mnontemporal -Munsafe_par_align -mp=align -o $@ $^ -lm
 stream-pgi-openmp-c: stream.c
 	$(PLAINCC) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp -o $@ $^ 
 stream-pgi2-openmp-c: stream_big.c
 	$(PLAINCC) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp -o $@ $^ 
 stream-pgi3-openmp-c: stream_big.c
 	$(PLAINCC) $(COMMON_FLAGS) -O3 -fast -Mipa=fast -mp=numa -o $@ $^ -lm
+#  LLNL streams setup
+stream-pgi4-openmp-c: stream_big.c
+	$(PLAINCC) $(COMMON_FLAGS) -O3 -fastsse -Mcache_align -Mvect=sse -Msmart -Mnontemporal -Munsafe_par_align -mp -o $@ $^ -lm
 
 
 
@@ -116,7 +122,7 @@ mysecond.o: mysecond.c
 
 
 clean:
-	rm -f stream-* stream2-* $(MYSECOND) $(MYSECOND_CC) *.o
+	rm -f stream-* stream2-* $(MYSECOND) $(MYSECOND_CC) *.o *.oo
 
 install uninstall:
 	$(do-$@)
