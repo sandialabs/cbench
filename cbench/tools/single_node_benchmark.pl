@@ -76,8 +76,11 @@ GetOptions(
 
 # find the Cbench testing tree
 my $bench_test = get_bench_test();
-(!defined $binident) and $binident = 'bin';
-my $binpath = "$bench_test/bin.$binident";
+my $bindir = 'bin';
+my $binidentopt = '';
+(defined $binident) and $bindir = "bin.$binident";
+(defined $binident) and $binidentopt = "--binident $binident";
+my $binpath = "$bench_test/$bindir";
 (defined $DEBUG) and print "DEBUG: test tree path = $bench_test\n";
 
 my $hn = `/bin/hostname`;
@@ -159,7 +162,7 @@ if ($report) {
 # streams, via node_hw_test
 if ($tests =~ /streams/ and $run) {
 	logmsg("Starting STREAMS testing");
-	runcmd("$bench_test/nodehwtest/node_hw_test --ident $identbase --binident $binident --match streams --debug 1","streams","overwrite");
+	runcmd("$bench_test/nodehwtest/node_hw_test --ident $identbase $binidentopt --match streams --debug 1","streams","overwrite");
 }
 # parse and report on streams
 if ($report) {
@@ -242,7 +245,7 @@ if ($report) {
 # cachebench, via node_hw_test
 if ($tests =~ /cachebench/ and $run) {
 	logmsg("Starting CACHEBENCH testing");
-	runcmd("$bench_test/nodehwtest/node_hw_test --ident $identbase --binident $binident --match cachebench --debug 1 --dump","cachebench","overwrite");
+	runcmd("$bench_test/nodehwtest/node_hw_test --ident $identbase $binidentopt --match cachebench --debug 1 --dump","cachebench","overwrite");
 }
 # parse and report on cachebench
 if ($report) {
@@ -436,7 +439,7 @@ if ($tests =~ /linpack/ and $run) {
 
 			my $pq = $threads * $processes;
 			my $cmd = "$bench_test/linpack/linpack_gen_jobs.pl --ident ".$identbase."_".
-				$threads."threads --runsizes $processes --binident $binident";
+				$threads."threads --runsizes $processes $binidentopt";
 			#print "$cmd\n";
 			runcmd("$cmd",'linpack');
 		}
@@ -533,7 +536,7 @@ if ($tests =~ /npb/ and $run) {
 
 	# generate the test identifier for our npb testing runs
 	my $cmd = "$bench_test/npb/npb_gen_jobs.pl --ident ".$identbase.
-		" --maxprocs $numcores --binident $binident --redundant";
+		" --maxprocs $numcores $binidentopt --redundant";
 	runcmd("$cmd",'npb');
 
 	# do our npb testing runs starting with the biggest memory runs first,
