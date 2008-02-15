@@ -132,7 +132,7 @@ if ($report) {
 	# cpu/core info
 	my @cpudata = `cat $destdir/$ident/$hn.snb.cpuinfo.out`;
     my %cpumap = linux_parse_cpuinfo(\@cpudata);
-
+print Dumper(%cpumap);
     # decode what the cpumap hash tells us
     foreach (keys %cpumap) {
 		(/model/) and next;
@@ -140,6 +140,11 @@ if ($report) {
         $num_cores_counted += $cpumap{$_}{'cores'};
         $num_logical_cpus += scalar @{$cpumap{$_}{'logical'}};
     }
+	# if no detailed core/socket info was found, fall back to just
+	# simple logical cpu count 
+	if (exists $cpumap{'COUNT'}) {
+		$num_physical_cpus = $num_cores_counted = $cpumap{'COUNT'};
+	}
 
 	$text .= "Number of Physical Processors: $num_physical_cpus\n".
 			"Number of Processing Cores: $num_cores_counted\n";
@@ -500,12 +505,23 @@ if ($report) {
 
 			$data{$nproc}{$nthreads} = $8;
 		}
+
 	}
 	#print Dumper (%data);
+
+	my $out = "$destdir/$ident/$hn.snb.linpack.out";
+	my @rawdata = `cat $out`;
+	my $memfactors = 'unknown';
+	foreach (@rawdata) {
+		if (/MEM_UTIL_FACTORS:\s+(\S+)/) {
+			$memfactors = $1;
+		}
+	}
 
 	build_gnuplot_histogram("linpack","Single Node Linpack Results",
 		"Number of MPI Processes","GigaFlops",\%data);
 	add_section("Single Node Linpack Results");
+	add_text("Memory Utilization Factors Used: $memfactors\n");
 	add_figure("linpack.pdf","Linpack Data","linpack");
 
 	# now, normalize the data by number of MPI processes and build another
