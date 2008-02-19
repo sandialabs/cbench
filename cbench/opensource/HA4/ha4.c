@@ -36,7 +36,7 @@
 /* proto for meminfo (meminfo.c) */
 int meminfo(unsigned long long *, unsigned long long *);
 
-#define SLEEP 5
+#define DEFAULT_SLEEP 5UL
 #define MB (1024UL*1024UL)
 
 /*
@@ -68,20 +68,22 @@ int main (int argc, char **argv) {
         unsigned long long mem = 0;
         unsigned long long swap_used = 0;
         int ret;
+        unsigned long sleepseconds = DEFAULT_SLEEP;
 
         mpicall(MPI_Init, &argc, &argv);
         mpicall(MPI_Comm_size, MPI_COMM_WORLD, &size);
         mpicall(MPI_Comm_rank, MPI_COMM_WORLD, &rank);
 
-        // mre 2005/12/12  - user can override memory footprint
         if (argc > 1)
             megs = strtoul(argv[1], NULL, 10);
 
         pagesize = sysconf(_SC_PAGESIZE);
 
-        // mre 2005/12/12  - user can override "pagesize"
         if (argc > 2)
-            pagesize = strtol(argv[2], NULL, 10);
+            sleepseconds = strtol(argv[2], NULL, 10);
+
+        if (argc > 3)
+            pagesize = strtol(argv[3], NULL, 10);
 
         if ( pagesize == 0 || pagesize == -1 ) {
                 fprintf(stderr, "Cannot determine pagesize on rank %d.  Every byte in array will be touched.\n", rank);
@@ -120,11 +122,11 @@ int main (int argc, char **argv) {
         mpicall(MPI_Barrier, MPI_COMM_WORLD);
 
         if ( rank == 0 ) {
-                printf("success!\nSleeping for %d seconds... ", SLEEP);
+                printf("success!\nSleeping for %d seconds... ", sleepseconds);
                 fflush(stdout);
         }
 
-        sleep(SLEEP);
+        sleep(sleepseconds);
 
         mpicall(MPI_Barrier, MPI_COMM_WORLD);
 
