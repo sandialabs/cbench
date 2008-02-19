@@ -59,6 +59,7 @@ my $num_data_columns = 2;
 my $testset = find_testset_identity($0);
 my $xaxis_ppn = 0;
 my $xaxis_ppn_nodeview = 0;
+my $follow_symlinks = 0;
 
 # this is a string buffer to hold interesting details of what output_parse
 # was asked to do and what data it found. we'll use this later to possibly record
@@ -118,6 +119,7 @@ GetOptions( 'ident=s' => \$ident,
 			'speedup' => \$speedup,
 			'parallelefficiency|peff' => \$paralleleff,
 			'scaledparallelefficiency|speff' => \$scaledpeff,
+			'follow_symlinks' => \$follow_symlinks,
 );
 
 if (defined $help) {
@@ -319,11 +321,11 @@ if (defined $meta) {
 			debug_print(1,"DEBUG: list of idents: ". join(' ',@identlist). " \n");
 			foreach (@identlist) {
 				$basepath = ".\/$_";
-				find(\&parse_output_file, $basepath);
+				find({wanted => \&parse_output_file, follow => $follow_symlinks}, $basepath);
 			}
 		}
 		else {
-			find(\&parse_output_file, $basepath);
+			find({wanted => \&parse_output_file, follow => $follow_symlinks}, $basepath);
 		}
 		chdir $pwd;
 	}
@@ -337,11 +339,11 @@ else {
 		debug_print(1,"DEBUG: list of idents: ". join(' ',@identlist). " \n");
 		foreach (@identlist) {
 			$basepath = ".\/$_";
-			find(\&parse_output_file, $basepath);
+			find({wanted => \&parse_output_file, follow => $follow_symlinks}, $basepath);
 		}
 	}
 	else {
-		find(\&parse_output_file, $basepath);
+		find({wanted => \&parse_output_file, follow => $follow_symlinks}, $basepath);
 	}
 }
 
@@ -1829,5 +1831,7 @@ sub usage {
 			"   --xaxis_ppn_nodeview Put PPN on the x-axis but organize the data series\n".
 			"                        with a node centric view as opposed to a number of \n".
 			"                        processes centric view\n".
+			"   --follow_symlinks  Tell output parser to follow directories that are\n".
+			"                      symbolic links.\n".
             "   --debug <level>  turn on debugging at the specified level\n";
 }
