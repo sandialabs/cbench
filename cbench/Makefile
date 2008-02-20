@@ -34,7 +34,7 @@ OPEN_SUBDIRS = opensource/b_eff opensource/mpi_latency \
                opensource/ior_bench opensource/iozone opensource/rotate \
                opensource/HPLlinpack opensource/IMB opensource/osutests \
                opensource/lanl  opensource/stab \
-               opensource/perftest opensource/mpi_examples opensource/mpi_slowcpu
+               opensource/perftest opensource/mpi_examples opensource/mpi_slowcpu opensource/mpi_malloc
 
 OPENEXTRAS_SUBDIRS = opensource/NPB opensource/hpcc
 
