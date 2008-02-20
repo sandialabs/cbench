@@ -23,7 +23,7 @@
 */
 
 /*
- * MPI program to allocate 0.95 GB per process, for NWCC requirement HA4
+ * MPI program to allocate 1 GB per process (or how ever much you specify)
  * Marcus R. Epperson - 9/2005
  */
 #include <stdio.h>
@@ -42,9 +42,7 @@ int meminfo(unsigned long long *, unsigned long long *);
 /*
  * DEFAULT_SPACE: the size (in MB) to request from the system via malloc
  */
-//#define DEFAULT_SPACE (950UL)      // 0.95 "GB"
-//#define DEFAULT_SPACE (972UL)      // 0.95 GB rounded down
-#define DEFAULT_SPACE (973UL)      // 0.95 GB rounded up
+#define DEFAULT_SPACE (1024UL)
 
 /*
  * All MPI calls wrapped with this so the code doesn't need return value
