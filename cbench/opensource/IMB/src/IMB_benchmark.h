@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -65,7 +65,7 @@ For more documentation than found here, see
 #ifndef __Bmark_h__
 #define __Bmark_h__
 
-
+#include "IMB_mem_info.h"
 
 /* Classification of benchmarks */
 
@@ -85,6 +85,32 @@ typedef struct cmode
           }
         *MODES;
 
+/* IMB 3.1 << */
+  struct iter_schedule
+  {
+  int msgspersample, msgs_nonaggr, overall_vol;
+/* evtl override for default parameters MSGSPERSAMPLE, MSGS_NONAGGR, OVERALL_VOL */
+
+  int n_sample, n_sample_prev;
+
+/* dynamic adaptation eventually */
+  int iter_dyn;     /* bool for request */
+  int* numiters;    /* #iterations in case of -mesglen request */
+  float secs;       /* max. seconds to run if dynamic requested */
+
+/* if off-cache is requested: */
+  int off_cache;     /* global bool for request */
+  int use_off_cache; /* per benchmark bool for request */
+  float cache_size;
+  int cache_line_size;
+  int s_cache_iter;  /* no. of send buffers needed to sufficiently exceed cache size */
+  int s_offs;        /* offset between send buffers to not hit same cache line */
+  int r_cache_iter;  /*            dto for recv - buffers              */
+  int r_offs;        /*            dto for recv - buffers              */
+  };
+
+/* >> IMB 3.1  */
+
 #define X_MODES 2
 
 typedef enum { put, get, no } DIRECTION;
@@ -96,10 +122,15 @@ typedef enum { nothing=-1,private, explicit, indv_block, indv_cyclic, shared }
 #else
 
 typedef int POSITIONING;
+#define nothing -1
 
 #endif
 
 /* Descriptor for benchmarks */
+/* IMB 3.1 << */
+// failure flags for single samples
+#define SAMPLE_FAILED_MEMORY -111111
+/* >> IMB 3.1  */
 
 struct Bench
   {
@@ -114,13 +145,18 @@ struct Bench
   struct cmode RUN_MODES[X_MODES];
 
   void (*Benchmark)(struct comm_info* c_info,int size,
-                    int n_sample,MODES RUN_MODE,double* time);
+/* IMB 3.1 << */
+                    struct iter_schedule* ITERATIONS,MODES RUN_MODE,double* time);
+/* >> IMB 3.1  */
                                /* Pointer to function runnning the benchmark */
 
   double scale_time, scale_bw; /* Scaling of timings and bandwidth */
   int Ntimes;
-
+/* IMB 3.1 << */
+  int sample_failure;
+// only for -DCHECK purposes: 
   int success;
+/* >> IMB 3.1  */
 
 #ifdef MPIIO
   POSITIONING fpointer;

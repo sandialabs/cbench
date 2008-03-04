@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -75,6 +75,10 @@ char *DEFC[] = {
   ,"Reduce_scatter" 
   ,"Allgather" 
   ,"Allgatherv" 
+  ,"Gather" 
+  ,"Gatherv" 
+  ,"Scatter" 
+  ,"Scatterv" 
   ,"Alltoall"
   ,"Alltoallv"
   ,"Bcast" 

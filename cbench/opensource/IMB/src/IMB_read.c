@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -79,9 +79,20 @@ For more documentation than found here, see
  
 /*************************************************************************/
 
+/* ===================================================================== */
+/* 
+IMB 3.1 changes
+July 2007
+Hans-Joachim Plum, Intel GmbH
+
+- replace "int n_sample" by iteration scheduling object "ITERATIONS"
+  (see => IMB_benchmark.h)
+
+*/
+/* ===================================================================== */
 
 
-void IMB_read_shared(struct comm_info* c_info, int size, int n_sample, 
+void IMB_read_shared(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                      MODES RUN_MODE, double* time)
 /*
 
@@ -101,8 +112,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -117,10 +128,12 @@ Output variables:
 
 */
 {
+if( c_info->File_rank>=0 )
+{
 if( RUN_MODE->AGGREGATE )
-IMB_read_ij(c_info, size, shared, RUN_MODE->type, 1, n_sample, 1, time);
+IMB_read_ij(c_info, size, shared, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, time);
 else
-IMB_read_ij(c_info, size, shared, RUN_MODE->type, n_sample, 1, 0, time);
+IMB_read_ij(c_info, size, shared, RUN_MODE->type, ITERATIONS->n_sample, 1, 0, time);
 
 if( RUN_MODE->NONBLOCKING )
 {
@@ -128,17 +141,18 @@ MPI_File_close(&c_info->fh);
 IMB_open_file(c_info);
 
 if( RUN_MODE->AGGREGATE )
-IMB_iread_ij(c_info, size, shared, RUN_MODE->type, 1, n_sample, 1, 1, time+1);
+IMB_iread_ij(c_info, size, shared, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, 1, time+1);
 else
-IMB_iread_ij(c_info, size, shared, RUN_MODE->type,  n_sample, 1, 0, 1, time+1);
+IMB_iread_ij(c_info, size, shared, RUN_MODE->type,  ITERATIONS->n_sample, 1, 0, 1, time+1);
 }
 
+}
 }
  
 /*************************************************************************/
 
 
-void IMB_read_indv(struct comm_info* c_info, int size, int n_sample, 
+void IMB_read_indv(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                    MODES RUN_MODE, double* time)
 /*
 
@@ -158,8 +172,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -175,10 +189,12 @@ Output variables:
 */
 {
 
+if( c_info->File_rank>=0 )
+{
 if( RUN_MODE->AGGREGATE )
-IMB_read_ij(c_info, size, indv_block, RUN_MODE->type, 1, n_sample, 1, time);
+IMB_read_ij(c_info, size, indv_block, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, time);
 else
-IMB_read_ij(c_info, size, indv_block, RUN_MODE->type, n_sample, 1, 0, time);
+IMB_read_ij(c_info, size, indv_block, RUN_MODE->type, ITERATIONS->n_sample, 1, 0, time);
 
 if( RUN_MODE->NONBLOCKING )
 {
@@ -186,18 +202,18 @@ MPI_File_close(&c_info->fh);
 IMB_open_file(c_info);
 
 if( RUN_MODE->AGGREGATE )
-IMB_iread_ij(c_info, size, indv_block, RUN_MODE->type, 1, n_sample, 1, 1, time+1);
+IMB_iread_ij(c_info, size, indv_block, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, 1, time+1);
 else
-IMB_iread_ij(c_info, size, indv_block, RUN_MODE->type,  n_sample, 1, 0, 1, time+1);
+IMB_iread_ij(c_info, size, indv_block, RUN_MODE->type,  ITERATIONS->n_sample, 1, 0, 1, time+1);
+
+}
+}
 
 }
 
 
-}
 
-
-
-void IMB_read_expl(struct comm_info* c_info, int size, int n_sample, 
+void IMB_read_expl(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                    MODES RUN_MODE, double* time)
 /*
 
@@ -217,8 +233,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -233,10 +249,12 @@ Output variables:
 
 */
 {
+if( c_info->File_rank>=0 )
+{
 if( RUN_MODE->AGGREGATE )
-IMB_read_ij(c_info, size, explicit, RUN_MODE->type, 1, n_sample, 1, time);
+IMB_read_ij(c_info, size, explicit, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, time);
 else
-IMB_read_ij(c_info, size, explicit, RUN_MODE->type, n_sample, 1, 0, time);
+IMB_read_ij(c_info, size, explicit, RUN_MODE->type, ITERATIONS->n_sample, 1, 0, time);
 
 if( RUN_MODE->NONBLOCKING )
 {
@@ -244,11 +262,11 @@ MPI_File_close(&c_info->fh);
 IMB_open_file(c_info);
 
 if( RUN_MODE->AGGREGATE )
-IMB_iread_ij(c_info, size, explicit, RUN_MODE->type, 1, n_sample, 1, 1, time+1);
+IMB_iread_ij(c_info, size, explicit, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, 1, time+1);
 else
-IMB_iread_ij(c_info, size, explicit, RUN_MODE->type,  n_sample, 1, 0, 1, time+1);
+IMB_iread_ij(c_info, size, explicit, RUN_MODE->type,  ITERATIONS->n_sample, 1, 0, 1, time+1);
 }
-
+}
 }
 
 
@@ -316,7 +334,6 @@ int i, j;
 int Locsize, Totalsize;
 MPI_Status stat;
 MPI_Offset Offset;
-
 
 int (* GEN_File_read)(MPI_File fh, void* buf, int count, 
                        MPI_Datatype datatype, MPI_Status *status);
@@ -453,7 +470,7 @@ if( time_inner ) *time = (MPI_Wtime()-*time)/(i_sample*j_sample);
 
 if( !time_inner ) *time = (MPI_Wtime() - *time)/(i_sample*j_sample);
 
-} /* end if FIle_rank >= 0 */
+} /* end if File_rank >= 0 */
 
 }
 
@@ -710,11 +727,11 @@ if( time_inner ) *time = (MPI_Wtime()-*time)/(i_sample*j_sample);
 
 if( !time_inner ) *time = (MPI_Wtime() - *time)/(i_sample*j_sample);
 
-free (REQUESTS);
-free (STAT);    
+IMB_v_free ((void**)&REQUESTS);
+IMB_v_free ((void**)&STAT);    
 
 } /* end if type */
 
-} /* end if FIle_rank >= 0 */
+} /* end if File_rank >= 0 */
 
 }

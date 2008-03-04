@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -111,7 +111,9 @@ IMB_ass_buf( BUF, 0, pos1, pos2, 1);
 
 
 
-int IMB_init_file(struct comm_info* c_info, struct Bench* Bmark, int NP)
+/* << IMB 3.1 */
+int IMB_init_file(struct comm_info* c_info, struct Bench* Bmark, struct iter_schedule* ITERATIONS, int NP)
+/* >> IMB 3.1 */
 /*
 
 
@@ -124,6 +126,9 @@ Input variables:
                       see [1] for more information)
                       
                       Given file i/o benchmark
+
+-ITERATIONS           (type struct iter_schedule *)                      
+                      Repetition scheduling
                       
 
 -NP                   (type int)                      
@@ -237,20 +242,33 @@ else
 
   if( Bmark->access == no ) return 0;
 
+  IMB_del_file(c_info); // if exists
 
   if( c_info -> File_rank == 0 )
    {
 
-   int ierr, size, total;
+   int ierr, size, total, i;
    MPI_Status stat;
 
-   IMB_del_file(c_info);
 
+/* << IMB 3.1. fixes of size */
+   if( c_info->n_lens>0 )
+   {
+   size=0;
+   for(i=0; i< c_info->n_lens; i++ )
+    size = max(size,c_info->msglen[i]);
+   }
+   else
+   {
    size=1<<MAXMSGLOG;
-   total = max(size,OVERALL_VOL);
+   }
+   total = max(size,ITERATIONS->overall_vol);
 
-   if( OVERALL_VOL/size > MSGSPERSAMPLE )
+   if( ITERATIONS->overall_vol/size > MSGSPERSAMPLE )
        total = size*MSGSPERSAMPLE;
+
+/* >> IMB 3.1 */
+
 /* July 2002 fix V2.2.1: calculation of file sizes in "priv" case */
    if ( Bmark->fpointer == private ) 
     {
@@ -330,8 +348,8 @@ In/out variables:
 
 */
 {
-if( c_info->filename != (char*)NULL ) free(c_info->filename);
-if( c_info->datarep  != (char*)NULL ) free(c_info->datarep );
+if( c_info->filename != (char*)NULL ) IMB_v_free((void**)&c_info->filename);
+if( c_info->datarep  != (char*)NULL ) IMB_v_free((void**)&c_info->datarep );
 if( c_info->filename != (char*)NULL )
 if( c_info->view     != MPI_DATATYPE_NULL ) 
                         MPI_Type_free(&c_info->view);
@@ -366,17 +384,26 @@ In/out variables:
 
 */
 {
-
+if ( c_info->File_comm != MPI_COMM_NULL )
+{
 if( c_info-> fh != MPI_FILE_NULL ) MPI_File_close(&c_info->fh);
+MPI_Barrier(c_info->File_comm);
 
-if( c_info->filename != (char*)NULL )
+if ( c_info->filename != (char*)NULL )
 {
 if( c_info->File_rank == 0 )
   {
-   int ierr;
+// touch file
+ierr = MPI_File_open(MPI_COMM_SELF, c_info->filename,
+                     c_info->amode, MPI_INFO_NULL, &c_info->fh);
+
+if( c_info-> fh != MPI_FILE_NULL ) MPI_File_close(&c_info->fh);
+
 /* IMB_3.0: simplify file deletion */
-   ierr=MPI_File_delete(c_info->filename,MPI_INFO_NULL);
+ierr=MPI_File_delete(c_info->filename,MPI_INFO_NULL);
   }
+}
+MPI_Barrier(c_info->File_comm);
 }
 }
 

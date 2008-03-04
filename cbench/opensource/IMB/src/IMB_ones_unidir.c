@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -82,9 +82,22 @@ For more documentation than found here, see
 /*************************************************/
 
 
+/* ===================================================================== */
+/* 
+IMB 3.1 changes
+July 2007
+Hans-Joachim Plum, Intel GmbH
+
+- replace "int n_sample" by iteration scheduling object "ITERATIONS"
+  (see => IMB_benchmark.h)
+
+- proceed with offsets in send / recv buffers to eventually provide
+  out-of-cache data
+*/
+/* ===================================================================== */
 
 
-void IMB_unidir_put (struct comm_info* c_info, int size, int n_sample, 
+void IMB_unidir_put (struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                      MODES RUN_MODE, double* time)
 /*
 
@@ -104,8 +117,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)                      
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -152,13 +165,13 @@ Output variables:
      IMB_ones_put(  c_info,
                 s_num, dest, 
                 r_num, sender,
-                size, n_sample, 
+                size, ITERATIONS,
                 time);
   if( RUN_MODE->AGGREGATE )
      IMB_ones_mput( c_info,
                 s_num, dest, 
                 r_num, sender,
-                size, n_sample, 
+                size, ITERATIONS,
                 time);
 
 }
@@ -167,7 +180,7 @@ Output variables:
 
 
 
-void IMB_unidir_get (struct comm_info* c_info, int size, int n_sample, 
+void IMB_unidir_get (struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                      MODES RUN_MODE, double* time)
 /*
 
@@ -187,8 +200,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -236,13 +249,13 @@ Output variables:
      IMB_ones_get(  c_info,
                 s_num, dest, 
                 r_num, sender,
-                size, n_sample, 
+                size, ITERATIONS,
                 time);
   if( RUN_MODE->AGGREGATE )
      IMB_ones_mget( c_info,
                 s_num, dest, 
                 r_num, sender,
-                size, n_sample, 
+                size, ITERATIONS,
                 time);
   
 }
@@ -252,7 +265,7 @@ Output variables:
 
 void IMB_ones_get(struct comm_info* c_info, int s_num, int dest, 
                   int r_num, int sender, int size, 
-                  int n_sample, double* time)
+                  struct iter_schedule *ITERATIONS, double* time)
 /*
 
                       
@@ -268,7 +281,7 @@ Input variables:
                       
 
 -s_num                (type int)                      
-                      #bytes to put if relevant for calling process 
+                      #buffer entries to put if relevant for calling process 
                       
 
 -dest                 (type int)                      
@@ -276,7 +289,7 @@ Input variables:
                       
 
 -r_num                (type int)                      
-                      #bytes to get if relevant for calling process 
+                      #buffer entries to get if relevant for calling process 
                       
 
 -sender               (type int)                      
@@ -287,9 +300,9 @@ Input variables:
                       Basic message size in bytes
                       
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
-                      
+-ITERATIONS           (type struct iter_schedule *)                      
+                      Repetition scheduling
+
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -327,7 +340,7 @@ for(i=0; i<N_BARR; i++) MPI_Barrier(c_info->communicator);
 if( sender ) 
 {
 
-for(i=0;i< n_sample;i++)
+for(i=0;i< ITERATIONS->n_sample;i++)
 	{
 
 /* "Send ", i.e. synchronize window */
@@ -340,27 +353,29 @@ for(i=0;i< n_sample;i++)
 else
 {
 
-for(i=0;i< n_sample;i++)
+for(i=0;i< ITERATIONS->n_sample;i++)
 	{
 
 /* "Receive" */
-       ierr = MPI_Get(c_info->r_buffer, r_num, c_info->r_data_type,
-                      dest, i*s_num, s_num, c_info->s_data_type, c_info->WIN);
+       ierr = MPI_Get((char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
+                      r_num, c_info->r_data_type,
+                      dest, i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
+                      s_num, c_info->s_data_type, c_info->WIN);
        ierr = MPI_Win_fence(0, c_info->WIN);
 
        MPI_ERRHAND(ierr);
 
        DIAGNOSTICS("MPI_Get: ",c_info,c_info->r_buffer,r_num,r_num,i,0);
 
-       CHK_DIFF("MPI_Get",c_info, c_info->r_buffer, i*r_num,
+       CHK_DIFF("MPI_Get",c_info, (void*)((char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs),0,
                  size, size, asize,
-                 get, 0, n_sample, i,
+                 get, 0, ITERATIONS->n_sample, i,
                  dest, &defect);
 	}
 
 }
 
-*time=(MPI_Wtime()-*time)/n_sample;
+*time=(MPI_Wtime()-*time)/ITERATIONS->n_sample;
 
 }
 }
@@ -370,7 +385,7 @@ for(i=0;i< n_sample;i++)
 
 void IMB_ones_mget(struct comm_info* c_info, int s_num, int dest, 
                    int r_num, int sender, int size, 
-                   int n_sample, double* time)
+                   struct iter_schedule* ITERATIONS, double* time)
 /*
 
                       
@@ -386,7 +401,7 @@ Input variables:
                       
 
 -s_num                (type int)                      
-                      #bytes to put if relevant for calling process 
+                      #buffer entries to put if relevant for calling process 
                       
 
 -dest                 (type int)                      
@@ -394,7 +409,7 @@ Input variables:
                       
 
 -r_num                (type int)                      
-                      #bytes to get if relevant for calling process 
+                      #buffer entries to get if relevant for calling process 
                       
 
 -sender               (type int)                      
@@ -405,9 +420,9 @@ Input variables:
                       Basic message size in bytes
                       
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
-                      
+-ITERATIONS           (type struct iter_schedule *)                      
+                      Repetition scheduling
+
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -445,23 +460,30 @@ for(i=0; i<N_BARR; i++) MPI_Barrier(c_info->communicator);
 *time = MPI_Wtime();
 
 if( !sender )
-for(i=0;i< n_sample;i++)
+for(i=0;i< ITERATIONS->n_sample;i++)
 	{
-        ierr = MPI_Get((void*)(recv+i*r_num), r_num, c_info->r_data_type,
-                       dest, i*s_num, s_num, c_info->s_data_type, c_info->WIN);
+        ierr = MPI_Get((void*)(recv+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs), 
+                       r_num, c_info->r_data_type,
+                       dest, i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
+                       s_num, c_info->s_data_type, c_info->WIN);
 	}
 
 ierr = MPI_Win_fence(0, c_info->WIN);
 MPI_ERRHAND(ierr);
 
-*time=(MPI_Wtime()-*time)/n_sample;
+*time=(MPI_Wtime()-*time)/ITERATIONS->n_sample;
 
 #ifdef CHECK
 if(!sender)
-       CHK_DIFF("MPI_Get",c_info, c_info->r_buffer, 0,
-                 n_sample*r_num, n_sample*r_num, asize,
-                 get, 0, n_sample, i,
+{
+for(i=0;i< ITERATIONS->n_sample;i++)
+	{
+       CHK_DIFF("MPI_Get",c_info, (void*)((char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs),0,
+                 size, size, asize,
+                 get, 0, ITERATIONS->n_sample, i,
                  dest, &defect);
+        }
+}
 #endif
 
 }
@@ -472,7 +494,7 @@ if(!sender)
 
 void IMB_ones_put(struct comm_info* c_info, int s_num, int dest, 
                   int r_num, int sender, int size, 
-                  int n_sample, double* time)
+                  struct iter_schedule* ITERATIONS,  double* time)
 /*
 
                       
@@ -488,7 +510,7 @@ Input variables:
                       
 
 -s_num                (type int)                      
-                      #bytes to put if relevant for calling process 
+                      #buffer entries to put if relevant for calling process 
                       
 
 -dest                 (type int)                      
@@ -496,7 +518,7 @@ Input variables:
                       
 
 -r_num                (type int)                      
-                      #bytes to get if relevant for calling process 
+                      #buffer entries to get if relevant for calling process 
                       
 
 -sender               (type int)                      
@@ -507,9 +529,9 @@ Input variables:
                       Basic message size in bytes
                       
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
-                      
+-ITERATIONS           (type struct iter_schedule *)                      
+                      Repetition scheduling
+
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -549,13 +571,15 @@ for(i=0; i<N_BARR; i++) MPI_Barrier(c_info->communicator);
 if( sender ) 
 {
 
-for(i=0;i< n_sample;i++)
+for(i=0;i< ITERATIONS->n_sample;i++)
 	{
 
 /* Send */
 
-       ierr = MPI_Put(c_info->s_buffer, s_num, c_info->s_data_type,
-                      dest, i*r_num, r_num, c_info->r_data_type, c_info->WIN);
+       ierr = MPI_Put((char*)c_info->s_buffer+i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
+                      s_num, c_info->s_data_type,
+                      dest, i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
+                      r_num, c_info->r_data_type, c_info->WIN);
 
        ierr = MPI_Win_fence(0, c_info->WIN);
        MPI_ERRHAND(ierr);
@@ -565,7 +589,7 @@ for(i=0;i< n_sample;i++)
 else
 {
 
-for(i=0;i< n_sample;i++)
+for(i=0;i< ITERATIONS->n_sample;i++)
 	{
 
 /* "Receive", i.e. synchronize the window */
@@ -574,15 +598,15 @@ for(i=0;i< n_sample;i++)
 
        DIAGNOSTICS("MPI_Put: ",c_info,c_info->r_buffer,r_num,r_num,i,0);
 
-       CHK_DIFF("MPI_Put",c_info, (void*)(recv+i*r_num), 0,
+       CHK_DIFF("MPI_Put",c_info, (void*)(recv+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs), 0,
                  size, size, asize,
-                 get, 0, n_sample, i,
+                 get, 0, ITERATIONS->n_sample, i,
                  dest, &defect);
 
         }
 }
 
-*time=(MPI_Wtime()-*time)/n_sample;
+*time=(MPI_Wtime()-*time)/ITERATIONS->n_sample;
 
 }
 }
@@ -592,7 +616,7 @@ for(i=0;i< n_sample;i++)
 
 void IMB_ones_mput(struct comm_info* c_info, int s_num, int dest, 
                    int r_num, int sender, int size, 
-                   int n_sample, double* time)
+                   struct iter_schedule* ITERATIONS, double* time)
 /*
 
                       
@@ -608,7 +632,7 @@ Input variables:
                       
 
 -s_num                (type int)                      
-                      #bytes to put if relevant for calling process 
+                      #buffer entries to put if relevant for calling process 
                       
 
 -dest                 (type int)                      
@@ -616,7 +640,7 @@ Input variables:
                       
 
 -r_num                (type int)                      
-                      #bytes to get if relevant for calling process 
+                      #buffer entries to get if relevant for calling process 
                       
 
 -sender               (type int)                      
@@ -627,9 +651,9 @@ Input variables:
                       Basic message size in bytes
                       
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
-                      
+-ITERATIONS           (type struct iter_schedule *)                      
+                      Repetition scheduling
+
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -647,7 +671,7 @@ Output variables:
 */
 {
 int i, ierr;
-char* send;
+char* send, *recv;
 
 #ifdef CHECK 
 defect=0;
@@ -658,6 +682,7 @@ if( c_info-> rank < 0 )
 else
 {
 send = (char*)c_info->s_buffer;
+recv = (char*)c_info->r_buffer;
 
 ierr = MPI_Win_fence(0, c_info->WIN);
 MPI_ERRHAND(ierr);
@@ -667,24 +692,28 @@ for(i=0; i<N_BARR; i++) MPI_Barrier(c_info->communicator);
 *time = MPI_Wtime();
 
 if( sender )
-for(i=0;i< n_sample;i++)
+for(i=0;i< ITERATIONS->n_sample;i++)
 	{
-          ierr = MPI_Put((void*)(send+i*s_num), s_num, c_info->s_data_type,
-                         dest, i*r_num, r_num, c_info->r_data_type, c_info->WIN);
+          ierr = MPI_Put((void*)(send+i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs),
+                         s_num, c_info->s_data_type,
+                         dest, i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
+                         r_num, c_info->r_data_type, c_info->WIN);
           MPI_ERRHAND(ierr);
-
 	}
 
 ierr = MPI_Win_fence(0, c_info->WIN);
 MPI_ERRHAND(ierr);
 
-*time=(MPI_Wtime()-*time)/n_sample;
+*time=(MPI_Wtime()-*time)/ITERATIONS->n_sample;
 
 if(!sender)
-       CHK_DIFF("MPI_Put",c_info, c_info->r_buffer, 0,
-                 n_sample*r_num, n_sample*r_num, asize,
-                 get, 0, n_sample, -1,
+for(i=0;i< ITERATIONS->n_sample;i++)
+	{
+       CHK_DIFF("MPI_Put",c_info, (void*)(recv+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs), 0,
+                 size, size, asize,
+                 get, 0, ITERATIONS->n_sample, i,
                  dest, &defect);
+}
 
 }
 }

@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -77,9 +77,22 @@ For more documentation than found here, see
 
 /*************************************************************************/
 
+/* ===================================================================== */
+/* 
+IMB 3.1 changes
+July 2007
+Hans-Joachim Plum, Intel GmbH
+
+- replace "int n_sample" by iteration scheduling object "ITERATIONS"
+  (see => IMB_benchmark.h)
+
+- proceed with offsets in send / recv buffers to eventually provide
+  out-of-cache data
+*/
+/* ===================================================================== */
 
 
-void IMB_bcast(struct comm_info* c_info, int size, int n_sample, 
+void IMB_bcast(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                MODES RUN_MODE, double* time)
 /*
 
@@ -99,8 +112,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       (only MPI-2 case: see [1])
@@ -137,24 +150,25 @@ defect=0.;
 
 
       t1 = MPI_Wtime();
-      for(i=0;i< n_sample;i++)
+      for(i=0;i< ITERATIONS->n_sample;i++)
 	{
 /* Provide that s_buffer is not overwritten */
           bc_buf = (i1 == c_info->rank) ? c_info->s_buffer : c_info->r_buffer;
-	  ierr= MPI_Bcast(bc_buf,s_num,c_info->s_data_type,
+	  ierr= MPI_Bcast((char*)bc_buf+i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
+                          s_num,c_info->s_data_type,
 			  i1,c_info->communicator);
 	  MPI_ERRHAND(ierr);
 
-          CHK_DIFF("Allgather",c_info, bc_buf, 0,
-                   size, size, 1, 
-                   put, 0, n_sample, i,
+          CHK_DIFF("Allgather",c_info, (char*)bc_buf+i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
+                   0, size, size, 1, 
+                   put, 0, ITERATIONS->n_sample, i,
                    i1, &defect);
 
 	  /*  CHANGE THE ROOT NODE */
 	  i1=(++i1)%c_info->num_procs;
 	}
       t2 = MPI_Wtime();
-      *time=(t2 - t1)/(n_sample);
+      *time=(t2 - t1)/(ITERATIONS->n_sample);
     }
   else
     { 

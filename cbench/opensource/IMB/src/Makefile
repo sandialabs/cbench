@@ -1,26 +1,16 @@
 feedback:
 	@echo " "
-	@echo "IMB_3.0 does not have a default Makefile any more."
+	@echo "IMB_3.1 does not have a default Makefile any more."
 	@echo "This Makefile can be used to"
 	@echo " "
-	@echo "make clean"
+	@echo "nmake clean"
 	@echo " "
 	@echo "For installing, please use:"
 	@echo " "
-	@echo "make -f make_ict"
+	@echo "nmake -f make_ict_win"
 	@echo " "
 	@echo "to install the Intel(r) Cluster Tools (ict) version."
-	@echo "When an Intel(r) MPI Library install and mpiicc path exists,"
-	@echo "this should work immediately."
-	@echo " "
-	@echo "Alternatively, use "
-	@echo " "
-	@echo "make -f make_mpich"
-	@echo " "
-	@echo "to install an mpich or similar version; for this,"
-	@echo "you normally have to edit at least the MPI_HOME"
-	@echo "variable provided in make_mpich"
 	@echo " "
 
 clean:
-	/bin/rm -f *.o *~ PI* core IMB-IO IMB-EXT IMB-MPI1 exe_io exe_ext exe_mpi1
+	del /f /q *.obj *~ PI* core IMB-IO.exe IMB-EXT.exe IMB-MPI1.exe exe_io exe_ext exe_mpi1 IMB_out IMB_out_*

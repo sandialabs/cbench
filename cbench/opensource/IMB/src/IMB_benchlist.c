@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -170,9 +170,9 @@ while( def_cases[*index] )
    char* TMP1 = IMB_str(def_cases[*index]), *TMP2 = IMB_str(name);
    IMB_lwr(TMP1); IMB_lwr(TMP2);
    if(!strcmp(TMP1,TMP2)) 
-     {free(TMP1); free(TMP2); break;}
+     {IMB_v_free((void**)&TMP1); IMB_v_free((void**)&TMP2); break;}
    (*index)++;
-   free(TMP1); free(TMP2);
+   IMB_v_free((void**)&TMP1); IMB_v_free((void**)&TMP2);
    }
 
 /* IMB_3.0
@@ -266,6 +266,9 @@ Output variables:
  Bmark->scale_time = 1.0;
  Bmark->scale_bw   = 1.0;
  Bmark->success    = 1;
+/* IMB 3.1 << */
+ Bmark->sample_failure = 0;
+/* >> IMB 3.1  */
  
  IMB_set_bmark(Bmark);
 
@@ -277,8 +280,8 @@ Output variables:
  }
  (*P_BList)[n_cases].name=NULL;
 
- free(Bname);
- free (List);
+ IMB_v_free((void**)&Bname);
+ IMB_v_free ((void**)&List);
 
 }
 
@@ -316,9 +319,9 @@ int i;
 i=0;
 while( (*P_BList)[i].name )
   {
-  free ((*P_BList)[i++].name);
+  IMB_v_free ((void**)&((*P_BList)[i++].name));
   }
-free(*P_BList);
+IMB_v_free((void**)P_BList);
 }
 }
 
@@ -374,7 +377,7 @@ while( BList[j].name )
           fprintf(unit,"\n# Attention, invalid benchmark name(s):\n");
      
           fprintf(unit,"# %s\n",BList[j].name);
-          free (BList[j].name);
+          IMB_v_free ((void**)&(BList[j].name));
           BList[j].name = IMB_str("");
      }
   j++;
@@ -383,8 +386,10 @@ while( BList[j].name )
 /* IMB_3.0 */
 if( ninvalid>0 )
 {
-fprintf(unit,"\n# List of valid benchmarks:\n#\n");
+/* IMB 3.1 << */
 int i=0;
+fprintf(unit,"\n# List of valid benchmarks:\n#\n");
+/* >> IMB 3.1  */
 while( def_cases[i] ){fprintf(unit,"# %s\n",def_cases[i++]);}
 }
 

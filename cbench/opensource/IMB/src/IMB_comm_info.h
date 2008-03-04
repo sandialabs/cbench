@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -104,6 +104,10 @@ int   s_alloc;             /* #bytes allocated in s_buffer            */
 void* r_buffer;            /* receive buffer                          */
 assign_type* r_data;       /* assign_type equivalent of r_buffer      */
 int   r_alloc;             /* #bytes allocated in r_buffer            */
+/* IMB 3.1 << */
+float max_mem, used_mem;   /* max. allowed / used GBytes for all      */
+                           /* message  buffers                        */
+/* >> IMB 3.1  */
 
 int n_lens;                /* # of selected lengths by -msglen option */
 int* msglen;               /* list of  "       "                  "   */

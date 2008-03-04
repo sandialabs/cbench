@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -86,6 +86,10 @@ For more documentation than found here, see
 #include "IMB_declare.h"
 #include "IMB_benchmark.h"
 
+/* IMB 3.1 << */
+#include "IMB_mem_info.h"
+/* >> IMB 3.1  */
+
 #include "IMB_prototypes.h"
 
 /********************************************************************/
@@ -127,10 +131,22 @@ else ok=0;
 return ok;
 }
 
-#define N_baseinfo 8
+#define N_baseinfo 13
+/* IMB 3.1 << */
+#define N_base_f_info 3  /* for float data */
+/* >> IMB 3.1  */
 
-int IMB_basic_input(struct comm_info* c_info, struct Bench** P_BList, int *argc, 
-                    char ***argv, int* NP_min)
+/* IMB 3.1 << */
+/*
+   new "ITERATIONS" object for repetition count scheduling 
+ 
+   major changes in interpreting the command line
+*/
+
+int IMB_basic_input(struct comm_info* c_info, struct Bench** P_BList, 
+                    struct iter_schedule* ITERATIONS,
+                    int *argc, char ***argv, int* NP_min)
+/* >> IMB 3.1  */
 /*
 
 
@@ -173,6 +189,9 @@ Output variables:
   int deflt;
   int * ALL_INFO;
   char** DEFC, **CMT;
+/* IMB 3.1 << */
+  float ALL_F_INFO[N_base_f_info];
+/* >> IMB 3.1  */
 
   int ok;
 /* IMB_3.0 */
@@ -180,6 +199,18 @@ Output variables:
   help_only=0;
 
   *P_BList = (struct Bench *)NULL;
+/* IMB 3.1 << */
+  ITERATIONS->n_sample=0;
+  ITERATIONS->off_cache=0;
+  ITERATIONS->cache_size=-1;
+  ITERATIONS->s_offs = ITERATIONS->r_offs = 0;
+  ITERATIONS->s_cache_iter = ITERATIONS->r_cache_iter = 1;
+  ITERATIONS->msgspersample=MSGSPERSAMPLE;
+  ITERATIONS->msgs_nonaggr=MSGS_NONAGGR;
+  ITERATIONS->overall_vol=OVERALL_VOL;
+  ITERATIONS->iter_dyn=0;
+  ITERATIONS->numiters=(int*)NULL;
+/* >> IMB 3.1  */
 
   MPI_Comm_rank(MPI_COMM_WORLD,&c_info->w_rank);
   MPI_Comm_size(MPI_COMM_WORLD,&c_info->w_num_procs);
@@ -187,15 +218,6 @@ Output variables:
   unit = stdout; 
   if( c_info->w_rank == 0 && strlen(OUTPUT_FILENAME) > 0 )
     unit = fopen(OUTPUT_FILENAME,"w"); 
-
-#ifdef DEBUG
-
-      dbgf_name = IMB_str("DBG_   ");
-      sprintf(dbgf_name+4,"%d",c_info->w_rank);
-
-      dbg_file = fopen(dbgf_name,"w");
-
-#endif
 
   deflt = 0;
   ok = 0;
@@ -262,6 +284,107 @@ Output variables:
           }
           iarg++;
 	}
+/* IMB 3.1 << */
+/* incorporation of flags -off_cache; -iter; -time; -mem */
+      if(!strcmp((*argv)[iarg],"-off_cache"))
+	{
+          int ierr, cls;
+          float cs;
+          if( iarg+1>=*argc ) {
+              fprintf(stderr,"Missing argument after \"off_cache\"\n");
+              ok=-1;
+              break;
+          }
+	  ierr=sscanf((*argv)[iarg+1],"%f,%d",&cs,&cls);
+          if( ierr==1 ) 
+           {
+           if( cs<0. ) cs=CACHE_SIZE;
+           cls=CACHE_LINE_SIZE;
+           }
+          else if( ierr!=2 )
+           {
+           fprintf(stderr,"Invalid off_cache selection\n");
+           ok = -1;
+           break;
+           } 
+	  ITERATIONS->cache_size = cs;
+	  ITERATIONS->cache_line_size = cls;
+          ITERATIONS->off_cache=1;
+          n_cases -= 2;
+          iarg++;
+	}
+      if(!strcmp((*argv)[iarg],"-iter"))
+	{
+          int ierr, msgs, overall_vol, msgs_nonaggr;
+          if( iarg+1>=*argc ) {
+              fprintf(stderr,"Missing argument after \"iter\"\n");
+              ok=-1;
+              break;
+          }
+	  ierr=sscanf((*argv)[iarg+1],"%d,%d,%d",&msgs,&overall_vol,&msgs_nonaggr);
+          if( ierr<1 || ierr>3 )
+           {
+           fprintf(stderr,"Invalid iter selection\n");
+           ok = -1;
+           break;
+           } 
+          if(ierr>=1) 
+           {
+           ITERATIONS->msgspersample=msgs;
+           }
+          if(ierr>=2)
+           {
+           ITERATIONS->overall_vol=1024*1024*overall_vol;
+           }
+          if(ierr==3)
+           {
+           ITERATIONS->msgs_nonaggr=msgs_nonaggr;
+           }
+          n_cases -= 2;
+          iarg++;
+	}
+      if(!strcmp((*argv)[iarg],"-time"))
+	{
+          int ierr; 
+          float secs;
+          if( iarg+1>=*argc ) {
+              fprintf(stderr,"Missing argument after \"iter\"\n");
+              ok=-1;
+              break;
+          }
+	  ierr=sscanf((*argv)[iarg+1],"%f",&secs);
+          if( ierr!=1 )
+           {
+           fprintf(stderr,"Invalid -time selection\n");
+           ok = -1;
+           break;
+           } 
+          ITERATIONS->iter_dyn=1;
+          ITERATIONS->secs=secs;
+          n_cases -= 2;
+          iarg++;
+	}
+      if(!strcmp((*argv)[iarg],"-mem"))
+	{
+          int ierr; 
+          float GB;
+          if( iarg+1>=*argc ) {
+              fprintf(stderr,"Missing argument after \"-mem\"\n");
+              ok=-1;
+              break;
+          }
+	  ierr=sscanf((*argv)[iarg+1],"%f",&GB);
+          if( ierr!=1 )
+           {
+           fprintf(stderr,"Invalid -time selection\n");
+           ok = -1;
+           break;
+           } 
+          c_info->max_mem=GB;
+          n_cases -= 2;
+          iarg++;
+	}
+/* >> IMB 3.1  */
       if(!strcmp((*argv)[iarg],"-map"))
 	{
           int ierr;
@@ -330,7 +453,6 @@ Output variables:
         iarg++;
        }
 
-
 /* IMB_3.0 */
       if( !help_only ) {
 
@@ -348,6 +470,16 @@ Output variables:
                 iarg++;
         else if(!strcmp((*argv)[iarg],"-msglen")) 
                 iarg++;
+/* IMB 3.1 << */
+        else if(!strcmp((*argv)[iarg],"-off_cache")) 
+                iarg++;
+        else if(!strcmp((*argv)[iarg],"-iter")) 
+                iarg++;
+        else if(!strcmp((*argv)[iarg],"-time")) 
+                iarg++;
+        else if(!strcmp((*argv)[iarg],"-mem")) 
+                iarg++;
+/* >> IMB 3.1  */
         else if(!strcmp((*argv)[iarg],"-map")) 
                 iarg++;
         else if(!strcmp((*argv)[iarg],"-input"))
@@ -476,15 +608,27 @@ Output variables:
 /* IMB_3.0 end "!help_only" */
     }
 
+/* IMB 3.1 << */
     ALL_INFO[0] = *NP_min;
     ALL_INFO[1] = c_info->group_mode;
     ALL_INFO[2] = deflt;
-    ALL_INFO[3] = n_cases;
-    ALL_INFO[4] = c_info->n_lens;
-    ALL_INFO[5] = c_info->px;
-    ALL_INFO[6] = c_info->py;
-    ALL_INFO[7] = ok;
+    ALL_INFO[3] = ITERATIONS->cache_line_size;
+    ALL_INFO[4] = ITERATIONS->msgspersample;
+    ALL_INFO[5] = ITERATIONS->overall_vol;
+    ALL_INFO[6] = ITERATIONS->msgs_nonaggr;
+    ALL_INFO[7] = ITERATIONS->iter_dyn;
+    ALL_INFO[8] = n_cases;
+    ALL_INFO[9] = c_info->n_lens;
+    ALL_INFO[10] = c_info->px;
+    ALL_INFO[11] = c_info->py;
+    ALL_INFO[12] = ok;
 
+    ALL_F_INFO[0] = ITERATIONS->cache_size;
+    ALL_F_INFO[1] = ITERATIONS->secs;
+    ALL_F_INFO[2] = c_info->max_mem;
+
+    MPI_Bcast(ALL_F_INFO,N_base_f_info,MPI_FLOAT,0,MPI_COMM_WORLD);
+/* >> IMB 3.1  */
     MPI_Bcast(ALL_INFO,N_baseinfo,MPI_INT,0,MPI_COMM_WORLD);
 
     if( ok<0 ) return ok;
@@ -493,9 +637,17 @@ Output variables:
     MPI_Bcast(ALL_INFO+N_baseinfo,n_cases,MPI_INT,0,MPI_COMM_WORLD);
 
     if( n_lens  > 0 )
+/* IMB 3.1 << */
+    {
     MPI_Bcast(c_info->msglen,n_lens,MPI_INT,0,MPI_COMM_WORLD);
+    if( ITERATIONS->iter_dyn )
+     {
+     IMB_i_alloc(&ITERATIONS->numiters,n_lens,"Basic_Input");
+     }
+/* >> IMB 3.1  */
+    }
 
-    free(ALL_INFO);
+    IMB_v_free((void**)&ALL_INFO);
 
     }
     else  /* w_rank > 0 */
@@ -503,17 +655,32 @@ Output variables:
 
     {
     int TMP[N_baseinfo];
-    MPI_Bcast(TMP,N_baseinfo,MPI_INT,0,MPI_COMM_WORLD);
 
+/* IMB 3.1 << */
+    MPI_Bcast(ALL_F_INFO,N_base_f_info,MPI_FLOAT,0,MPI_COMM_WORLD);
+/* >> IMB 3.1  */
+    MPI_Bcast(TMP,N_baseinfo,MPI_INT,0,MPI_COMM_WORLD);
 
     *NP_min = TMP[0];
     c_info->group_mode = TMP[1];
     deflt = TMP[2];
-    n_cases = TMP[3];
-    n_lens = TMP[4];
-    c_info->px = TMP[5];
-    c_info->py = TMP[6];
-    ok = TMP[7];
+/* IMB 3.1 << */
+    ITERATIONS->cache_size=ALL_F_INFO[0];
+    if(ITERATIONS->cache_size<0.) ITERATIONS->off_cache=0;
+    else                          ITERATIONS->off_cache=1;
+    ITERATIONS->cache_line_size=TMP[3];
+    ITERATIONS->msgspersample=TMP[4];
+    ITERATIONS->overall_vol=TMP[5];
+    ITERATIONS->msgs_nonaggr=TMP[6];
+    ITERATIONS->iter_dyn=TMP[7];
+    ITERATIONS->secs=ALL_F_INFO[1];
+    c_info->max_mem=ALL_F_INFO[2];
+    n_cases = TMP[8];
+    n_lens = TMP[9];
+    c_info->px = TMP[10];
+    c_info->py = TMP[11];
+    ok = TMP[12];
+/* >> IMB 3.1  */
 
     if( ok<0 ) return ok;
 
@@ -534,7 +701,7 @@ Output variables:
      IMB_construct_blist(P_BList,n_cases,"");
      }
      }
-     free(ALL_INFO);
+     IMB_v_free((void**)&ALL_INFO);
      }
     else
      IMB_construct_blist(P_BList,1,"");
@@ -544,17 +711,26 @@ Output variables:
      c_info->n_lens=n_lens;
      IMB_i_alloc(&c_info->msglen,n_lens,"Basic_Input");
      MPI_Bcast(c_info->msglen,n_lens,MPI_INT,0,MPI_COMM_WORLD);
+/* IMB 3.1 << */
+     if( ITERATIONS->iter_dyn )
+     {
+     IMB_i_alloc(&ITERATIONS->numiters,n_lens,"Basic_Input");
+     }
+/* >> IMB 3.1  */
      }
 
     }
 #ifdef DEBUG
 {
 int i;
-fprintf(dbgf,"Got msglen:\n");
+if( n_lens>0 )
+{
+fprintf(dbg_file,"Got msglen:\n");
 for(i=0; i<n_lens; i++) fprintf(stderr,"%d ",c_info->msglen[i]);
-fprintf(dbgf,"\n\n");
-fprintf(dbgf,"px py = %d %d\n",c_info->px,c_info->py);
-fprintf(dbgf,"\n\n");
+}
+fprintf(dbg_file,"\n\n");
+fprintf(dbg_file,"px py = %d %d\n",c_info->px,c_info->py);
+fprintf(dbg_file,"\n\n");
 }
 #endif
  
@@ -770,8 +946,6 @@ return 0;
 
 /**********************************************************************/
 
-
-
 void IMB_set_communicator(struct comm_info *c_info )
 /*
 
@@ -844,10 +1018,8 @@ In/out variables:
       MPI_Comm_split(MPI_COMM_WORLD, color, key, &c_info->communicator); 
     }
 
-    free(map);
+    IMB_v_free((void**)&map);
 }
-
-
 
 
 int IMB_valid(struct comm_info * c_info, struct Bench* Bmark, int NP)
@@ -953,6 +1125,9 @@ c_info->s_alloc = 0;
 c_info->r_buffer = NULL;
 c_info->r_data = NULL;
 c_info->r_alloc = 0;
+/* IMB 3.1 << */
+c_info->max_mem = MAX_MEM_USAGE;
+/* >> IMB 3.1  */
 c_info->n_lens = 0;
 c_info->msglen = NULL;
 c_info->group_mode = 0;

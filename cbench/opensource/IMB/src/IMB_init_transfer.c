@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -79,7 +79,9 @@ For more documentation than found here, see
 
 
 
-void IMB_init_transfer(struct comm_info* c_info, struct Bench* Bmark, int size)
+/* IMB 3.1 << */
+void IMB_init_transfer(struct comm_info* c_info, struct Bench* Bmark, int size, int acc_size)
+/* >> IMB 3.1  */
 /*
 
                       
@@ -101,6 +103,10 @@ Input variables:
 -size                 (type int)                      
                       (Only IO case): used to determine file view
                       
+IMB 3.1 <<
+-acc_size             (type int)                      
+                      (Only EXT case): accumulate window size
+>> IMB 3.1
 
 
 In/out variables: 
@@ -198,7 +204,7 @@ if( Bmark->fpointer == indv_block || Bmark->fpointer == shared ||
 #else
 
 #ifdef EXT
-int sz, s_size, r_size, maxlen;
+int sz, s_size, r_size;
 int ierr;
 
 ierr=0;
@@ -218,9 +224,9 @@ if( c_info -> rank >= 0 )
 {
 IMB_user_set_info(&c_info->info);
 
-maxlen = 1<<MAXMSGLOG;
-sz = max(maxlen,OVERALL_VOL);
-if( OVERALL_VOL/MSGSPERSAMPLE > maxlen ) sz = maxlen*MSGSPERSAMPLE;
+/* IMB 3.1 << */
+ sz = acc_size;
+/* >> IMB 3.1  */
 
 if( Bmark->access == put)
 {
@@ -250,8 +256,6 @@ IMB_set_errhand(c_info);
 err_flag = 0;
 
 }
-
-
 
 
 void IMB_close_transfer (struct comm_info* c_info, struct Bench* Bmark, int size)
@@ -293,6 +297,7 @@ In/out variables:
 if( c_info->view != MPI_DATATYPE_NULL )
     MPI_Type_free(&c_info->view);
 
+if( c_info->File_rank >= 0 && Bmark->access != no && c_info->fh!=MPI_FILE_NULL)
 MPI_File_close(&c_info->fh);
 
 #else

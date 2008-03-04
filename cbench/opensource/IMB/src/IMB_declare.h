@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -86,11 +86,14 @@ typedef int Type_Size;          /*correct MPI standard  */
 
 #include "IMB_comm_info.h"
 
-#define nDEBUG
+extern int num_alloc, num_free;
+
+
+#undef DEBUG
 
 #ifdef DEBUG
 
-#define DIAGNOSTICS(text,c_info,buf,loclen,totlen,j_sample,pos) {if(j_sample == 0) show((text),(c_info),(buf),(loclen),(totlen),(j_sample),(pos));}
+#define DIAGNOSTICS(text,c_info,buf,loclen,totlen,j_sample,pos) {if(j_sample <=10) IMB_show((text),(c_info),(buf),(loclen),(totlen),(j_sample),(pos));}
 
 extern FILE* dbg_file;
 extern char* dbgf_name;
@@ -167,8 +170,13 @@ extern double *all_defect;
 #define ow_format 13
 #define out_fields 8
 
+/* IMB 3.1 << */
+/* include Windows case */
+#ifndef WIN_IMB
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
+#endif
+/* >> IMB 3.1  */
 
 #ifdef BUFFERS_INT
 #define A_ABS(i) abs((i))

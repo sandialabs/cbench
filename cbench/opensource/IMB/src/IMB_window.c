@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -80,7 +80,7 @@ For more documentation than found here, see
 
 
 
-void IMB_window(struct comm_info* c_info, int size, int n_sample, 
+void IMB_window(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                 MODES RUN_MODE, double* time)
 /*
 
@@ -100,8 +100,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule)                      
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -126,7 +126,7 @@ Output variables:
       for(i=0; i<N_BARR; i++) MPI_Barrier(c_info->communicator);
 
       t1 = MPI_Wtime();
-      for(i=0;i< n_sample;i++)
+      for(i=0;i< ITERATIONS->n_sample;i++)
 	{
           ierr = MPI_Win_create(c_info->r_buffer,size,1,MPI_INFO_NULL,
                                 c_info->communicator, &c_info->WIN);
@@ -144,7 +144,7 @@ Output variables:
           MPI_ERRHAND(ierr);
 	}
       t2 = MPI_Wtime();
-      *time=(t2 - t1)/(n_sample);
+      *time=(t2 - t1)/(ITERATIONS->n_sample);
     }
   else
     { 

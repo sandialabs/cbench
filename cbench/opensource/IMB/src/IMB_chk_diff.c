@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -493,6 +493,7 @@ if( Totalsize<= 0 ) return;
 
 #ifdef MPIIO
 
+MPI_Barrier(c_info->File_comm);
 if( mode == put )
 {
    if( c_info -> File_rank == 0 )
@@ -571,8 +572,7 @@ if( mode == put )
      (j_sample*Totalsize)+faultpos);
 
     AUX = (void*)(((char*)RECEIVED)+faultpos);
-    IMB_show("Erroneous data:",c_info,AUX,Totalsize-faultpos,Totalsize-faultpos,
-         j_sample,-1);
+    IMB_show("Erroneous data:",c_info,AUX,Totalsize-faultpos,Totalsize-faultpos,j_sample,nothing);
 
    }
    else
@@ -585,7 +585,7 @@ if( mode == put )
    {
    IMB_err_msg(c_info,text,Totalsize,j_sample);
    IMB_show("restored buffer from output file, has permuted data: ",
-         c_info,RECEIVED,Totalsize,Totalsize,j_sample,-1);
+            c_info,RECEIVED,Totalsize,Totalsize,j_sample,nothing);
    }
    }
 
@@ -594,11 +594,12 @@ if( mode == put )
    }
 
    IMB_del_r_buf(c_info);
-   free(lengths); free (all_ranks);
+   IMB_v_free((void**)&lengths); IMB_v_free ((void**)&all_ranks);
 
 
    }
 
+fflush(unit);
 }   
 if( mode == get )
 {
@@ -624,10 +625,10 @@ if( mode == get )
        RECEIVED = (void*)((char*)RECEIVED+faultpos);
        fprintf(unit,"File position: %d\n",file_pos+pos+faultpos);
        IMB_show( "Read invalid portion: ",c_info, RECEIVED,
-             Locsize-faultpos, Totalsize, j_sample, fpos);
+                 Locsize-faultpos, Totalsize, j_sample, fpos);
        AUX = (void*)((char*)AUX + pos + faultpos);
        IMB_show( "Expected portion: ",c_info, AUX,
-             Locsize-pos-faultpos, Locsize-pos-faultpos, j_sample, -1);
+                 Locsize-pos-faultpos, Locsize-pos-faultpos, j_sample, nothing);
        MPI_Gather(&pos,1,MPI_INT,c_info->rdispl,1,MPI_INT,0,c_info->File_comm);
       }
    else
@@ -659,6 +660,7 @@ if( mode == get )
    defloc = max(defloc,def_tmp);
 
 }
+MPI_Barrier(c_info->File_comm);
 
 #else
 

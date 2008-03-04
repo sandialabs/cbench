@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -67,6 +67,19 @@ For more documentation than found here, see
  ***************************************************************************/
 
 
+/* ===================================================================== */
+/* 
+IMB 3.1 changes
+July 2007
+Hans-Joachim Plum, Intel GmbH
+
+- replace "int n_sample" by iteration scheduling object "ITERATIONS"
+  (see => IMB_benchmark.h)
+
+- proceed with offsets in send / recv buffers to eventually provide
+  out-of-cache data
+*/
+/* ===================================================================== */
 
 
 
@@ -79,7 +92,7 @@ For more documentation than found here, see
 
 
 
-void IMB_bidir_get(struct comm_info* c_info, int size, int n_sample, 
+void IMB_bidir_get(struct comm_info* c_info, int size,  struct iter_schedule* ITERATIONS,
                    MODES RUN_MODE, double* time)
 /*
 
@@ -99,8 +112,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -147,13 +160,13 @@ Output variables:
      IMB_ones_get(  c_info,
                 s_num, dest, 
                 r_num, sender,
-                size, n_sample, 
+                size, ITERATIONS,
                 time);
   if( RUN_MODE->AGGREGATE )
      IMB_ones_mget( c_info,
                 s_num, dest, 
                 r_num, sender,
-                size, n_sample, 
+                size, ITERATIONS,
                 time);
 
 }
@@ -161,7 +174,7 @@ Output variables:
 
 
 
-void IMB_bidir_put(struct comm_info* c_info, int size, int n_sample, 
+void IMB_bidir_put(struct comm_info* c_info, int size,  struct iter_schedule* ITERATIONS,
                    MODES RUN_MODE, double* time)
 /*
 
@@ -181,8 +194,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -230,14 +243,14 @@ Output variables:
      IMB_ones_put(  c_info,
                 s_num, dest, 
                 r_num, sender,
-                size, n_sample, 
+                size, ITERATIONS,
                 time);
   
   if( RUN_MODE->AGGREGATE )
      IMB_ones_mput( c_info,
                 s_num, dest, 
                 r_num, sender,
-                size, n_sample, 
+                size, ITERATIONS,
                 time);
 
 }

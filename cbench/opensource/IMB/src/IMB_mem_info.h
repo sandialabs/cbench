@@ -56,116 +56,23 @@ For more documentation than found here, see
     Users Guide and Methodology Description
     In 
     doc/IMB_ug.pdf
-
- File: IMB_allgather.c 
-
- Implemented functions: 
-
- IMB_allgather;
-
+    
  ***************************************************************************/
 
-#include "IMB_declare.h"
-#include "IMB_benchmark.h"
 
-#include "IMB_prototypes.h"
-
-/*******************************************************************************/
-
-/* ===================================================================== */
-/* 
-IMB 3.1 changes
-July 2007
-Hans-Joachim Plum, Intel GmbH
-
-- replace "int n_sample" by iteration scheduling object "ITERATIONS"
-  (see => IMB_benchmark.h)
-
-- proceed with offsets in send / recv buffers to eventually provide
-  out-of-cache data
-*/
-/* ===================================================================== */
-
-
-void IMB_allgather(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
-                   MODES RUN_MODE, double* time)
 /*
-
-                      
-                      MPI-1 benchmark kernel
-                      Benchmarks MPI_Allgather
-                      
-
-
-Input variables: 
-
--c_info               (type struct comm_info*)                      
-                      Collection of all base data for MPI;
-                      see [1] for more information
-                      
-
--size                 (type int)                      
-                      Basic message size in bytes
-
--ITERATIONS           (type struct iter_schedule *)
-                      Repetition scheduling
-
--RUN_MODE             (type MODES)                      
-                      (only MPI-2 case: see [1])
-
-
-Output variables: 
-
--time                 (type double*)                      
-                      Timing result per sample
-
-
+Header file newly introduced in IMB 3.1 
 */
-{
-  double t1, t2;
-  int    i;
 
-  Type_Size s_size,r_size;
-  int s_num, r_num;
-  
-#ifdef CHECK
-defect=0.;
+#ifndef __mem_info_h__
+#define __mem_info_h__
+
+
+#define CACHE_UNIT 1048576 /* Unit for cache sizes */
+#define CACHE_SIZE 1  /* default last level cache size (in units CACHE_UNIT Bytes) when using "off_cache" */
+#define CACHE_LINE_SIZE  64 /* default last level cache line size (Bytes) */
+
+#define MEM_UNIT 1073741824 /* Units for memory usage sizes */
+#define MAX_MEM_USAGE  1  /* default max. memory (in units MEM_UNIT Bytes) used for message buffers */
+
 #endif
-  ierr = 0;
-  /*  GET SIZE OF DATA TYPE */  
-  MPI_Type_size(c_info->s_data_type,&s_size);
-  MPI_Type_size(c_info->r_data_type,&r_size);
-  if ((s_size!=0) && (r_size!=0))
-    {
-      s_num=size/s_size;
-      r_num=size/r_size;
-    } 
-  
-  if(c_info->rank!=-1)
-    {
-      for(i=0; i<N_BARR; i++) MPI_Barrier(c_info->communicator);
-
-      t1 = MPI_Wtime();
-      for(i=0;i< ITERATIONS->n_sample;i++)
-        {
-          ierr = MPI_Allgather((char*)c_info->s_buffer+i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
-                               s_num,c_info->s_data_type,
-			       (char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
-                               r_num,c_info->r_data_type,
-			       c_info->communicator);
-          MPI_ERRHAND(ierr);
-
-          CHK_DIFF("Allgather",c_info, (char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs, 0,
-                   0, c_info->num_procs*size, 1, 
-                   put, 0, ITERATIONS->n_sample, i,
-                   -2, &defect);
-        }
-      t2 = MPI_Wtime();
-      *time=(t2 - t1)/ITERATIONS->n_sample;
-    }
-  else
-    { 
-      *time = 0.; 
-    }
-}
-

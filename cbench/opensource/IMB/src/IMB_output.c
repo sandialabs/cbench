@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -88,9 +88,14 @@ New in IMB_3.0:
 
 
 
+/* IMB 3.1 << */
+/*
+Introduce new ITERATIONS object
+*/
 void IMB_output(struct comm_info* c_info, struct Bench* Bmark, MODES BMODE, 
-                int header, int size, int n_sample, 
+                int header, int size, struct iter_schedule* ITERATIONS,
                 double *time)
+/* >> IMB 3.1  */
 /*
 
 
@@ -122,8 +127,8 @@ Input variables:
                       Benchmark message size
                       
 
--n_sample             (type int)                      
-                      Benchmark repetition number
+-ITERATIONS           (type struct iter_schedule)                      
+                      Benchmark repetition descr. object
                       
 
 -time                 (type double *)                      
@@ -268,15 +273,17 @@ Input variables:
       {
 
 
+/* IMB 3.1 << use ITERATIONS object */
+
       for( i_gr=0; i_gr<c_info->n_groups; i_gr++ )
 	{
 	  if(i_gr == 0) fprintf(unit,"\n");
 
-    	  IMB_display_times(Bmark, all_times, c_info, i_gr, n_sample, size, edit_type);
+    	  IMB_display_times(Bmark, all_times, c_info, i_gr, ITERATIONS->n_sample, size, edit_type);
 	} 
       }
       else
-    	  IMB_display_times(Bmark, all_times, c_info,  0, n_sample, size, edit_type);
+    	  IMB_display_times(Bmark, all_times, c_info,  0, ITERATIONS->n_sample, size, edit_type);
     } 
 }
 /*****************************************************************/
@@ -422,6 +429,25 @@ Input variables:
 	ip=strlen(aux_string);
       }
 
+/* IMB 3.1 << */
+    if( Bmark->sample_failure ){
+	IMB_edit_format(1,0);
+	sprintf(aux_string+ip,format,size);
+	ip=strlen(aux_string);
+        switch( Bmark->sample_failure )
+          {
+          case SAMPLE_FAILED_MEMORY:
+	  sprintf(aux_string+ip," out-of-mem.; needed X=%8.3f GB; use flag \"-mem X\" or MAX_MEM_USAGE>=X (IMB_mem_info.h)",(1000.*c_info->used_mem+1.)/1000.);
+          break;
+          }
+    }
+
+    else
+
+    {
+    
+/* >> IMB 3.1  */
+
     if( edit_type == 0 )
       { 
 	IMB_edit_format(2,2);
@@ -460,6 +486,11 @@ Input variables:
     if( defect > TOL    ) Bmark->success=0;
     }
 #endif
+
+/* IMB 3.1 << */
+    }
+/* >> IMB 3.1  */
+
     fprintf(unit,"%s\n",aux_string);
     fflush(unit);
 
@@ -471,7 +502,10 @@ Input variables:
 
 
 
-void IMB_show_selections(struct comm_info* c_info, struct Bench* BList)
+/* IMB 3.1 << */
+// Re-display calling sequence
+void IMB_show_selections(struct comm_info* c_info, struct Bench* BList, int *argc, char ***argv)
+/* >> IMB 3.1  */
 /*
 
                       
@@ -493,24 +527,68 @@ Input variables:
                       
                       The requested list of benchmarks
                       
+-argc                 (type int *)                      
+                      Number of command line arguments
+                      
+
+-argv                 (type char ***)                      
+                      List of command line arguments
+                      
+
 
 
 */
 {
+  int iarg=0;
+  int i;
   if(c_info->w_rank == 0 )
     {
       IMB_general_info();
-      fprintf(unit,"#\n");
+/* IMB 3.1 << */
+// repeat calling sequence
+      fprintf(unit,"\n\n# Calling sequence was: \n\n#");
+      while( iarg<*argc )
+      {
+      if (iarg>0 && iarg%6==0){
+        if( (*argv)[iarg][0]=='-' && iarg+1<*argc ) 
+           {
+           fprintf(unit," %s %s\n#", (*argv)[iarg], (*argv)[iarg+1]);
+           iarg++;
+           }
+        else
+           fprintf(unit," %s\n#", (*argv)[iarg]);
+      for(i=0; i<=strlen((*argv)[0]); i++) fprintf(unit," ");
+      }
+      else
+           fprintf(unit," %s", (*argv)[iarg]);
+      iarg++;
+      }
+      fprintf(unit,"\n\n");
 #ifndef MPIIO
+      if( c_info->n_lens>0 )
+      {
+      fprintf(unit,"# Message lengths were user defined\n");
+      }
+      else
+/* >> IMB 3.1  */
+      {
       fprintf(unit,"# Minimum message length in bytes:   %d\n",0);
       fprintf(unit,"# Maximum message length in bytes:   %d\n",1<<MAXMSGLOG);
+      }
       fprintf(unit,"#\n");
       fprintf(unit,"# MPI_Datatype                   :   MPI_BYTE \n");
       fprintf(unit,"# MPI_Datatype for reductions    :   MPI_FLOAT\n");
       fprintf(unit,"# MPI_Op                         :   MPI_SUM  \n");
 #else
+      if( c_info->n_lens>0 )
+      {
+      fprintf(unit,"# IO lengths were user defined\n");
+      }
+      else
+      {
       fprintf(unit,"# Minimum io portion in bytes:   %d\n",0);
       fprintf(unit,"# Maximum io portion in bytes:   %d\n",1<<MAXMSGLOG);
+      }
       fprintf(unit,"#\n");
       IMB_print_info();
 #endif
@@ -655,7 +733,7 @@ do_out=0;
 if( txt )
 if( strcmp(txt,"") )
  {
- outtxt=(char*) malloc( (strlen(txt)+6)*sizeof(char));
+ outtxt = (char*)IMB_v_alloc((strlen(txt)+6)*sizeof(char)," IMB_print_array ");
  do_out=1;
  }
 
@@ -694,6 +772,11 @@ fprintf(unit,"#  . \n");
 fprintf(unit,"#  . \n"); 
 disp=N-MAX_SHOW/2;
 IMB_print_array(&Array[(N-MAX_SHOW/2)*M], MAX_SHOW/2, disp, M, txt, unit);
+}
+
+if( do_out )
+{
+IMB_v_free((void**)&outtxt);
 }
 
 }
@@ -778,7 +861,7 @@ for( ikey=0; ikey<nkeys; ikey++ )
  MPI_Info_get(tmp_info, key, vlen, value, &exists);
  printf("# %s = \"%s\"\n",key,value);
  
- free (value);
+ IMB_v_free ((void**)&value);
  }
 
 MPI_Info_free(&tmp_info);
@@ -904,7 +987,7 @@ void IMB_help()
 fflush(stderr);
 fflush(unit);
 
-fprintf(unit,"\nCalling sequence:\n\n");
+fprintf(unit,"\nCalling sequence (command line will be repeated in Output table!):\n\n");
 
 #ifdef MPI1
 fprintf(unit,"\n\
@@ -914,14 +997,22 @@ fprintf(unit,"\n\
 IMB-EXT     [-h{elp}]\n");
 #elif defined (MPIIO)
 fprintf(unit,"\n\
-IMB-IO      [-h{elp}]\n");
+imB-IO      [-h{elp}]\n");
 #endif
+
+/* IMB 3.1 << */
+/* Update calling sequence */
+/* >> IMB 3.1  */
 fprintf(unit,"\
-            [-npmin  <NPmin>]\n\
-            [-multi  <MultiMode>]\n\
-            [-msglen <Lengths_file>]\n\
-            [-map    <PxQ>]\n\
-            [-input  <filename>]\n\
+            [-npmin     <NPmin>]\n\
+            [-multi     <MultiMode>]\n\
+            [-off_cache <cache_size[,cache_line_size]>\n\
+            [-iter      <msgspersample[,overall_vol[,msgs_nonaggr]]>\n\
+            [-time      <max_runtime per sample>]\n\
+            [-mem       <max. per process memory for overall message buffers>]\n\
+            [-msglen    <Lengths_file>]\n\
+            [-map       <PxQ>]\n\
+            [-input     <filename>]\n\
             [benchmark1 [,benchmark2 [,...]]]\n\
 \n\
 where \n\
@@ -929,47 +1020,128 @@ where \n\
 - h ( or help) just provides basic help \n\
   (if active, all other arguments are ignored)\n\
 \n\
-- NPmin is the minimum number of processes to run on\n\
+- npmin\n\n\
+  the argumaent after npmin is NPmin, \n\
+  the minimum number of processes to run on\n\
   (then if IMB is started on NP processes, the process numbers \n\
    NPmin, 2*NPmin, ... ,2^k * NPmin < NP, NP are used)\n\
    >>>\n\
    to run on just NP processes, run IMB on NP and select -npmin NP\n\
    <<<\n\
-  Default: NPmin=2\n\
+  default: \n\
+  NPmin=2\n\
+\n");
+#ifdef MPIIO
+fprintf(unit,"\
+- off_cache \n\n\
+  no effect for IMB-IO (only IMB-MPI1, IMB-EXT) \n\
+\n");
+#else
+fprintf(unit,"\
+- off_cache\n\n\
+  the argument after off_cache can be 1 single (cache_size) \n\
+  or 2 comma separated (cache_size,cache_line_size) numbers\n\
+  \n\
+  cache_size is a float for the size of the last level cache in MBytes\n\
+  can be an upper estimate (however, the larger, the more memory is exploited)\n\
+  can be -1 to use the default in => IMB_mem_info.h\n\
+  \n\
+  cache_line_size is optional as second number (int), \n\
+  size (Bytes) of a last level cache line, can be an upper estimate \n\
+  any 2 messages are separated by at least 2 cache lines \n\
+  the default is set in => IMB_mem_info.h\n\
+  \n\
+  remark: -off_cache is effective for IMB-MPI1, IMB-EXT, but not IMB-IO \n\
+  \n\
+  examples \n\
+   -off_cache -1 (use defaults of IMB_mem_info.h); \n\
+   -off_cache 2.5 (2.5 MB last level cache, default line size); \n\
+   -off_cache 16,128 (16 MB last level cache, line size 128); \n\
+  \n\
+  default: \n\
+  no cache control, data likely to come out of cache most of the time \n\
+\n");
+#endif
+fprintf(unit,"\
+- iter \n\n\
+  the argument after -iter can be 1 single, 2 comma separated, or 3 comma separated \n\
+  integer numbers, which override the defaults \n\
+  MSGSPERSAMPLE, OVERALL_VOL, MSGS_NONAGGR of =>IMB_settings.h \n\
+  examples \n\
+   -iter 2000        (override MSGSPERSAMPLE by value 2000) \n\
+   -iter 1000,100    (override OVERALL_VOL by 100) \n\
+   -iter 1000,40,150 (override MSGS_NONAGGR by 150) \n\
+  \n\
+  default: \n\
+  iteration control through parameters MSGSPERSAMPLE,OVERALL_VOL,MSGS_NONAGGR => IMB_settings.h \n\
 \n\
-- P,Q are integer numbers with P*Q <= NP\n\
-  Enter PxQ with the 2 numbers separated by letter \"x\" and no blancs\n\
-  The basic communicator is set up as P by Q process grid\n\
+- time\n\n\
+  the argument after -time is a float, specifying that \n\
+  a benchmark will run at most that many seconds per message size \n\
+  the combination with the -iter flag or its defaults is so that always \n\
+  the maximum number of repetitions is chosen that fulfills all restrictions \n\
+  example \n\
+   -time 0.150       (a benchmark will (roughly) run at most 150 milli seconds per message size, iff\n\
+                      the default (or -iter selected) number of repetitions would take longer than that) \n\
+  \n\
+  remark: per sample, the rough number of repetitions to fulfill the -time request \n\
+          is estimated in preparatory runs that use ~ 1 second overhead \n\
+  \n\
+  default: \n\
+  no time limit \n\
 \n\
-  If, e.g., one runs on N nodes of X processors each, and inserts\n\
-  P=X, Q=N, then the numbering of processes is \"inter node first\".\n\
-  Running PingPong with P=X, Q=2 would measure inter-node performance\n\
+- mem\n\n\
+  the argument after -mem is a float, specifying that \n\
+  at most that many GBytes are allocated per process for the message buffers \n\
+  if the size is exceeded, a warning will be output, stating how much memory \n\
+  would have been necessary, but the overall run is not interrupted \n\
+  example \n\
+   -mem 0.2         (restrict memory for message buffers to 200 MBytes per process) \n\
+  \n\
+  default: \n\
+  the memory is restricted by MAX_MEM_USAGE => IMB_mem_info.h \n\
+\n\
+- map\n\n\
+  the argument after -map is PxQ, P,Q are integer numbers with P*Q <= NP\n\
+  enter PxQ with the 2 numbers separated by letter \"x\" and no blancs\n\
+  the basic communicator is set up as P by Q process grid\n\
+\n\
+  if, e.g., one runs on N nodes of X processors each, and inserts\n\
+  P=X, Q=N, then the numbering of processes is \"inter node first\"\n\
+  running PingPong with P=X, Q=2 would measure inter-node performance\n\
   (assuming MPI default would apply 'normal' mapping, i.e. fill nodes\n\
   first priority) \n\
 \n\
-  Default: Q=1\n\
+  default: \n\
+  Q=1\n\
 \n\
-- MultiMode is 0 or 1\n\
+- multi\n\n\
+  the argument after -multi is MultiMode (0 or 1)\n\
 \n\
   if -multi is selected, running the N process version of a benchmark\n\
   on NP overall, means running on (NP/N) simultaneous groups of N each.\n\
 \n\
   MultiMode only controls default (0) or extensive (1) output charts.\n\
-  0: Only lowest performance groups is output\n\
-  1: All groups are output\n\
+  0: only lowest performance groups is output\n\
+  1: all groups are output\n\
 \n\
-  Default: multi off\n\
+  default: \n\
+  multi off\n\
 \n\
-- Lengths_file is an ASCII file, containing any set of nonnegative\n\
+- msglen\n\n\
+  the argument after -msglen is a lengths_file, an ASCII file, containing any set of nonnegative\n\
   message lengths, 1 per line\n\
 \n\
-  Default: no Lengths_file, lengths defined by settings.h, settings_io.h\n\
+  default: \n\
+  no lengths_file, lengths defined by settings.h, settings_io.h\n\
   \n\
-- filename is any text file containing, line by line, benchmark names.\n\
-  Facilitates running particular benchmarks as compared to using the\n\
+- input\n\n\
+  the argument after -input is a filename is any text file containing, line by line, benchmark names\n\
+  facilitates running particular benchmarks as compared to using the\n\
   command line.\n\
 \n\
-  Default: no input file exists\n\
+  default: \n\
+  no input file exists\n\
   \n\
 - benchmarkX is (in arbitrary lower/upper case spelling)\n\
 \n");
@@ -983,6 +1155,10 @@ Exchange\n\
 Bcast\n\
 Allgather\n\
 Allgatherv\n\
+Gather\n\
+Gatherv\n\
+Scatter\n\
+Scatterv\n\
 Alltoall\n\
 Alltoallv\n\
 Reduce\n\

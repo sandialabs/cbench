@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -81,8 +81,21 @@ For more documentation than found here, see
 /*************************************************************************/
 
 
+/*************************************************************************/
 
-void IMB_write_shared(struct comm_info* c_info, int size, int n_sample, 
+/* ===================================================================== */
+/* 
+IMB 3.1 changes
+July 2007
+Hans-Joachim Plum, Intel GmbH
+
+- replace "int n_sample" by iteration scheduling object "ITERATIONS"
+  (see => IMB_benchmark.h)
+
+*/
+/* ===================================================================== */
+
+void IMB_write_shared(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                       MODES RUN_MODE, double* time)
 /*
 
@@ -102,8 +115,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -118,10 +131,12 @@ Output variables:
 
 */
 {
+if( c_info->File_rank>=0 )
+{
 if( RUN_MODE->AGGREGATE )
-IMB_write_ij(c_info, size, shared, RUN_MODE->type, 1, n_sample, 1, time);
+IMB_write_ij(c_info, size, shared, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, time);
 else
-IMB_write_ij(c_info, size, shared, RUN_MODE->type,  n_sample, 1, 0, time);
+IMB_write_ij(c_info, size, shared, RUN_MODE->type,  ITERATIONS->n_sample, 1, 0, time);
 
 if( RUN_MODE->NONBLOCKING )
 {
@@ -129,9 +144,10 @@ MPI_File_close(&c_info->fh);
 IMB_open_file(c_info);
 
 if( RUN_MODE->AGGREGATE )
-IMB_iwrite_ij(c_info, size, shared, RUN_MODE->type, 1, n_sample, 1, 1, time+1);
+IMB_iwrite_ij(c_info, size, shared, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, 1, time+1);
 else
-IMB_iwrite_ij(c_info, size, shared, RUN_MODE->type,  n_sample, 1, 0, 1, time+1);
+IMB_iwrite_ij(c_info, size, shared, RUN_MODE->type,  ITERATIONS->n_sample, 1, 0, 1, time+1);
+}
 }
 }
 
@@ -139,7 +155,7 @@ IMB_iwrite_ij(c_info, size, shared, RUN_MODE->type,  n_sample, 1, 0, 1, time+1);
 
 
 
-void IMB_write_indv(struct comm_info* c_info, int size, int n_sample, 
+void IMB_write_indv(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                     MODES RUN_MODE, double* time)
 /*
 
@@ -159,8 +175,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -175,10 +191,12 @@ Output variables:
 
 */
 {
+if( c_info->File_rank>=0 )
+{
 if( RUN_MODE->AGGREGATE )
-IMB_write_ij(c_info, size, indv_block, RUN_MODE->type, 1, n_sample, 1, time);
+IMB_write_ij(c_info, size, indv_block, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, time);
 else
-IMB_write_ij(c_info, size, indv_block, RUN_MODE->type,  n_sample, 1, 0, time);
+IMB_write_ij(c_info, size, indv_block, RUN_MODE->type,  ITERATIONS->n_sample, 1, 0, time);
 
 if( RUN_MODE->NONBLOCKING )
 {
@@ -186,18 +204,18 @@ MPI_File_close(&c_info->fh);
 IMB_open_file(c_info);
 
 if( RUN_MODE->AGGREGATE )
-IMB_iwrite_ij(c_info, size, indv_block, RUN_MODE->type, 1, n_sample, 1, 1, time+1);
+IMB_iwrite_ij(c_info, size, indv_block, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, 1, time+1);
 else
-IMB_iwrite_ij(c_info, size, indv_block, RUN_MODE->type,  n_sample, 1, 0, 1, time+1);
+IMB_iwrite_ij(c_info, size, indv_block, RUN_MODE->type,  ITERATIONS->n_sample, 1, 0, 1, time+1);
 }
-
+}
 }
 
 /*************************************************************************/
 
 
 
-void IMB_write_expl(struct comm_info* c_info, int size, int n_sample, 
+void IMB_write_expl(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                     MODES RUN_MODE, double* time)
 /*
 
@@ -217,8 +235,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -233,10 +251,12 @@ Output variables:
 
 */
 {
+if( c_info->File_rank>=0 )
+{
 if( RUN_MODE->AGGREGATE )
-IMB_write_ij(c_info, size, explicit, RUN_MODE->type, 1, n_sample, 1, time);
+IMB_write_ij(c_info, size, explicit, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, time);
 else
-IMB_write_ij(c_info, size, explicit, RUN_MODE->type,  n_sample, 1, 0, time);
+IMB_write_ij(c_info, size, explicit, RUN_MODE->type,  ITERATIONS->n_sample, 1, 0, time);
 
 if( RUN_MODE->NONBLOCKING )
 {
@@ -244,9 +264,10 @@ MPI_File_close(&c_info->fh);
 IMB_open_file(c_info);
 
 if( RUN_MODE->AGGREGATE )
-IMB_iwrite_ij(c_info, size, explicit, RUN_MODE->type, 1, n_sample, 1, 1, time+1);
+IMB_iwrite_ij(c_info, size, explicit, RUN_MODE->type, 1, ITERATIONS->n_sample, 1, 1, time+1);
 else
-IMB_iwrite_ij(c_info, size, explicit, RUN_MODE->type,  n_sample, 1, 0, 1, time+1);
+IMB_iwrite_ij(c_info, size, explicit, RUN_MODE->type,  ITERATIONS->n_sample, 1, 0, 1, time+1);
+}
 }
 }
 
@@ -372,6 +393,9 @@ DIAGNOSTICS("Write shared ",c_info,c_info->s_buffer,Locsize,Totalsize,i+j,pos);
 
 }
 
+// IMB_3.1 fix: use the following triple operation to assure write completion
+MPI_File_sync(c_info->fh);
+MPI_Barrier(c_info->File_comm);
 MPI_File_sync(c_info->fh);
 
 if( time_inner ) *time = (MPI_Wtime() - *time)/(i_sample*j_sample);
@@ -508,6 +532,9 @@ MPI_ERRHAND(ierr);
 
 }
 
+// IMB_3.1 fix: use the following triple operation to assure write completion
+MPI_File_sync(c_info->fh);
+MPI_Barrier(c_info->File_comm);
 MPI_File_sync(c_info->fh);
 
 
@@ -594,8 +621,10 @@ else
 MPI_Waitall(j_sample,REQUESTS,STAT);
 
 
+// IMB_3.1 fix: use the following triple operation to assure write completion
 MPI_File_sync(c_info->fh);
-
+MPI_Barrier(c_info->File_comm);
+MPI_File_sync(c_info->fh);
 
 if( time_inner ) *time = (MPI_Wtime() - *time)/(i_sample*j_sample);
 
@@ -608,8 +637,8 @@ CHK_STOP;
 }
 if( !time_inner ) *time = (MPI_Wtime() - *time)/(i_sample*j_sample);
 
-free (REQUESTS);
-free (STAT);    
+IMB_v_free ((void**)&REQUESTS);
+IMB_v_free ((void**)&STAT);    
 
 }
 

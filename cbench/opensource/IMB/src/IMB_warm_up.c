@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -78,7 +78,13 @@ For more documentation than found here, see
 
 
 
-void IMB_warm_up (struct comm_info* c_info, struct Bench* Bmark, int iter)
+/* IMB 3.1 << */
+/*
+Use ITERATIONS object;
+perform warmup with the minimum message size, no longer with the maximum one;
+*/
+void IMB_warm_up (struct comm_info* c_info, struct Bench* Bmark, struct iter_schedule* ITERATIONS, int iter)
+/* >> IMB 3.1  */
 /*
 
                       
@@ -102,6 +108,11 @@ Input variables:
                       
                       The actual benchmark
                       
+IMB 3.1 <<
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
+>> IMB 3.1
+
 
 -iter                 (type int)                      
                       Number of the outer iteration of the benchmark. Only
@@ -120,11 +131,16 @@ Input variables:
 #ifndef MPIIO
       if( iter == 0 )
 	{
-	  int size = 1<<MAXMSGLOG;
+/* IMB 3.1: other warm up settings */
+	  int size = asize;
 	  double t;
-	  int n_sample = N_WARMUP;
+	  int n_sample = ITERATIONS->n_sample;
 
-	  Bmark->Benchmark(c_info, size, n_sample, &MD, &t);
+	  ITERATIONS->n_sample = N_WARMUP;
+
+	  Bmark->Benchmark(c_info, size, ITERATIONS, &MD, &t);
+
+          ITERATIONS->n_sample = n_sample;
 	}
 #endif
     }

@@ -57,11 +57,11 @@ For more documentation than found here, see
     In 
     doc/IMB_ug.pdf
 
- File: IMB_pingping.c 
+ File: IMB_scatterv.c 
 
  Implemented functions: 
 
- IMB_pingping;
+ IMB_scatterv;
 
  ***************************************************************************/
 
@@ -74,31 +74,25 @@ For more documentation than found here, see
 
 #include "IMB_prototypes.h"
 
-/*************************************************************************/
-
+/*******************************************************************************/
 
 /* ===================================================================== */
 /* 
-IMB 3.1 changes
+IMB_scatterv is a new IMB 3.1 benchmark
 July 2007
 Hans-Joachim Plum, Intel GmbH
 
-- replace "int n_sample" by iteration scheduling object "ITERATIONS"
-  (see => IMB_benchmark.h)
-
-- proceed with offsets in send / recv buffers to eventually provide
-  out-of-cache data
 */
 /* ===================================================================== */
 
 
-void IMB_pingping(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
-                  MODES RUN_MODE, double* time)
+void IMB_scatterv(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
+                 MODES RUN_MODE, double* time)
 /*
 
                       
                       MPI-1 benchmark kernel
-                      2 process exchange; MPI_Isend + MPI_Recv 
+                      Benchmarks MPI_Scatterv
                       
 
 
@@ -127,67 +121,55 @@ Output variables:
 
 */
 {
-  double t1,t2;
+  double t1, t2;
   int    i;
-  
-  Type_Size s_size, r_size;
+  Type_Size s_size,r_size;
   int s_num, r_num;
-  int s_tag, r_tag;
-  int dest, source;
-  MPI_Status stat;
-  MPI_Request request;
 
-#ifdef CHECK 
-  defect=0;
+#ifdef CHECK
+defect=0.;
 #endif
   ierr = 0;
 
+  /*  GET SIZE OF DATA TYPE */  
   MPI_Type_size(c_info->s_data_type,&s_size);
   MPI_Type_size(c_info->r_data_type,&r_size);
-
   if ((s_size!=0) && (r_size!=0))
-   {
+    {
       s_num=size/s_size;
       r_num=size/r_size;
     } 
-  s_tag = 1;
-  r_tag = c_info->select_tag ? s_tag : MPI_ANY_TAG;
-  
-  dest = -1;
-  if (c_info->rank == c_info->pair0)
-      dest = c_info->pair1;
-  else if (c_info->rank == c_info->pair1)
-      dest = c_info->pair0;
 
-  source = c_info->select_source ? dest : MPI_ANY_SOURCE;
-      
-  if( dest != -1 )
+  /* INITIALIZATION OF DISPLACEMENT and RECEIVE COUNTS */
+
+  for (i=0;i<c_info->num_procs ;i++)
+    {
+      c_info->sdispl[i] = s_num*i;
+      c_info->sndcnt[i] = s_num;
+    }
+
+  
+  if(c_info->rank!=-1)
     {
       for(i=0; i<N_BARR; i++) MPI_Barrier(c_info->communicator);
 
       t1 = MPI_Wtime();
-      for(i=0;i< ITERATIONS->n_sample;i++)
-	{
-	  ierr= MPI_Isend((char*)c_info->s_buffer+i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
-                          s_num,
-			  c_info->s_data_type,dest,s_tag,
-			  c_info->communicator,&request);
-	  MPI_ERRHAND(ierr);
-	  ierr = MPI_Recv((char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
-                          r_num,c_info->r_data_type,source,
-			  r_tag,c_info->communicator,&stat);
-	  MPI_ERRHAND(ierr);
-
-	  ierr = MPI_Wait(&request, &stat);
-	  MPI_ERRHAND(ierr);
-
-          CHK_DIFF("PingPing",c_info, (char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
-                    0, size, size, asize,
-                    put, 0, ITERATIONS->n_sample, i,
-                    dest, &defect);
-	}
+      for(i=0;i<ITERATIONS->n_sample;i++)
+      {
+          ierr = MPI_Scatterv((char*)c_info->s_buffer+i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
+                              c_info->sndcnt,c_info->sdispl, c_info->s_data_type,
+		              (char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
+// root = round robin
+                              r_num, c_info->r_data_type, i%c_info->num_procs,
+                              c_info->communicator);
+          MPI_ERRHAND(ierr);
+          CHK_DIFF("Scatterv",c_info, 
+                   (char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
+                   c_info->sdispl[c_info->rank], size, size, 1, 
+                   put, 0, ITERATIONS->n_sample, i,
+                   i%c_info->num_procs, &defect);
+        }
       t2 = MPI_Wtime();
-      
       *time=(t2 - t1)/ITERATIONS->n_sample;
     }
   else
@@ -195,4 +177,3 @@ Output variables:
       *time = 0.; 
     }
 }
-

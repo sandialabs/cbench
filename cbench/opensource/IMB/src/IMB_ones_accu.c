@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -79,9 +79,22 @@ For more documentation than found here, see
 
 /*************************************************************************/
 
+/* ===================================================================== */
+/* 
+IMB 3.1 changes
+July 2007
+Hans-Joachim Plum, Intel GmbH
+
+- replace "int n_sample" by iteration scheduling object "ITERATIONS"
+  (see => IMB_benchmark.h)
+
+- proceed with offsets in send / recv buffers to eventually provide
+  out-of-cache data
+*/
+/* ===================================================================== */
 
 
-void IMB_accumulate (struct comm_info* c_info, int size, int n_sample, 
+void IMB_accumulate (struct comm_info* c_info, int size,  struct iter_schedule* ITERATIONS,
                      MODES RUN_MODE, double* time)
 /*
 
@@ -101,8 +114,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       Mode (aggregate/non aggregate; blocking/nonblocking);
@@ -121,6 +134,9 @@ Output variables:
   
   Type_Size s_size,r_size;
   int s_num, r_num;
+/* IMB 3.1 << */
+  int r_off;
+/* >> IMB 3.1  */
   int s_tag, r_tag;
   int dest, source, root;
   int i;
@@ -134,10 +150,15 @@ Output variables:
 
   /*  GET SIZE OF DATA TYPE */  
 MPI_Type_size(c_info->red_data_type,&s_size);
-if (s_size!=0) s_num=size/s_size;
+
+/* IMB 3.1 << */
+s_num=size/s_size;
+r_size=s_size;
+r_num=s_num;
+r_off=ITERATIONS->r_offs/r_size;
+/* >> IMB 3.1  */
 
 root = (c_info-> rank == 0);
-
 
 if( c_info-> rank < 0 )
 *time = 0.;
@@ -149,13 +170,15 @@ if( !RUN_MODE->AGGREGATE )
 
 *time = MPI_Wtime();
 
-for(i=0;i< n_sample;i++)
+for(i=0;i< ITERATIONS->n_sample;i++)
 	{
 
-       ierr = MPI_Accumulate
-                     (c_info->s_buffer, s_num, c_info->red_data_type,
-                      0, i*s_num, s_num, c_info->red_data_type, c_info->op_type,
-                      c_info->WIN );
+       ierr = MPI_Accumulate(
+                 (char*)c_info->s_buffer+i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
+                 s_num, c_info->red_data_type,
+                 0, i%ITERATIONS->r_cache_iter*r_off,
+                 r_num, c_info->red_data_type, c_info->op_type,
+                 c_info->WIN );
        MPI_ERRHAND(ierr);
 
        ierr = MPI_Win_fence(0, c_info->WIN);
@@ -163,17 +186,17 @@ for(i=0;i< n_sample;i++)
 #ifdef CHECK
 if( root ) 
 {
-       CHK_DIFF("Accumulate",c_info, (void*)(c_info->r_data+i*s_num), 0,
-                size, size, asize, 
-                put, 0, n_sample, i,
+       CHK_DIFF("Accumulate",c_info, (char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
+                0, size, size, asize, 
+                put, 0, ITERATIONS->n_sample, i,
                 -1, &defect);
-       IMB_ass_buf(c_info->r_buffer, 0, 0, size-1, 0);
+       IMB_ass_buf((char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs, 0, 0, size-1, 0);
 }
 MPI_Barrier(c_info->communicator);
 #endif
 
 	}
-*time=(MPI_Wtime()-*time)/n_sample;
+*time=(MPI_Wtime()-*time)/ITERATIONS->n_sample;
 }
 
 if( RUN_MODE->AGGREGATE )
@@ -183,13 +206,18 @@ for(i=0; i<N_BARR; i++) MPI_Barrier(c_info->communicator);
 
 *time = MPI_Wtime();
 
-for(i=0;i< n_sample;i++)
+#ifdef CHECK
+for(i=0;i< ITERATIONS->r_cache_iter; i++)
+#else
+for(i=0;i< ITERATIONS->n_sample;i++)
+#endif
 	{
 
-
-       ierr = MPI_Accumulate
-                ((void*)(c_info->s_data+i*s_num), s_num, c_info->red_data_type,
-                 0, i*s_num, s_num, c_info->red_data_type, c_info->op_type,
+       ierr = MPI_Accumulate(
+                 (char*)c_info->s_buffer+i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
+                 s_num, c_info->red_data_type,
+                 0, i%ITERATIONS->r_cache_iter*r_off,
+                 r_num, c_info->red_data_type, c_info->op_type,
                  c_info->WIN );
        MPI_ERRHAND(ierr);
 
@@ -198,15 +226,18 @@ for(i=0;i< n_sample;i++)
        ierr = MPI_Win_fence(0, c_info->WIN);
        MPI_ERRHAND(ierr);
 
-*time=(MPI_Wtime()-*time)/n_sample;
+*time=(MPI_Wtime()-*time)/ITERATIONS->n_sample;
 
 #ifdef CHECK
 if( root ) 
 {
-    CHK_DIFF("Accumulate",c_info, c_info->r_buffer, 0,
-             n_sample*size, n_sample*size, asize, 
-             put, 0, n_sample, -1,
+for(i=0;i< ITERATIONS->r_cache_iter; i++)
+	{
+    CHK_DIFF("Accumulate", c_info, (char*)c_info->r_buffer+i*ITERATIONS->r_offs,
+             0, size, size, asize, 
+             put, 0, ITERATIONS->n_sample, i,
              -1, &defect);
+        }
 }
 #endif
 

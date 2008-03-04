@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -72,6 +72,8 @@ For more documentation than found here, see
 
 #include "IMB_prototypes.h"
 
+extern int num_alloc, num_free;
+
 
 /**********************************************************************/
 
@@ -118,6 +120,10 @@ int   header;
 int     size;             
 int   MAXMSG;
 int x_sample,n_sample;            
+/* IMB 3.1 << */
+struct iter_schedule ITERATIONS;
+int mem_ok;
+/* >> IMB 3.1  */
 MODES BMODE;            
 double  time[MAX_TIMINGS]; 
 
@@ -129,19 +135,23 @@ IMB_set_default(&C_INFO);
 
 IMB_init_pointers(&C_INFO);
 
-if( IMB_basic_input(&C_INFO,&BList,&argc,&argv,&NP_min)<0 )
+/* IMB 3.1 << */
+if( IMB_basic_input(&C_INFO,&BList,&ITERATIONS,&argc,&argv,&NP_min)<0 )
+/* >> IMB 3.1  */
 {
 /* IMB_3.0: help mode */
 if( C_INFO.w_rank==0 ){
 IMB_help();
 }
 MPI_Barrier(MPI_COMM_WORLD);
-IMB_free_all(&C_INFO, &BList);
+IMB_free_all(&C_INFO, &BList, &ITERATIONS);
 MPI_Finalize();
 return 0;
 }
 
-IMB_show_selections(&C_INFO,BList);
+/* IMB 3.1 << */
+IMB_show_selections(&C_INFO,BList,&argc,&argv);
+/* >> IMB 3.1  */
 
 /* LOOP OVER INDIVIDUAL BENCHMARKS */
 j=0;
@@ -171,7 +181,7 @@ while( (p=BList[j].name) )
 	if(IMB_init_communicator(&C_INFO,NP)!=0) IMB_err_hand(0,-1);
 
 #ifdef MPIIO
-	if(IMB_init_file(&C_INFO,Bmark,NP)!=0) IMB_err_hand(0,-1);
+	if(IMB_init_file(&C_INFO,Bmark,&ITERATIONS,NP)!=0) IMB_err_hand(0,-1);
 #endif
 
 	/* MINIMAL OUTPUT IF UNIT IS GIVEN */
@@ -183,8 +193,6 @@ while( (p=BList[j].name) )
 	  };
 	header=1;
 
-	MAXMSG=1<<MAXMSGLOG;
-
 #ifdef EXT
         MPI_Type_size(C_INFO.red_data_type,&unit_size);
 #else
@@ -195,18 +203,15 @@ while( (p=BList[j].name) )
 #endif
 
 	MAXMSG=(1<<MAXMSGLOG)/unit_size* unit_size;
-	
 
         for( imod=0; imod < Bmark->N_Modes; imod++ )
         {
 
         BMODE=&Bmark->RUN_MODES[imod];
 
-        x_sample = BMODE->AGGREGATE ? MSGSPERSAMPLE : MSGS_NONAGGR;
-/* July 2002 fix V2.2.1: */
-#if (defined EXT || defined MPIIO)
-        if( Bmark->access==no ) x_sample=MSGS_NONAGGR;
-#endif
+/* IMB 3.1 << */
+// x_sample calc => IMB_init_buffers_iter
+/* >> IMB 3.1  */
 
 	header=header | (imod > 0);
 	
@@ -221,7 +226,7 @@ while( (p=BList[j].name) )
 		if( iter == 0 ) 
 		  {
                     if( C_INFO.n_lens>0 ) size=C_INFO.msglen[0];
-		    else                  size     = 0;
+		    else                  size=0;
 		  }
 		else if ( iter == 1 ) 
 		  {  
@@ -235,7 +240,7 @@ while( (p=BList[j].name) )
 		else
 		  { 
                     if( C_INFO.n_lens>0 ) size=C_INFO.msglen[iter];
-		    else                  size     = min(MAXMSG,size+size);
+		    else                  size=min(MAXMSG,size+size);
 		  }
 
                 if( size> MAXMSG )
@@ -247,32 +252,32 @@ while( (p=BList[j].name) )
                  } 
 
                 size = (size+unit_size-1)/unit_size*unit_size;
-
-                if ( size>0 )
-                n_sample =max(1,min(OVERALL_VOL/size,x_sample));
-                else n_sample = x_sample ;
-
-
                 if( Bmark->RUN_MODES[0].type == Sync ) 
                    {
                     size=MAXMSG; iter = C_INFO.n_lens;
                    }
 
-                for(i=0; i<MAX_TIMINGS; i++) time[i] = 0.;
+/* IMB 3.1 << */
+// put some initialization stuff into:
+                IMB_init_buffers_iter(&C_INFO, &ITERATIONS, Bmark, BMODE, iter, size);
 
-                IMB_init_buffers(&C_INFO, Bmark, size);
+// IMB_init_buffers_iter has decided failure when memory usage exceeds limit:
+                if( !Bmark->sample_failure ){
 
-	        IMB_init_transfer(&C_INFO, Bmark, size);
+         	IMB_warm_up  (&C_INFO,Bmark,&ITERATIONS,iter);                    
 
-		IMB_warm_up  (&C_INFO,Bmark,iter);                    
+  		Bmark->Benchmark(&C_INFO,size,&ITERATIONS,BMODE,time);
 
-		Bmark->Benchmark(&C_INFO,size,n_sample,BMODE,time);
+                }
+/* >> IMB 3.1  */
 
                 /* Synchronization, in particular for idle processes
                    which have to wait in a well defined manner */
                 MPI_Barrier(MPI_COMM_WORLD);
                      
-	  	IMB_output   (&C_INFO,Bmark,BMODE,header,size,n_sample,time);
+/* IMB 3.1 << */
+	  	IMB_output   (&C_INFO,Bmark,BMODE,header,size,&ITERATIONS,time);
+/* >> IMB 3.1  */
 
                 IMB_close_transfer(&C_INFO, Bmark, size);
 
@@ -356,7 +361,30 @@ j++;
 
 IMB_end_msg(&C_INFO);
 
-IMB_free_all(&C_INFO, &BList);
+/* IMB 3.1 << */
+IMB_free_all(&C_INFO, &BList, &ITERATIONS);
+
+
+#ifdef CHECK
+if( num_alloc == num_free ){
+ierr=0;
+}
+else
+{
+fprintf(stderr,"pr %d: calls to IMB_v_alloc %d / IMB_v_free %d (doesn't seem ok, are unequal!)\n",C_INFO.w_rank,num_alloc,num_free);
+ierr=1;
+}
+MPI_Allreduce(&ierr,&mem_ok,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+if( C_INFO.w_rank==0 )
+{
+if( mem_ok == 0 ) 
+{
+fprintf(stderr,"# of calls to IMB_v_alloc / IMB_v_free match on all processes\n");
+}
+}
+#endif
+
+/* >> IMB 3.1  */
 MPI_Finalize();
 
 return 0;

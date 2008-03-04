@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -53,43 +53,55 @@ goods and services.
 /* MPI-1 message passing benchmarks */
 
 
-void IMB_allgather(struct comm_info* c_info, int size, int n_sample, 
+void IMB_allgather(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                    MODES RUN_MODE, double* time);
 
-void IMB_allgatherv(struct comm_info* c_info, int size, int n_sample, 
+void IMB_allgatherv(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                     MODES RUN_MODE, double* time);
 
-void IMB_allreduce(struct comm_info* c_info, int size, int n_sample, 
-                   MODES RUN_MODE, double* time);
-
-void IMB_alltoall(struct comm_info* c_info, int size, int n_sample, 
-                  MODES RUN_MODE, double* time);
-
-void IMB_alltoallv(struct comm_info* c_info, int size, int n_sample, 
-                   MODES RUN_MODE, double* time);
-
-void IMB_barrier(struct comm_info* c_info, int size, int n_sample, 
-                 MODES RUN_MODE, double* time);
-
-void IMB_bcast(struct comm_info* c_info, int size, int n_sample, 
-               MODES RUN_MODE, double* time);
-
-void IMB_exchange(struct comm_info* c_info, int size, int n_sample, 
-                  MODES RUN_MODE, double* time);
-
-void IMB_pingping(struct comm_info* c_info, int size, int n_sample, 
-                  MODES RUN_MODE, double* time);
-
-void IMB_pingpong(struct comm_info* c_info, int size, int n_sample, 
-                  MODES RUN_MODE, double* time);
-
-void IMB_reduce(struct comm_info* c_info, int size, int n_sample, 
+void IMB_gather(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                 MODES RUN_MODE, double* time);
 
-void IMB_reduce_scatter(struct comm_info* c_info, int size, int n_sample, 
+void IMB_gatherv(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
+                 MODES RUN_MODE, double* time);
+
+void IMB_scatter(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
+                 MODES RUN_MODE, double* time);
+
+void IMB_scatterv(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
+                  MODES RUN_MODE, double* time);
+
+void IMB_allreduce(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
+                   MODES RUN_MODE, double* time);
+
+void IMB_alltoall(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
+                  MODES RUN_MODE, double* time);
+
+void IMB_alltoallv(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
+                   MODES RUN_MODE, double* time);
+
+void IMB_barrier(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
+                 MODES RUN_MODE, double* time);
+
+void IMB_bcast(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
+               MODES RUN_MODE, double* time);
+
+void IMB_exchange(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
+                  MODES RUN_MODE, double* time);
+
+void IMB_pingping(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
+                  MODES RUN_MODE, double* time);
+
+void IMB_pingpong(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
+                  MODES RUN_MODE, double* time);
+
+void IMB_reduce(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
+                MODES RUN_MODE, double* time);
+
+void IMB_reduce_scatter(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                         MODES RUN_MODE, double* time);
 
-void IMB_sendrecv(struct comm_info* c_info, int size, int n_sample, 
+void IMB_sendrecv(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                   MODES RUN_MODE, double* time);
 
 
@@ -97,38 +109,38 @@ void IMB_sendrecv(struct comm_info* c_info, int size, int n_sample,
 
 #ifdef EXT
 
-void IMB_accumulate (struct comm_info* c_info, int size, int n_sample, 
+void IMB_accumulate (struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                      MODES RUN_MODE, double* time);
 
-void IMB_bidir_get(struct comm_info* c_info, int size, int n_sample, 
+void IMB_bidir_get(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                    MODES RUN_MODE, double* time);
 
-void IMB_bidir_put(struct comm_info* c_info, int size, int n_sample, 
+void IMB_bidir_put(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                    MODES RUN_MODE, double* time);
 
-void IMB_unidir_put (struct comm_info* c_info, int size, int n_sample, 
+void IMB_unidir_put (struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                      MODES RUN_MODE, double* time);
 
-void IMB_unidir_get (struct comm_info* c_info, int size, int n_sample, 
+void IMB_unidir_get (struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                      MODES RUN_MODE, double* time);
 
 void IMB_ones_get(struct comm_info* c_info, int s_num, int dest, 
                   int r_num, int sender, int size, 
-                  int n_sample, double* time);
+                  struct iter_schedule* ITERATIONS, double* time);
 
 void IMB_ones_mget(struct comm_info* c_info, int s_num, int dest, 
                    int r_num, int sender, int size, 
-                   int n_sample, double* time);
+                   struct iter_schedule* ITERATIONS, double* time);
 
 void IMB_ones_put(struct comm_info* c_info, int s_num, int dest, 
                   int r_num, int sender, int size, 
-                  int n_sample, double* time);
+                  struct iter_schedule* ITERATIONS, double* time);
 
 void IMB_ones_mput(struct comm_info* c_info, int s_num, int dest, 
                    int r_num, int sender, int size, 
-                   int n_sample, double* time);
+                   struct iter_schedule* ITERATIONS, double* time);
 
-void IMB_window(struct comm_info* c_info, int size, int n_sample, 
+void IMB_window(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                 MODES RUN_MODE, double* time);
 
 void IMB_user_set_info(MPI_Info* opt_info);
@@ -139,16 +151,16 @@ void IMB_user_set_info(MPI_Info* opt_info);
 
 #ifdef MPIIO
 
-void IMB_open_close(struct comm_info* c_info, int size, int n_sample, 
+void IMB_open_close(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                     MODES RUN_MODE, double* time);
 
-void IMB_read_shared(struct comm_info* c_info, int size, int n_sample, 
+void IMB_read_shared(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                      MODES RUN_MODE, double* time);
 
-void IMB_read_indv(struct comm_info* c_info, int size, int n_sample, 
+void IMB_read_indv(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                    MODES RUN_MODE, double* time);
 
-void IMB_read_expl(struct comm_info* c_info, int size, int n_sample, 
+void IMB_read_expl(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                    MODES RUN_MODE, double* time);
 
 void IMB_read_ij(struct comm_info* c_info, int size, POSITIONING pos, 
@@ -159,13 +171,13 @@ void IMB_iread_ij(struct comm_info* c_info, int size, POSITIONING pos,
                   BTYPES type, int i_sample, int j_sample, 
                   int time_inner, int do_ovrlp, double* time);
 
-void IMB_write_shared(struct comm_info* c_info, int size, int n_sample, 
+void IMB_write_shared(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                       MODES RUN_MODE, double* time);
 
-void IMB_write_indv(struct comm_info* c_info, int size, int n_sample, 
+void IMB_write_indv(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                     MODES RUN_MODE, double* time);
 
-void IMB_write_expl(struct comm_info* c_info, int size, int n_sample, 
+void IMB_write_expl(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS, 
                     MODES RUN_MODE, double* time);
 
 void IMB_write_ij(struct comm_info* c_info, int size, POSITIONING pos, 
@@ -185,8 +197,11 @@ void IMB_user_set_info(MPI_Info* opt_info);
 
 int main(int argc, char **argv);
 
-int IMB_basic_input(struct comm_info* c_info, struct Bench** P_BList, int *argc, 
-                    char ***argv, int* NP_min);
+/* IMB 3.1 << */
+int IMB_basic_input(struct comm_info* c_info, struct Bench** P_BList, 
+                    struct iter_schedule* ITERATIONS,
+                    int *argc, char ***argv, int* NP_min);
+/* >> IMB 3.1  */
 
 void IMB_get_rank_portion(int rank, int NP, int size, 
                           int unit_size, int* pos1, int* pos2);
@@ -226,7 +241,9 @@ void IMB_set_bmark(struct Bench* Bmark);
 
 void IMB_init_file_content(void* BUF, int pos1, int pos2);
 
-int IMB_init_file(struct comm_info* c_info, struct Bench* Bmark, int NP);
+/* << IMB 3.1 */
+int IMB_init_file(struct comm_info* c_info, struct Bench* Bmark, struct iter_schedule* ITERATIONS, int NP);
+/* >> IMB 3.1 */
 
 void IMB_free_file(struct comm_info * c_info);
 
@@ -249,11 +266,13 @@ void IMB_destruct_blist(struct Bench ** P_BList);
 
 void IMB_print_blist(struct comm_info * c_info, struct Bench *BList);
 
-void IMB_init_transfer(struct comm_info* c_info, struct Bench* Bmark, int size);
+/* IMB 3.1 << */
+void IMB_init_transfer(struct comm_info* c_info, struct Bench* Bmark, int size, int acc_size);
+/* >> IMB 3.1  */
 
 void IMB_close_transfer (struct comm_info* c_info, struct Bench* Bmark, int size);
 
-void IMB_warm_up (struct comm_info* c_info, struct Bench* Bmark, int iter);
+void IMB_warm_up (struct comm_info* c_info, struct Bench* Bmark, struct iter_schedule* ITERATIONS, int iter);
 
 void IMB_cpu_exploit(float target_secs, int initialize);
 
@@ -263,9 +282,11 @@ void IMB_make_sys_info();
 
 void IMB_end_msg(struct comm_info* c_info );
 
+/* IMB 3.1 << */
 void IMB_output(struct comm_info* c_info, struct Bench* Bmark, MODES BMODE, 
-                int header, int size, int n_sample, 
+                int header, int size, struct iter_schedule* ITERATIONS,
                 double *time);
+/* >> IMB 3.1  */
 
 /* New in IMB_3.0 */
 void IMB_help();
@@ -274,7 +295,9 @@ void IMB_display_times(struct Bench* Bmark, double* tlist, struct comm_info* c_i
                        int group, int n_sample, int size, 
                        int edit_type);
 
-void IMB_show_selections(struct comm_info* c_info, struct Bench* BList);
+/* IMB 3.1 << */
+void IMB_show_selections(struct comm_info* c_info, struct Bench* BList, int *argc, char ***argv);
+/* >> IMB 3.1  */
 
 void IMB_show_procids(struct comm_info* c_info);
 
@@ -312,9 +335,12 @@ void IMB_set_buf(struct comm_info* c_info, int selected_rank, int s_pos1,
 
 void IMB_init_pointers(struct comm_info *c_info );
 
-void IMB_init_buffers(struct comm_info* c_info, struct Bench* Bmark, int size);
+/* IMB 3.1 << */
+void IMB_init_buffers_iter(struct comm_info* c_info, struct iter_schedule* ITERATIONS, 
+                           struct Bench* Bmark, MODES BMODE, int iter, int size);
 
-void IMB_free_all(struct comm_info* c_info, struct Bench** P_BList);
+void IMB_free_all(struct comm_info* c_info, struct Bench** P_BList, struct iter_schedule* ITERATIONS);
+/* >> IMB 3.1  */
 
 void IMB_del_s_buf(struct comm_info* c_info );
 

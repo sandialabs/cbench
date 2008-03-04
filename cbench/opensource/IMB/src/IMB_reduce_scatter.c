@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -78,8 +78,21 @@ For more documentation than found here, see
 /*******************************************************************************/
 
 
+/* ===================================================================== */
+/* 
+IMB 3.1 changes
+July 2007
+Hans-Joachim Plum, Intel GmbH
 
-void IMB_reduce_scatter(struct comm_info* c_info, int size, int n_sample, 
+- replace "int n_sample" by iteration scheduling object "ITERATIONS"
+  (see => IMB_benchmark.h)
+
+- proceed with offsets in send / recv buffers to eventually provide
+  out-of-cache data
+*/
+/* ===================================================================== */
+
+void IMB_reduce_scatter(struct comm_info* c_info, int size, struct iter_schedule* ITERATIONS,
                         MODES RUN_MODE, double* time)
 /*
 
@@ -99,8 +112,8 @@ Input variables:
 -size                 (type int)                      
                       Basic message size in bytes
 
--n_sample             (type int)                      
-                      Number of repetitions (for timing accuracy)
+-ITERATIONS           (type struct iter_schedule *)
+                      Repetition scheduling
 
 -RUN_MODE             (type MODES)                      
                       (only MPI-2 case: see [1])
@@ -145,23 +158,25 @@ defect=0.;
       for(i=0; i<N_BARR; i++) MPI_Barrier(c_info->communicator);
 
       t1 = MPI_Wtime();
-      for(i=0;i< n_sample;i++)
+      for(i=0;i< ITERATIONS->n_sample;i++)
         {
           ierr = MPI_Reduce_scatter
-                           (c_info->s_buffer,c_info->r_buffer,
+                           ((char*)c_info->s_buffer+i%ITERATIONS->s_cache_iter*ITERATIONS->s_offs,
+                            (char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
                             c_info->reccnt,
 			    c_info->red_data_type,c_info->op_type,
 			    c_info->communicator);
           MPI_ERRHAND(ierr);
 
-          CHK_DIFF("Reduce_scatter",c_info, c_info->r_buffer, pos,
+          CHK_DIFF("Reduce_scatter",c_info, (char*)c_info->r_buffer+i%ITERATIONS->r_cache_iter*ITERATIONS->r_offs,
+                    pos,
                     Locsize, size, asize,
-                    put, 0, n_sample, i,
+                    put, 0, ITERATIONS->n_sample, i,
                     -1, &defect);
 
         }
       t2 = MPI_Wtime();
-      *time=(t2 - t1)/n_sample;
+      *time=(t2 - t1)/ITERATIONS->n_sample;
     }
   else
     { 

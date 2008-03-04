@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -135,7 +135,11 @@ DON'T change anything below here !!
 #define N_WARMUP 2
 #define N_BARR   2
 
+#ifdef CHECK
+#define TARGET_CPU_SECS 0.001
+#else
 #define TARGET_CPU_SECS 0.01
+#endif
 
 #endif
 

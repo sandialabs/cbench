@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -139,8 +139,11 @@ DON'T change anything below here !!
 #define MSGS_NONAGGR  10
 #define OVERALL_VOL 16*1048576
 
-
-#define TARGET_CPU_SECS 0.1 /* unit seconds */
+#ifdef CHECK
+#define TARGET_CPU_SECS 0.001
+#else
+#define TARGET_CPU_SECS 0.01
+#endif
 
 #define N_BARR   2
 

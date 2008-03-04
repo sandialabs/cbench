@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -70,7 +70,7 @@ For more documentation than found here, see
 
 
 
-char* VERSION="3.0";
+char* VERSION="3.1";
 
 #include <stdio.h>
 #include <time.h>
@@ -118,8 +118,15 @@ void IMB_general_info()
   fprintf(unit,"\n");
 }
 
+/* IMB 3.1 << */
+/* include WIN case */
+#ifndef WIN_IMB
 #include <sys/utsname.h>
-
+#else
+#include <Windows.h>
+#define INFO_BUFFER_SIZE 32767
+#endif
+/* >> IMB 3.1  */
 
 
 void IMB_make_sys_info()
@@ -134,6 +141,9 @@ void IMB_make_sys_info()
 */
 {
   int dont_care, mpi_subversion, mpi_version;
+/* IMB 3.1 << */
+/* include WIN case */
+#ifndef WIN_IMB
   struct utsname info;
   uname( &info );
   dont_care = MPI_Get_version(&mpi_version,&mpi_subversion);
@@ -142,6 +152,61 @@ void IMB_make_sys_info()
   fprintf(unit,"# System                : %s\n",info.sysname);
   fprintf(unit,"# Release               : %s\n",info.release);
   fprintf(unit,"# Version               : %s\n",info.version);
+#else
+  OSVERSIONINFO info;
+  TCHAR infoBuf[INFO_BUFFER_SIZE];
+  DWORD bufCharCount = INFO_BUFFER_SIZE;
+  dont_care = MPI_Get_version(&mpi_version,&mpi_subversion);
+  
+  info.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+  GetVersionEx(&info);
+
+  bufCharCount = ExpandEnvironmentStrings("%PROCESSOR_IDENTIFIER%",infoBuf,INFO_BUFFER_SIZE);
+
+  fprintf(unit,"# Machine               : %s\n",infoBuf);
+
+  if (info.dwMajorVersion == 4)
+      switch (info.dwMinorVersion) {
+      case 90 :
+          fprintf(unit,"# System                : Windows Me\n");
+          break;
+      case 10 :
+          fprintf(unit,"# System                : Windows 98\n");
+          break;
+      case 0 :
+          fprintf(unit,"# System                : Windows NT 4.0\n");
+          break;
+      default :
+          break;
+      }
+  else if (info.dwMajorVersion == 5)
+      switch (info.dwMinorVersion) {
+      case 2 :
+          fprintf(unit,"# System                : Windows 2003\n");
+          break;
+      case 1 :
+          fprintf(unit,"# System                : Windows XP\n");
+          break;
+      case 0 :
+          fprintf(unit,"# System                : Windows 2000\n");
+          break;
+      default :
+          break;
+      }
+  else if (info.dwMajorVersion == 6)
+      switch (info.dwMinorVersion) {
+      case 0 :
+          fprintf(unit,"# System                : Windows Server \"Longhorn\"\n");
+          break;
+      default :
+          break;
+      }
+  
+  fprintf(unit,"# Release               : %-d.%-d.%-d\n",info.dwMajorVersion,
+          info.dwMinorVersion,info.dwBuildNumber);
+  fprintf(unit,"# Version               : %s\n",info.szCSDVersion);
+#endif
+/* >> IMB 3.1  */
   fprintf(unit,"# MPI Version           : %-d.%-d\n",mpi_version,mpi_subversion);
   fprintf(unit,"# MPI Thread Environment: ");
 

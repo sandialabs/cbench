@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- * Copyright (c) 2003-2006 Intel Corporation.                                *
+ * Copyright (c) 2003-2007 Intel Corporation.                                *
  * All rights reserved.                                                      *
  *                                                                           *
  *****************************************************************************
@@ -233,6 +233,34 @@ return;
           Bmark->Benchmark = IMB_allgatherv;
           type = Collective;
           Bmark->bench_comments = &Allgatherv_cmt[0];
+	}
+ else if (!strcmp(Bmark->name,"gather"))
+	{ 
+          strcpy(Bmark->name,"Gather");
+          Bmark->Benchmark = IMB_gather;
+          type = Collective;
+          Bmark->bench_comments = &Gather_cmt[0];
+	}
+ else if (!strcmp(Bmark->name,"gatherv"))
+	{ 
+          strcpy(Bmark->name,"Gatherv");
+          Bmark->Benchmark = IMB_gatherv;
+          type = Collective;
+          Bmark->bench_comments = &Gatherv_cmt[0];
+	}
+ else if (!strcmp(Bmark->name,"scatter"))
+	{ 
+          strcpy(Bmark->name,"Scatter");
+          Bmark->Benchmark = IMB_scatter;
+          type = Collective;
+          Bmark->bench_comments = &Scatter_cmt[0];
+	}
+ else if (!strcmp(Bmark->name,"scatterv"))
+	{ 
+          strcpy(Bmark->name,"Scatterv");
+          Bmark->Benchmark = IMB_scatterv;
+          type = Collective;
+          Bmark->bench_comments = &Scatterv_cmt[0];
 	}
  else if (!strcmp(Bmark->name,"alltoall"))
 	{ 
