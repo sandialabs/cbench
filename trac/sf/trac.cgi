@@ -18,9 +18,9 @@
 import sys
 import os
 
-sys.path.append("/home/groups/c/cb/cbench-sf/tracinstall/lib/python2.3/site-packages/")
-sys.path.append("/home/groups/c/cb/cbench-sf/tracinstall/usr/lib/python2.3/site-packages/")
-os.environ['TRAC_ENV'] = "/tmp/persistent/cbench-sf/TRAC"
+sys.path.append("/home/groups/c/cb/cbench/tracinstall/lib/python2.3/site-packages/")
+sys.path.append("/home/groups/c/cb/cbench/tracinstall/usr/lib/python2.3/site-packages/")
+os.environ['TRAC_ENV'] = "/tmp/persistent/cbench/TRAC"
 
 try:
     from trac.web import cgi_frontend

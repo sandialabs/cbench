@@ -7,8 +7,8 @@ else
 	ACT="$1"
 fi
 
-PERSIST=/tmp/persistent/cbench-sf
-PROJ=/home/groups/c/cb/cbench-sf
+PERSIST=/tmp/persistent/cbench
+PROJ=/home/groups/c/cb/cbench
 HOME=/home/users/s/so/sonicsoft70
 
 if [ "$ACT" == 'site' ]; then
@@ -49,5 +49,7 @@ if [ "$ACT" == 'install' ]; then
 	
 	cd $PROJ
 	tar xvfz $PROJ/tracinstall.tar.gz
+	#find $PROJ -type f -exec chmod 0664 {} \;
+	#find $PROJ -type d -exec chmod 2775 {} \;
 	/bin/rm -f $PROJ/tracinstall.tar.gz
 fi

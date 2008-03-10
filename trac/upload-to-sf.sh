@@ -5,6 +5,7 @@ set -x
 SRC=/data/cbench/cbench
 TMP=/tmp/tracsite
 SFSTUFF=$HOME/tracstuff/sf
+SFPROJ=cbench
 
 mkdir -p $TMP
 rm -rf $TMP/*
@@ -12,7 +13,7 @@ rm -rf $TMP/*
 # create empty SVN
 #svnadmin create $TMP/SVN
 mkdir -p $TMP/SVN
-rsync -a --exclude mylogs --exclude hooks --exclude dav $SRC/SVNnew/ $TMP/SVN/.
+#rsync -a --exclude mylogs --exclude hooks --exclude dav $SRC/SVNnew/ $TMP/SVN/.
 
 # build a TRAC site image for sf
 rsync --exclude trac.db* --exclude trac.log -a $SRC/TRAC $TMP/.
@@ -41,4 +42,4 @@ $HOME/sf/scp_to_shell $HOME/tracinstall.tar.gz
 $HOME/sf/scp_to_shell $SFSTUFF/update-sf.sh .
 $HOME/sf/scp_to_shell $SFSTUFF/set_trac_perms.sh .
 $HOME/sf/scp_to_shell $SFSTUFF/ls2html.sh .
-$HOME/sf/login_to_shell "chmod u+x cbench-sf/set_trac_perms.sh cbench-sf/update-sf.sh cbench-sf/ls2html.sh"
+$HOME/sf/login_to_shell "chmod ug+x $SFPROJ/set_trac_perms.sh $SFPROJ/update-sf.sh $SFPROJ/ls2html.sh"
