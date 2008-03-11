@@ -57,7 +57,7 @@ int main (int argc, char **argv) {
     	time_t timestamp;
 
     	timestamp = time(NULL);
-	printf("main() launch: %s\n",ctime(&timestamp));
+		fprintf(stderr, "main() launch: %s\n",ctime(&timestamp));
 
         int rank, size;
         long i;
