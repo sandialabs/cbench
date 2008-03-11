@@ -189,6 +189,8 @@ foreach my $set (@testset_list) {
 
 	# nodehwtest testset still has some necessarily unique scripts
 	($set eq 'nodehwtest') and 
+		testset_symlink_file("tools/nodehwtest_gen_jobs.pl","$testset_path/$set\_gen_jobs.pl",$force);
+	($set eq 'nodehwtest') and 
 		testset_symlink_file("tools/nodehwtest_start_jobs.pl","$testset_path/$set\_start_jobs.pl",$force);
 	($set eq 'nodehwtest') and 
 		testset_symlink_file("tools/nodehwtest_output_parse.pl","$testset_path/$set\_output_parse.pl",$force);
