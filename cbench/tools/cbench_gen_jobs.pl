@@ -98,7 +98,7 @@ $DEBUG and print "DEBUG: $bench_test $testset_path\n";
 (!defined $ident) and $ident = $cluster_name . "1";
 if (!defined $testdir and $testset =~ /^io|shakedown/) {
 	$testdir = "$testset_path/$ident/TMP";
-	print "$0: --testdir not specified, defaulting to $testdir\n";
+	info_print("$0: --testdir not specified, defaulting to $testdir\n");
 	mkdir "$testdir",0750;
 }
 
@@ -528,7 +528,7 @@ sub xhpl_gen_innerloop {
 	# of 1:k with k in [1..3].
 	my ($P, $Q) = compute_PQ($numprocs);
 	if ($P == 0 or $Q == 0) {
-		print "No files generated for linpack $jobname\n";
+		warning_print("No files generated for linpack $jobname\n");
 		rmdir "$testset_path\/$ident\/$jobname";
 		return 1;
 	}
