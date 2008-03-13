@@ -9,6 +9,8 @@
 cbench_run_cmd()
 {
 	local cmd=$@
+	
+	cbench_echo "Cbench joblaunch cmd line: $cmd"
 
 	# FIXME: just a note that teh STDIN_FILE stuff needs to work for the
 	#        interactive case too.... before I forget to note that it does...

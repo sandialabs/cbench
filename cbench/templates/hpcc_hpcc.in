@@ -1,6 +1,9 @@
 # HPCC job template
 # NOTE: bash syntax is used here
 
+cbench_echo "Cbench memory_util_factors: MEM_UTIL_FACTORS_HERE"
+cbench_echo
+
 CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/HPCC_BIN_HERE"
 
 # note for posterity what hpcc binary was used in case
