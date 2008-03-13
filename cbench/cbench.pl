@@ -2448,14 +2448,16 @@ sub debug_print {
 
 # print out cbench warnings
 sub warning_print {
-	$_ =~ s/\n$//;
-    print YELLOW BOLD "WARNING: $_[0]",RESET,"\n";
+	my $msg = shift;
+	$msg =~ s/\n$//;
+    print YELLOW BOLD "WARNING: $msg",RESET,"\n";
 }
 
 # print out cbench info messages
 sub info_print {
-	$_ =~ s/\n$//;
-    print BLUE BOLD "INFO: $_[0]",RESET,"\n";
+	my $msg = shift;
+	$msg =~ s/\n$//;
+    print BLUE BOLD "INFO: $msg",RESET,"\n";
 }
 
 
