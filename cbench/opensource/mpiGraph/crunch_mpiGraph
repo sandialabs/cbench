@@ -64,8 +64,8 @@
 
 #use lib '/usr/global/tools/bin/perl';
 #use slurm_hostlist;
-#use Hostlist qw(compress);
-#$Hostlist::quadrics_ranges = 1;
+use Hostlist qw(compress);
+$Hostlist::quadrics_ranges = 1;
 
 # crunch_mpiGraph - post-process mpiGraph output to generate report
 # Author:  Adam Moody <moody20@llnl.gov>
@@ -81,6 +81,7 @@ sub usage
   print "            [-route <route_table> [-sortbw|-sortcount|-sortcost]] <mpiGraph_output>\n";
   print "\n";
   print "  Node-to-node bandwidth options:\n";
+  print "    -max       Set maximum bandwidth value (in MB/sec) to scale by\n";
   print "    -html      output to html (default)\n";
   print "    -z         add javascript to html for zooming\n";
   print "               This may produce very large index.html files, but it's very useful for inspecting detailed features\n";
@@ -108,6 +109,7 @@ my @imagerows = ();
 $mode = "html";
 $small = 0;
 $strip_mpi_rank = 1;
+$maxbw = 0;
 my %args = (
   routes => "",
   sortby => "bandwidth",
@@ -122,6 +124,7 @@ while (@ARGV) {
     elsif ($arg =~ /^-sortcount/) { $args{sortby} = "count"; }
     elsif ($arg =~ /^-sortcost/)  { $args{sortby} = "cost"; }
     elsif ($arg =~ /^-tty/)     { $mode = "tty"; }
+    elsif ($arg =~ /^-max/)     { $maxbw = shift @ARGV; }
     elsif ($arg =~ /^-html/)    { $mode = "html"; }
     elsif ($arg =~ /^-small/)   { $small = 1; }
     elsif ($arg =~ /^-dist/)    { $args{dist} = 1; }
@@ -510,9 +513,14 @@ sub read_file
       $rh =~ s/[a-zA-Z\s]*$//; # strip off trailing letters and spaces
       $rh =~ s/^\s*\d+://;     # strip off leading spaces and [0-9]+:
       if ($strip_mpi_rank) { $rh =~ s/:\d+$//; } # remove mpi rank from node name
+#TODO: hack to remove suffix starting with '-'
+#print "-- $rh -- ";
+      $rh =~ s/\-\w*$//;     # strip off trailing prefix starting with '-'
+#print "-- $rh -- \n";
       for(my $i = 1; $i < @parts; $i++) {
         $ch = $colnames[$i];
         if ($strip_mpi_rank) { $ch =~ s/:\d+$//; } # remove mpi rank from node name
+        $ch =~ s/\-\w*$//;     # strip off trailing prefix starting with '-'
         if ($sendflag) { push @{$$sendtable{$rh}{$ch}}, $parts[$i]; }
         if ($recvflag) { push @{$$recvtable{$rh}{$ch}}, $parts[$i]; }
       }
@@ -585,8 +593,7 @@ sub output_rankmap
   #my $slurm_hostlist = new slurm_hostlist;
   #return (scalar(@nodes), slurm_hostlist->hostlist_str(@nodes));
   #print scalar(Hostlist::compress(@nodes)), "\n";
-  #return (scalar(@nodes), scalar(Hostlist::compress(@nodes)));
-  return (scalar(@nodes), "");
+  return (scalar(@nodes), scalar(Hostlist::compress(@nodes)));
 }
 
 # write out bandwidth table
@@ -763,6 +770,7 @@ sub output_table_bitmap
   print "Writing $outfile ...\n";
   my @outrows = ();
   my ($min, $max, $avg) = @stats;
+  if ($maxbw) { $max = $maxbw; }
   my @rows = keys %$table;
   @rows = (sort {($a =~ /(\d+)$/)[0] <=> ($b =~ /(\d+)$/)[0]} @rows);
   @cols = @rows;
@@ -867,8 +875,8 @@ sub return_rankmapjs
   my $node = "";
   my $rank = "";
   foreach my $row (@rows) {
-    if ($strip_mpi_rank) { ($node) = ($row =~ /([a-zA-Z]+\d*)/); $rank++; }
-    else { ($node, $rank) = ($row =~ /([a-zA-Z]+\d*):(\d+)/); }
+    if ($strip_mpi_rank) { ($node) = ($row =~ /([a-zA-Z\-]+\d*)/); $rank++; }
+    else { ($node, $rank) = ($row =~ /([a-zA-Z\-]+\d*):(\d+)/); }
     if ($node) { push @nodes, '"' . $node . '"'; }
   }
   return (scalar(@nodes), "var rankmap = [" . join(",", @nodes) . "];");

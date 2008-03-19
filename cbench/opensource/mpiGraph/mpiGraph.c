@@ -119,7 +119,8 @@ double g_timeval__end_recv;
 // =============================================================
 */
 
-void code(int mypid, int size, int times, int nnodes, int window) {
+void code(int mypid, int size, int times, int nnodes, int window)
+{
   /*
   arguments are: 
     mypid  = process ID of this process
@@ -215,72 +216,47 @@ void code(int mypid, int size, int times, int nnodes, int window) {
   /* calculate stats on my bandwidths */
   if(mypid == 0) printf("Gathering results\n");
   double* sendsums = (double*) malloc(sizeof(double)*nnodes);
-  double* sendsqrs = (double*) malloc(sizeof(double)*nnodes);
   double* recvsums = (double*) malloc(sizeof(double)*nnodes);
-  double* recvsqrs = (double*) malloc(sizeof(double)*nnodes);
   for(j=0; j<nnodes; j++) {
     sendsums[j] = 0.0;
-    sendsqrs[j] = 0.0;
     recvsums[j] = 0.0;
-    recvsqrs[j] = 0.0;
     if (j == mypid) continue;
     for(i=0; i<times; i++) {
       double sendval = sendtimes[j*times+i];
       double recvval = recvtimes[j*times+i];
       sendsums[j] += sendval;
-      sendsqrs[j] += sendval*sendval;
       recvsums[j] += recvval;
-      recvsqrs[j] += recvval*recvval;
     }
   }
 
   /* gather results to rank 0 */
-  double* allsendsums;
-  double* allsendsqrs;
-  double* allrecvsums;
-  double* allrecvsqrs;
+  double* allsums;
   if (mypid == 0) {
-    allsendsums = (double*) malloc(sizeof(double)*nnodes*nnodes);
-    allsendsqrs = (double*) malloc(sizeof(double)*nnodes*nnodes);
-    allrecvsums = (double*) malloc(sizeof(double)*nnodes*nnodes);
-    allrecvsqrs = (double*) malloc(sizeof(double)*nnodes*nnodes);
+    allsums = (double*) malloc(sizeof(double)*nnodes*nnodes);
   }
-  MPI_Gather(sendsums, nnodes, MPI_DOUBLE, allsendsums, nnodes, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  MPI_Gather(sendsqrs, nnodes, MPI_DOUBLE, allsendsqrs, nnodes, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  MPI_Gather(recvsums, nnodes, MPI_DOUBLE, allrecvsums, nnodes, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  MPI_Gather(recvsqrs, nnodes, MPI_DOUBLE, allrecvsqrs, nnodes, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Gather(sendsums, nnodes, MPI_DOUBLE, allsums, nnodes, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
   /* rank 0 computes stats over results from all nodes and prints them to stdout */
   if (mypid == 0) {
     /* compute stats over all nodes */
     double sendsum = 0.0;
-    double sendsqr = 0.0;
-    double recvsum = 0.0;
-    double recvsqr = 0.0;
     double sendmin = 10000000000000000.0;
-    double recvmin = 10000000000000000.0;
     double MBsec   = ((double)(size)) * 1000000.0 / (1024.0*1024.0);
     for(j=0; j<nnodes; j++) {
       for(k=0; k<nnodes; k++) {
         if (j == k) continue;
-        double sendval = allsendsums[j*nnodes+k];
-        double recvval = allrecvsums[j*nnodes+k];
+        double sendval = allsums[j*nnodes+k];
         sendsum += sendval;
-        sendsqr += sendval;
-        recvsum += recvval;
-        recvsqr += recvval;
         sendmin = (sendval < sendmin) ? sendval : sendmin;
-        recvmin = (recvval < recvmin) ? recvval : recvmin;
       }
     }
 
-    /* print send and receive stats */
+    /* print send stats */
     sendmin /= (double) times;
-    recvmin /= (double) times;
     sendsum /= (double) (nnodes)*(nnodes-1)*times;
-    recvsum /= (double) (nnodes)*(nnodes-1)*times;
-    printf("Send max\t%f\nRecv max\t%f\n", MBsec/sendmin, MBsec/recvmin);
-    printf("Send avg\t%f\nRecv avg\t%f\n", MBsec/sendsum, MBsec/recvsum);
+    printf("\nSend max\t%f\n", MBsec/sendmin);
+    printf("Send avg\t%f\n", MBsec/sendsum);
 
     /* print send bandwidth table */
     printf("\n");
@@ -292,12 +268,37 @@ void code(int mypid, int size, int times, int nnodes, int window) {
     for(j=0; j<nnodes; j++) {
       printf("%s:%d to\t", &hostnames[j*sizeof(hostname)], j);
       for(k=0; k<nnodes; k++) {
-        double val = allsendsums[j*nnodes+k];
+        double val = allsums[j*nnodes+k];
         if (val != 0.0) { val = MBsec * (double) times / val; }
         printf("%0.3f\t", val);
       }
       printf("\n");
     }
+  }
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Gather(recvsums, nnodes, MPI_DOUBLE, allsums, nnodes, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+  /* rank 0 computes stats over results from all nodes and prints them to stdout */
+  if (mypid == 0) {
+    /* compute stats over all nodes */
+    double recvsum = 0.0;
+    double recvmin = 10000000000000000.0;
+    double MBsec   = ((double)(size)) * 1000000.0 / (1024.0*1024.0);
+    for(j=0; j<nnodes; j++) {
+      for(k=0; k<nnodes; k++) {
+        if (j == k) continue;
+        double recvval = allsums[j*nnodes+k];
+        recvsum += recvval;
+        recvmin = (recvval < recvmin) ? recvval : recvmin;
+      }
+    }
+
+    /* print receive stats */
+    recvmin /= (double) times;
+    recvsum /= (double) (nnodes)*(nnodes-1)*times;
+    printf("\nRecv max\t%f\n", MBsec/recvmin);
+    printf("Recv avg\t%f\n", MBsec/recvsum);
 
     /* print receive bandwidth table */
     printf("\n");
@@ -309,7 +310,7 @@ void code(int mypid, int size, int times, int nnodes, int window) {
     for(j=0; j<nnodes; j++) {
       printf("%s:%d from\t", &hostnames[j*sizeof(hostname)], j);
       for(k=0; k<nnodes; k++) {
-        double val = allrecvsums[j*nnodes+k];
+        double val = allsums[j*nnodes+k];
         if (val != 0.0) { val = MBsec * (double) times / val; }
         printf("%0.3f\t", val);
       }
@@ -317,11 +318,21 @@ void code(int mypid, int size, int times, int nnodes, int window) {
     }
   }
 
+  /* free off memory */
+  free(send_message);
+  free(recv_message);
+  free(status_array);
+  free(request_array);
+  free(sendtimes);
+  free(recvtimes);
+  free(message_tags);
+
   return;
 }
 
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
   int mypid, size, times, window, args[3], nnodes;
 
   /* start up */
