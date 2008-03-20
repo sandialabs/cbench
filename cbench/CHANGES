@@ -4,7 +4,13 @@
         
 A __brief__ summary of changes in each release of Cbench.
 
-* upcoming Cbench release (1.1.5)
+* future Cbench release (1.2.0)
+	* updated to hpcc v 1.2.0
+	* updated to IMB v 3.1
+	* memtester 4.0.8
+	* added Slurm batch system support
+
+* Cbench release (1.1.5)
 	* fix a bug with the HPL/HPCC N parameter calulation when using > 1ppn
 	* make the default hpcc input deck match that of linpack
 	* Marcus Epperson added the mpiGraph benchmark, by Adam Moody of LLNL,
