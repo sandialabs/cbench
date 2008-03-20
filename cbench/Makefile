@@ -29,8 +29,7 @@ HWTEST_SUBDIRS = opensource/fpck opensource/ctcs opensource/memtester \
 
 OPEN_SUBDIRS = opensource/b_eff opensource/mpi_latency \
                opensource/mpi_hello opensource/mpi_hello_ordered opensource/mpi_overhead \
-               opensource/mpi_routecheck opensource/mpi_tokensmash \
-               opensource/PMB2.2.1 opensource/presta1.2 \
+               opensource/mpi_routecheck opensource/presta1.2 \
                opensource/ior_bench opensource/iozone opensource/rotate \
                opensource/HPLlinpack opensource/IMB opensource/osutests \
                opensource/lanl  opensource/stab \
