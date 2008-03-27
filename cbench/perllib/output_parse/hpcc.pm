@@ -109,7 +109,7 @@ sub parse {
 	my $start_time = 0;
 	my $end_time = 0;
     foreach my $l (@{$txtbuf}) {
-        ($l =~ /DARPA\/DOE HPC Challange Benchmark/) and
+        ($l =~ /DARPA\/DOE HPC Challenge Benchmark/) and
 			$status = 'STARTED';
 		($l =~ /Begin of Summary section/) and $found_endrecord = 1 and
 			$status = 'COMPLETED';

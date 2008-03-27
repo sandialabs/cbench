@@ -173,11 +173,11 @@ sub parse {
 			# where the process count does not equal the number of
 			# processors in the Cbench jobname
 			if ($1 == $main::np or ($1 == 2 and $testname =~ /Ping/)) {
-				($testname =~ /Ping/) and $parse_state = 2;
-				($testname =~ /Sendrecv|Exchange/) and $parse_state = 3;
-				($testname =~ /Allreduce|Reduce|Reduce_scatter|Allgather|Alltoall|Bcast/)
+				($testname =~ /^Ping/) and $parse_state = 2;
+				($testname =~ /^Sendrecv|^Exchange/) and $parse_state = 3;
+				($testname =~ /^Allreduce|^Reduce|^Reduce_scatter|^Allgather|^Gather|^Scatter|^Alltoall|^Bcast/)
 					and $parse_state = 4;
-				($testname =~ /Barrier/) and $parse_state = 5;
+				($testname =~ /^Barrier/) and $parse_state = 5;
 			}
 			else {
 				$parse_state = 0;
@@ -240,6 +240,14 @@ sub parse {
 				$status = 'FOUNDDATA';	
 			}
 		}
+
+		# check for some IMB errors 
+		if ($l =~ /out-of-mem/) {
+			# out-of-mem.; needed X=   1.003 GB; use flag "-mem X" or MAX_MEM_USAGE>=X (IMB_mem_info.h)
+			$status = "IMBOUTOFMEMORY_$testname";
+			main::debug_print(1,"DEBUG:imb: IMBOUTOFMEMORY found during $testname ");
+		}
+
 	}
 
 	# check to see if all the tests that were supposed to run generated
