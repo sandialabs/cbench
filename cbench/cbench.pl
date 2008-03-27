@@ -2660,6 +2660,7 @@ sub lammps_file_substitute {
 		close(OUT);
 	}
 }
+
 #copy the input files into a job file
 sub lammps_copy_files {
 	my $input_file_dest = shift;
@@ -2668,13 +2669,9 @@ sub lammps_copy_files {
 
 	my $input_file = "$lammps_bench/in.$code_name";
 
-	debug_print(3, "DEBUG: lammps_copy_file for $input_file\n");
-
-	#check for input file; skip if not present
-	(-e $input_file) or print "Could not locate $input_file: $?\n" and next;
-
-	#copy the in.whatever file to the new jobdir
-	system("cp $input_file $input_file_dest") == 0 or die("Could not copy $input_file: $?\n");
+     #check for input file; skip if not present
+     (-e $input_file) or print "Could not locate $input_file: $?\n" and next;
+     debug_print(3, "DEBUG: lammps_copy_file for $input_file\n");
 
 	#check for scaled version of input deck
 	if ( -e "$lammps_bench/in.$code_name.scaled" ) {
@@ -2682,6 +2679,76 @@ sub lammps_copy_files {
 
 		system("cp $input_file $input_file_dest") == 0 or die("Could not copy $input_file: $?\n");
 	}
+    
+	#copy the in.whatever file to the new jobdir
+	system("cp $input_file $input_file_dest") == 0 or die("Could not copy $input_file: $?\n");
+}
+
+#return the desired scaling parameters based on the size of the job being generated
+sub lammps_get_scaling_params {
+    my $numprocs = shift;
+    my $scaled_factor = shift;
+
+    if (not defined $scaled_factor) {
+        $scaled_factor = "1 1 1";
+    }
+
+    #there's probably a better way to split directly into the desired variables, but this works 
+    @factors = split /\s/, $scaled_factor;
+
+    my $x = $factors[0];
+    my $y = $factors[1];
+    my $z = $factors[2];
+
+    #create scaling parameters for use with the LAMMPS scaling jobs
+    #   These parameters are based on a static list of scaling parameters from Sandia benchmarking
+    #   efforts.  Future work will allow the user to provide a list of desired scaling parameters,
+    #   but right now it only uses the static rules below.
+
+    if ( $numprocs <= 1 ) {
+        my $scaling_params = "-var x " . 1*$x . " -var y " . 1*$y . " -var z " . 1*$z;
+        return $scaling_params;
+    }
+    elsif ( $numprocs <= 2 ) { 
+        my $scaling_params = "-var x " . 2*$x . " -var y " . 1*$y . " -var z " . 1*$z;
+        return $scaling_params;
+    }
+    elsif ( $numprocs <= 4 ) { 
+        my $scaling_params = "-var x " . 2*$x . " -var y " . 2*$y . " -var z " . 1*$z;
+        return $scaling_params;
+    }
+    elsif ( $numprocs <= 8 ) { 
+        my $scaling_params = "-var x " . 2*$x . " -var y " . 2*$y . " -var z " . 2*$z;
+        return $scaling_params;
+    }
+    elsif ( $numprocs <= 16 ) { 
+        my $scaling_params = "-var x " . 4*$x . " -var y " . 2*$y . " -var z " . 2*$z;
+        return $scaling_params;
+    }
+    elsif ( $numprocs <= 32 ) { 
+        my $scaling_params = "-var x " . 4*$x . " -var y " . 4*$y . " -var z " . 2*$z;
+        return $scaling_params;
+    }
+    elsif ( $numprocs <= 64 ) { 
+        my $scaling_params = "-var x " . 4*$x . " -var y " . 4*$y . " -var z " . 4*$z;
+        return $scaling_params;
+    }
+    elsif ( $numprocs <= 128 ) { 
+        my $scaling_params = "-var x " . 8*$x . " -var y " . 4*$y . " -var z " . 4*$z;
+        return $scaling_params;
+    }
+    elsif ( $numprocs <= 256 ) { 
+        my $scaling_params = "-var x " . 8*$x . " -var y " . 8*$y . " -var z " . 4*$z;
+        return $scaling_params;
+    }
+    elsif ( $numprocs <= 512 ) { 
+        my $scaling_params = "-var x " . 8*$x . " -var y " . 8*$y . " -var z " . 8*$z;
+        return $scaling_params;
+    }
+    else {
+        my $scaling_params = "-var x " . 16*$x . " -var y " . 8*$y . " -var z " . 8*$z;
+        return $scaling_params;
+    }
 }
 
 1;
