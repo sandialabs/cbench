@@ -20,10 +20,13 @@ if [ ! -f ./lengths ]; then
 512
 1024
 2048
+4096
 EOF
 
 fi
 
-CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/IMB-MPI1 -msglen ./lengths -npmin NUM_PROCS_HERE"
+# FIXME: for now we limit memory to 2.0GB, we need to parameterize
+#        this from cluster.def
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/IMB-MPI1 -iter 100 -time 10.0 -mem 2.0 -msglen ./lengths -npmin NUM_PROCS_HERE"
 
 cbench_run_cmd $CMD
