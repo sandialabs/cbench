@@ -67,7 +67,7 @@ GetOptions(
 	'redundant' => \$redundant,
 	'joblaunch_extraargs=s' => \$joblaunchargs,
 	'memory_util_factors|mem_factors=s' => \$new_memory_util_factors,
-	'ompthreads=i|ompnumthreads' => \$OMPNUMTHREADS,
+	'threads|ompthreads|ompnumthreads=i' => \$OMPNUMTHREADS,
 );
 
 if (defined $help) {
