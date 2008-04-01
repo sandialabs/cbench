@@ -67,6 +67,7 @@ GetOptions(
 	'redundant' => \$redundant,
 	'joblaunch_extraargs=s' => \$joblaunchargs,
 	'memory_util_factors|mem_factors=s' => \$new_memory_util_factors,
+	'ompthreads=i|ompnumthreads' => \$OMPNUMTHREADS,
 );
 
 if (defined $help) {
@@ -644,5 +645,10 @@ sub usage {
 		  "   --memory_util_factors  Override the cluster.def \@memory_util_factors array.\n".
 		  "                          For example:\n".
 		  "                            --memory_util_factors 0.10,0.77,0.85\n".  
+		  "   --ompthreads <num> \n".
+		  "   --ompnumthreads <num> \n".
+		  "   --threads <num>  Tell Cbench to use the specified number of threads per\n".
+		  "                    process where applicable. This is usually equivalent to\n".
+		  "                    setting OMP_NUM_THREADS environment variable\n".
 		  "   --debug <level>  Turn on debugging at the specified level\n";
 }

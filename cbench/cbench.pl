@@ -2077,7 +2077,10 @@ sub std_substitute {
 	# calc the threads per mpi process for the job
 	# we by default assume we want to utilize all cores on a node
 	# which we can get from procs_per_node in cluster.def
+	# 
+	# we also check for an explicit setting via the OMPNUMTHREADS global
 	$temp = $procs_per_node / (($numprocs < $ppn) ? $numprocs : $ppn);
+	(defined $OMPNUMTHREADS) and $temp = $OMPNUMTHREADS;
 	$string =~ s/NUM_THREADS_PER_PROCESS_HERE/$temp/gs;
 	$string =~ s/JOBNAME_HERE/$jobname/gs;
 	$string =~ s/JOBSCRIPT_HERE/$jobname\.$batch_extension/gs;
@@ -2104,6 +2107,8 @@ sub calc_num_nodes {
 	my $procs = shift;
 	my $ppn = shift;
 	
+	($ppn <= 0) and (warning_print("calc_num_nodes() ppn param is bad!") and return 1);
+
 	my $num_nodes = int $procs/$ppn;
 	(($num_nodes * $ppn) < $procs) and $num_nodes++;
 
