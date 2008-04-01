@@ -669,7 +669,7 @@ print join('',@tmpbuf) . "\n";
 
 my $temp = 0;
 my $temp2 = $total_jobs_parsed - $statusdata{'NOTICE'};
-$temp = $statusdata{'PASSED'}/$temp2 unless ($total_jobs_parsed == 0);
+$temp = $statusdata{'PASSED'}/$temp2 unless ($temp2 == 0);
 printf "Overall Job Success = %0.2f%%\n",$temp*100;
 push @invocation_data, sprintf "# Overall Job Success = %0.2f%%\n",$temp*100;
 
