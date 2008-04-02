@@ -132,7 +132,7 @@ if ($report) {
 	# cpu/core info
 	my @cpudata = `cat $destdir/$ident/$hn.snb.cpuinfo.out`;
     my %cpumap = linux_parse_cpuinfo(\@cpudata);
-print Dumper(%cpumap);
+	(defined $DEBUG) and print Dumper(%cpumap);
     # decode what the cpumap hash tells us
     foreach (keys %cpumap) {
 		(/model/) and next;
@@ -340,6 +340,8 @@ if ($report) {
 
 	build_gnuplot_graph("nodeperf2","DGEMM Results","Megabytes","Megaflops",\%plotdata);
 	add_section("DGEMM Results");
+	add_text("All DGEMM tests a run using a single process with OMP_NUM_THREADS set".
+		" to the maximum number of computing cores on the node\n");
 	add_figure("nodeperf2.pdf","DGEMM Data","nodeperf2");
 }
 
@@ -407,35 +409,8 @@ if ($tests =~ /linpack/ and $run) {
 	# first we need to generate all the linpack jobs scripts
 	logmsg("Generating Linpack testing scripts");
 
-	# We tweak the OMP_NUM_THREADS environment var to control the
-	# number of threads used. We do this by modifying the common_header.in
-	# template in $CBENCHTEST. Before we muck with this file, save the
-	# original.
-	runcmd("/bin/cp -f $bench_test/common_header.in $bench_test/common_header.in.SNB_SAVED",'','nosave');
-
-	# read in the common_header template
-	my $tmp = "$bench_test/common_header.in.SNB_SAVED";
-	open (IN,"<$tmp") or die
-		"Could not open $tmp ($!)";
-	# set slurp mode
-	undef $/;
-	my $orig = <IN>;
-	# unset slurp
-	$/ = "\n";
-	close(IN);
-
 	# do the actual job script generation
 	for my $threads (1..$numcores) {
-		# write out a common_header.in template with the right number of threads
-		$cmnhdr = $orig;
-		addchange_envvar(\$cmnhdr,"export OMP_NUM_THREADS","$threads");
-		my $out = "$bench_test/common_header.in";
-		open (OUT,">$out") or do {
-			print "Could not open $out ($!)\n";
-		};
-		print OUT "$cmnhdr\n";
-		close(OUT);
-
 		my $count = $numcores / $threads;
 		for my $processes (1..$count) {
 			#(($processes * $threads) > $numcores) and next;
@@ -444,13 +419,11 @@ if ($tests =~ /linpack/ and $run) {
 
 			my $pq = $threads * $processes;
 			my $cmd = "$bench_test/linpack/linpack_gen_jobs.pl --ident ".$identbase."_".
-				$threads."threads --runsizes $processes $binidentopt";
-			#print "$cmd\n";
+				$threads."threads --runsizes $processes $binidentopt --threads $threads";
+			print "$cmd\n";
 			runcmd("$cmd",'linpack');
 		}
 	}
-	# restore the common_header.in template to its original state
-	runcmd("/bin/cp -f $bench_test/common_header.in.SNB_SAVED $bench_test/common_header.in",'','nosave');
 
 	#
 	# next we need to run all the linpack jobs scripts that make sense
@@ -507,7 +480,7 @@ if ($report) {
 		}
 
 	}
-	#print Dumper (%data);
+	(defined $DEBUG) and print Dumper (%data);
 
 	my $out = "$destdir/$ident/$hn.snb.linpack.out";
 	my @rawdata = `cat $out`;
@@ -521,10 +494,10 @@ if ($report) {
 	build_gnuplot_histogram("linpack","Single Node Linpack Results",
 		"Number of MPI Processes","GigaFlops",\%data);
 	add_section("Single Node Linpack Results");
-	add_text("Memory Utilization Factors Used: $memfactors\n");
+	add_text("Memory Utilization Factors Used: $memfactors\n\n");
 	add_figure("linpack.pdf","Linpack Data","linpack");
 
-	# now, normalize the data by number of MPI processes and build another
+	# now, normalize the data by number of computing threads and build another
 	# graph (easier to see scaling efficiency)
 	for my $np (keys %data) {
 		for my $nt (keys %{$data{$np}}) {
@@ -578,13 +551,13 @@ if ($report) {
 
 	# build the second NPB plot which is normalized to show scaling efficiency
 	runcmd("/bin/rm -f $bench_test/npb/npb.ps","npb");
-	runcmd("$bench_test/npb/npb_output_parse.pl --match \'$identbase\' --normalize numprocs ".
+	runcmd("$bench_test/npb/npb_output_parse.pl --match \'$identbase\' --scaledparalleleff ".
 		"--collapse \'snb\' --xrange 1,$num_cores_counted --gnuplot --yrange 0,\* ".
 		"--linewidth 4 </dev/null","npb");
 	runcmd("/bin/cp -f $bench_test/npb/npb.ps $destdir/npb-normalized.ps","npb");
 	ps2pdf("$destdir/npb-normalized.ps");
-	add_text("This graph normalizes the NAS Parallel Benchmark data by the number of ".
-		"MPI processes so that scaling efficiency can be seen.\n");
+	add_text("This graph normalizes the NAS Parallel Benchmark data so that scaled parallel".
+		"efficiency can be seen. A flat line at a Y value of 1 would be 100% efficiency.\n");
 	add_figure("npb-normalized.pdf","Normalized NAS Parallel Benchmark Data","npb-normalized");
 }
 
@@ -737,7 +710,7 @@ sub add_figure {
 	my ($base,$suf) = $file =~ /(\S+)\.(\S+)$/;
 	if (! -f "$destdir/$base.pdf") {
 		print "WARNING:add_figure() $base.pdf doesn't exist...not adding figure\n";
-		push @report_core_buf, "Figure \'$name\' not available.\n";
+		push @report_core_buf, "\nFigure \'$name\' not available.\n\n";
 		return;
 	}
 
@@ -856,6 +829,14 @@ sub build_gnuplot_histogram {
 	my $href = shift;
 	my $options = shift;
 
+	# we have to have Gnuplot 4.1 or greater for histograms... check for it
+	my $tmpbuf = `gnuplot -V`;
+	my ($gnuplot_ver) = $tmpbuf =~ /gnuplot\s+(\S+)\s+/;
+	if ($gnuplot_ver < 4.1) {
+		print "WARNING:build_gnuplot_histogram() requires Gnuplot version 4.1 or greater!\n";
+		return;
+	}
+
 	# remove old plot files
 	system("/bin/rm -f $fileid.{ps,jpg,pdf}");
 
@@ -893,7 +874,7 @@ sub build_gnuplot_histogram {
 		$keyindex = 2;
 		my $numseries = scalar keys(%{$href->{$x}});
 		#plot 'linpack.dat-custom' using 2:xtic(1) ti col, '' u 3 ti col, '' u 4 ti col
-		for my $series (sort {$a cmp $b} (keys %{$href->{$x}}) ) {
+		for my $series (sort {$a <=> $b} (keys %{$href->{$x}}) ) {
 			print CMD "\"$fileid.dat\" using $keyindex:xtic(1) ti col";
 			print PLOT "\"$series threads\" ";
 			print CMD ", " unless ($keyindex-1 == $numseries);
@@ -930,7 +911,7 @@ sub build_gnuplot_histogram {
 	# build the data file
 	for my $x (sort {$a <=> $b} (keys %$href) ) {
 		print PLOT "$x ";
-		for my $series (sort {$a cmp $b} (keys %{$href->{$x}}) ) {
+		for my $series (sort {$a <=> $b} (keys %{$href->{$x}}) ) {
 			print PLOT $href->{$x}{$series} . " ";
 		}
 		print PLOT "\n";
