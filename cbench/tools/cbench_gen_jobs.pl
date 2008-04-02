@@ -46,9 +46,6 @@ my $hpccbin = 'hpcc';
 
 my $testset;
 
-# pass_through lets "non options" stay in ARGV w/o raising an error
-Getopt::Long::Configure("pass_through");
-
 GetOptions(
 	'ident=s' => \$ident,
 	'binident=s' => \$BINIDENT,
