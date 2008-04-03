@@ -65,6 +65,9 @@ GetOptions(
 	'joblaunch_extraargs=s' => \$joblaunchargs,
 	'memory_util_factors|mem_factors=s' => \$new_memory_util_factors,
 	'threads|ompthreads|ompnumthreads=i' => \$OMPNUMTHREADS,
+    'scaled' => \$scaled,
+    'scaled-only' => \$scaled_only,
+    'scale-factor=s' => \$scale_factor,
 );
 
 if (defined $help) {
@@ -127,6 +130,7 @@ if (!defined $testdir and $testset =~ /^io|shakedown/) {
         'lammps' => {
             'init' => 'lammps_gen_init',
             'innerloop' => 'lammps_gen_innerloop',
+            'joblist' => 'lammps_gen_joblist',
         },
 	},
 );
@@ -589,24 +593,70 @@ sub lammps_gen_init {
     $ENV{LAMMPSMACHINE} or die "Error: Must set LAMMPSMACHINE environment variable to install LAMMPS (see doc/INSTALL)\n";
 }
 
+sub lammps_gen_joblist {
+    my $ppn = shift;
+    my $numprocs = shift;
+
+    my @scaled_joblist = qw(rhodo.scaled chain.scaled);
+    my @normal_joblist = qw(rhodo chain lj); #this is only a temporary list; LAMMPS has many more codes use 
+    debug_print(3, "DEBUG: entering lammps_gen_joblist($ppn,$numprocs)\n");
+
+    #we only want scaled jobs to be created when specified by the user
+
+    my @tmplist =();
+
+    if ( not defined $scaled and not defined $scaled_only ) {
+        debug_print(3, "DEBUG: generating only lammps normal jobs");
+        push(@tmplist, @normal_joblist);
+    }
+
+    #create only scaled jobs when --scaled-only parameter is set
+    #create scaled jobs with normal jobs when --scaled parameter is set
+    else {
+        debug_print(3, "DEBUG: generating lammps scaled jobs");
+        #add scaled jobs 
+            push(@tmplist, @scaled_joblist);
+
+        if ( not defined $scaled_only ) {
+            #also generate normal jobs for --scaled parameter
+            debug_print(3, "DEBUG: generating lammps normal jobs");
+            push(@tmplist, @normal_joblist );
+        }
+    }
+
+    debug_print(3, "DEBUG: lammps_gen_joblist() joblist=".join(',',@tmplist));
+    return @tmplist; 
+}   
+
 sub lammps_gen_innerloop {
-	my $outbuf = shift;      # a *reference* to the actual $outbuf
-	my $numprocs = shift;
-	my $ppn = shift;
-	my $numnodes = shift;
-	my $runtype = uc shift;
-	my $walltime = shift;
-	my $testset = shift;
-	my $jobname = shift;
-	my $ident = shift;
-	my $job = shift;
+    my $outbuf = shift;      # a *reference* to the actual $outbuf
+        my $numprocs = shift;
+    my $ppn = shift;
+    my $numnodes = shift;
+    my $runtype = uc shift;
+    my $walltime = shift;
+    my $testset = shift;
+    my $jobname = shift;
+    my $ident = shift;
+    my $job = shift;
 
-	debug_print(3,"DEBUG: entering custom_lammps_innerloop()\n");
+    debug_print(3,"DEBUG: entering custom_lammps_innerloop()\n");
 
-	debug_print(3,"DEBUG: copying files to: $testset_path\/$ident\/$jobname\n");
+    debug_print(3,"DEBUG: copying files to: $testset_path\/$ident\/$jobname\n");
 
-    #copy modified lammps in.* files to each jobdir
-    lammps_copy_files("$testset_path\/$ident\/$jobname", $job);
+# check for LAMMPS-specific environment variables
+    $ENV{LAMMPSDIR} or die "Error: Must set LAMMPSDIR environment variable to install LAMMPS (see doc/INSTALL)\n";
+    $ENV{LAMMPSMACHINE} or die "Error: Must set LAMMPSMACHINE environment variable to install LAMMPS (see doc/INSTALL)\n";
+
+#copy modified lammps in.* files to each jobdir
+    $jobname !~ /scaled/ and lammps_copy_files("$testset_path\/$ident\/$jobname", $job);
+
+#set up the scaling parameters based on this jobsize
+    if ( $jobname =~ /scaled/ ) {
+        $scaling_params = lammps_get_scaling_params($numprocs, $scale_factor);
+        $$outbuf =~ s/SCALING.*""/SCALING_PARAMS="$scaling_params"\n/gs;
+    }
+
 
     return 0;
 }
@@ -647,5 +697,13 @@ sub usage {
 		  "   --threads <num>  Tell Cbench to use the specified number of threads per\n".
 		  "                    process where applicable. This is usually equivalent to\n".
 		  "                    setting OMP_NUM_THREADS environment variable\n".
-		  "   --debug <level>  Turn on debugging at the specified level\n";
+          "   --debug <level>  Turn on debugging at the specified level\n";
+    if ( defined $ENV{LAMMPSDIR} or $testset =~ /lammps/ ) {
+        print "   \nLAMMPS scaling options:\n".
+            "   --scaled                  Generate scaled jobs along with normal jobs\n".
+            "   --scaled-only             Generate scaled jobs only\n".
+            "   --scaled-factor <factor>  The additional factor by which you would like to \n".
+            "                             scale the x,y,z values in the scaling benchmarks\n";
+    }
+
 }
