@@ -9,16 +9,19 @@
 cbench_run_cmd()
 {
 	local cmd=$@
-	
-	cbench_echo "Cbench joblaunch cmd line: $cmd"
 
-	# FIXME: just a note that teh STDIN_FILE stuff needs to work for the
+echo "STDIN_FILE: $STDIN_FILE"
+
+	# FIXME: just a note that the STDIN_FILE stuff and the SCALING_PARAMS stuff need to work for the
 	#        interactive case too.... before I forget to note that it does...
     if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" ]; then
 	    $cmd 1>>$STDOUT_FILE 2>>$STDERR_FILE
+    #this stuff is used by LAMMPS 
     else
         if [ -n "$STDIN_FILE" ] ; then
 	        $cmd < "$STDIN_FILE"
+        elif [ -n "$SCALING_PARAMS" ]; then
+            $cmd "$SCALING_PARAMS" < "$STDIN_FILE"
         else
 	        $cmd
         fi
