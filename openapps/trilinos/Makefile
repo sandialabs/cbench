@@ -1,6 +1,6 @@
 include ../../make.def
 
-SRC=trilinos-8.0.3
+SRC=trilinos-8.0.5
 TAR=$(SRC).tar.gz
 URL=http://trilinos.sandia.gov/download/files/$(TAR)
 
