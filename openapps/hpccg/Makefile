@@ -2,7 +2,7 @@ include ../../make.def
 
 export CFLAGS
 
-SRC=HPCCG-0.3
+SRC=HPCCG-0.4
 TAR=$(SRC).tar.gz
 URL=http://www.cs.sandia.gov/~maherou/$(TAR)
 
@@ -12,14 +12,14 @@ INSTALLTARGETS = $(EXECS)
 
 normal: $(SRC)
 	cd $(SRC) && ln -sf ../Makefile.cbench Makefile.cbench
-	$(MAKE) -C $(SRC) -f Makefile.cbench
+	$(MAKE) CXX=$(CXX) LINKER=$(CXX) -C $(SRC) -f Makefile.cbench
 
 $(SRC): $(TAR)
 	[ ! -d $(SRC) ] && tar zxf $(TAR)
 	ln -sf $(SRC) src
 
 $(TAR):
-	wget $(URL)
+	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
