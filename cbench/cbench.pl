@@ -719,11 +719,17 @@ sub build_job_templates {
 	# named TESTSET_BINARYNAME.in where TESTSET is the test set name,
 	# i.e. 'bandwidth', 'xhpl', and BINARYNAME is the name of the specific
 	# benchmark to be run
-	my @temp = `/bin/ls -1 $testset_path\/$testset\_*\.in`;
+	my @temp = `/bin/ls -1 $testset_path\/$testset\_*\.in 2>&1`;
 	
 	# we also want to build the internal Cbench "job" used by the combination
 	# batch (--combobatch start_jobs mode)
 	push @temp, `/bin/ls -1 $bench_test\/templates/combobatch.in`;
+
+	# if the cbench_make_skel_jobscript.pl called us to generate just a
+	# skeleton job script, use the skeleton hello world job template
+	if ($testset =~ /^SKELETONJOB:(\S+)/) {
+		@temp = ("$bench_test\/templates/skeleton_$1.in");
+	}
 
 	foreach (@temp) {
 		chomp $_;
@@ -736,6 +742,10 @@ sub build_job_templates {
 		elsif (/combobatch.in/) {
 			$jobname = "combobatch";
 			$jobfile = "$bench_test\/templates/combobatch.in";
+		}
+		elsif (/(skeleton_\S+.in)/) {
+			$jobname = "skel";
+			$jobfile = "$bench_test\/templates/$1";
 		}
 		else {
 			next;
