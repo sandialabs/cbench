@@ -400,6 +400,16 @@ define do-lammps-install
 	$(BENCH_HOME)/sbin/install_lammps; 
 endef
 
+define download-url
+	@file=`basename $1`; url=`dirname $1`; \
+	for path in $$url http://synapse.sandia.gov/static/tarballs; do \
+	   [ -f $$file ] && break; \
+	   wget --no-check-certificate $$path/$$file; \
+	done
+endef
+
+
+
 # Installation variables
 bin_dir = $(BENCH_HOME)/bin
 hwtest_bin_dir = $(bin_dir)/hwtests
