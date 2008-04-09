@@ -340,7 +340,7 @@ if ($report) {
 
 	build_gnuplot_graph("nodeperf2","DGEMM Results","Megabytes","Megaflops",\%plotdata);
 	add_section("DGEMM Results");
-	add_text("All DGEMM tests a run using a single process with OMP_NUM_THREADS set".
+	add_text("All DGEMM tests a run using a single process with OMP number of threads set".
 		" to the maximum number of computing cores on the node\n");
 	add_figure("nodeperf2.pdf","DGEMM Data","nodeperf2");
 }
