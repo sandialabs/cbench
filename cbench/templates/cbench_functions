@@ -10,7 +10,8 @@ cbench_run_cmd()
 {
 	local cmd=$@
 
-echo "STDIN_FILE: $STDIN_FILE"
+	cbench_echo "Cbench joblaunch cmd line: $cmd"
+	cbench_echo "Cbench joblaunch STDIN_FILE: $STDIN_FILE"
 
 	# FIXME: just a note that the STDIN_FILE stuff and the SCALING_PARAMS stuff need to work for the
 	#        interactive case too.... before I forget to note that it does...
