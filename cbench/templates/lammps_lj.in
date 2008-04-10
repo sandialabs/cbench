@@ -2,9 +2,8 @@
 # Uses LAMMPS benchmark code LJ
 # NOTE: bash syntax is used here
 
-CMD="JOBLAUNCH_CMD_HERE$LAMMPSDIR/src/lmp_$LAMMPSMACHINE"
+CMD="JOBLAUNCH_CMD_HERE $LAMMPSDIR/src/lmp_$LAMMPSMACHINE SCALING_PARAMS_HERE"
 STDIN_FILE="$CBENCHTEST/lammps/bench/in.lj"
-SCALING_PARAMS=""
 
 cbench_run_cmd $CMD
 

@@ -630,7 +630,7 @@ sub lammps_gen_joblist {
 
 sub lammps_gen_innerloop {
     my $outbuf = shift;      # a *reference* to the actual $outbuf
-        my $numprocs = shift;
+	my $numprocs = shift;
     my $ppn = shift;
     my $numnodes = shift;
     my $runtype = uc shift;
@@ -644,18 +644,18 @@ sub lammps_gen_innerloop {
 
     debug_print(3,"DEBUG: copying files to: $testset_path\/$ident\/$jobname\n");
 
-# check for LAMMPS-specific environment variables
-    $ENV{LAMMPSDIR} or die "Error: Must set LAMMPSDIR environment variable to install LAMMPS (see doc/INSTALL)\n";
-    $ENV{LAMMPSMACHINE} or die "Error: Must set LAMMPSMACHINE environment variable to install LAMMPS (see doc/INSTALL)\n";
-
-#copy modified lammps in.* files to each jobdir
+	#copy modified lammps in.* files to each jobdir
     $jobname !~ /scaled/ and lammps_copy_files("$testset_path\/$ident\/$jobname", $job);
 
-#set up the scaling parameters based on this jobsize
+	#set up the scaling parameters based on this jobsize
     if ( $jobname =~ /scaled/ ) {
         $scaling_params = lammps_get_scaling_params($numprocs, $scale_factor);
-        $$outbuf =~ s/SCALING.*""/SCALING_PARAMS="$scaling_params"\n/gs;
+		debug_print(2,"DEBUG:lammps_gen_innerloop() scaling_params=$scaling_params");
+        $$outbuf =~ s/SCALING_PARAMS_HERE/$scaling_params/gs;
     }
+	else {
+        $$outbuf =~ s/SCALING_PARAMS_HERE//gs;
+	}
 
 
     return 0;
