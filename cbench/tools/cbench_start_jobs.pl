@@ -66,6 +66,7 @@ GetOptions( 'ident=s' => \$ident,
 		'repeat=i' => \$repeat,
 		'delay=i' => \$delay,
 		'polldelay=i' => \$polldelay,
+		'echooutput' => \$echooutput,
 		'testset=s' => \$testset,
 		'dryrun' => \$DRYRUN,
 		'debug:i' => \$DEBUG,
@@ -79,6 +80,7 @@ if (defined $help) {
 }
 
 $optdata{testset} = $testset;
+$optdata{echooutput} = 0;
 
 (!defined $ident) and $ident = $cluster_name . "1";
 (defined $serialbatch) and $throttledbatch = 1;
@@ -96,6 +98,7 @@ if (defined $waitall and !defined $throttledbatch) {
 (!defined $polldelay) and $polldelay = "120";
 (!defined $repeat) and $repeat = "1";
 (!defined $batchargs) and $batchargs = " ";
+(defined $echooutput) and $optdata{echooutput} = 1;
 
 if (defined $procs) {
 	$minprocs = $procs;
@@ -189,6 +192,9 @@ sub usage {
           "    --delay <num>          The number of seconds to sleep between jobs\n" .
           "    --polldelay <num>      The number of seconds to sleep between polls of\n" .
 		  "                           the batch system in throttledbatch mode\n".
+		  "    --echooutput           For the --interactive mode, echo the output of the\n".
+		  "                           jobs that are run as well as saving it to *.o* \n".
+		  "                           output files\n".
 		  "    --debug <level>        Debug level\n".
           "    --dryrun               Do everything but start jobs to see what would happen\n";
 }

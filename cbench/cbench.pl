@@ -1170,6 +1170,7 @@ sub start_jobs {
 				}
 				else {
 					my $cmd = "./$i\.sh";
+					($$optdata{echooutput}) and $cmd = "CBENCH_ECHO_OUTPUT=YES $cmd";
 					debug_print(1, "DEBUG:start_jobs() cmd=$cmd\n");
 					system($cmd) unless $DRYRUN;
 				}
