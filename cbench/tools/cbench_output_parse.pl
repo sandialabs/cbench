@@ -126,6 +126,8 @@ GetOptions( 'ident=s' => \$ident,
 			'walltimedata|walldata' => \$walldata,
 			'showpassed' => \$showpassed,
 			'shownotices' => \$SHOWNOTICES,
+			'jobid:i' => \$jobid_match,
+			'gazebo' => \$gazebo,
 );
 
 if (defined $help) {
@@ -139,6 +141,8 @@ if (defined $collapse and $collapse eq '') {
 
 (defined $dplot and defined $gnuplot) and 
 	die "--dplot and --gnuplot cannot be used together...";
+
+(defined $gazebo and !defined $jobid_match) and die "--gazebo requires --job";
 
 (!defined $mean and !defined $max and !defined $min) and $mean = 1;
 
@@ -603,6 +607,51 @@ cleanup_output_hash(\%outhash);
 
 print "\n";
 
+if (defined $gazebo) {
+	# output specifically for running under Gazebo
+	#
+	# in gazebo mode we should only be dealing with a single job so we
+	# do things a bit differently and restrict our output
+	my $numkeys = keys %statusdata;
+	($numkeys > 1) and 
+		warning_print("Found more than one job status key in Gazebo mode...");
+
+	my @output = ();
+	for $job (sort {$a <=> $b} (keys %{$outhash{'0'}}) ) {
+    	($job == 0) and next;
+
+		for $np (sort {$a <=> $b} (keys %outhash) ) {
+    		($np == 0) and next;
+
+			# clean up the data series name to be just the data point name
+			my $series = $outhash{'0'}{$job};
+			$series =~ s/(\S+\-\d+ppn\-)//;
+			$series =~ s/(-mean$)//;
+
+			my $line = "<td> $series ";
+
+			if (defined $outhash{$np}{$job}) {
+				my $str = sprintf("%s",$outhash{$np}{$job});
+				$str =~ s/\s+//;
+				$line .= $str;
+			}
+			push @output, "$line\n" unless (!defined $outhash{$np}{$job});
+    	}
+	}
+	print @output;
+	print "\n";
+
+	if ($statusdata{PASSED} == 1) {
+		print "Job $jobid_match PASSED\n";
+	}
+	else {
+		foreach my $k (keys %statusdata) {
+			print "Job $jobid_match FAILED with $k\n";
+		}
+	}
+	exit;
+}
+
 # Dump out the results in a grep happy table format if requested.
 # This supersedes all other output dumping.
 if (defined $grepable) {
@@ -703,6 +752,12 @@ sub parse_output_file {
 
 		my $jobid = $1;
 		my ($bench, $extra, $jobname);
+
+		# if the --jobid parameter was specified we are only looking for a single
+		# jobid
+		if (defined $jobid_match) {
+			($jobid_match != $jobid) and next;
+		}
 
         # Extract information we want from the name of the file we
         # are going to parse. We can do this because the file name
@@ -1906,5 +1961,9 @@ sub usage {
 			"                      means the job neither passed nor failed but encountered a known\n".
 			"                      condition that it did not like.  An example of this is an Mpi\n".
 			"                      test that will not run on one process\n".
+			"   --jobid <num>      Tells the output parser to only look for output from the\n".
+			"                      specific job identified by the specified number\n".
+			"   --gazebo           Outputs results of the parse in a format that is friendly\n".
+			"                      to being run under the Gazebo testing system\n".
             "   --debug <level>  turn on debugging at the specified level\n";
 }
