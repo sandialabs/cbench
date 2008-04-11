@@ -2147,6 +2147,9 @@ sub print_job_err {
 	my $status = shift;
 	my $extra = shift;
 
+	# if this is a Cbench NOTICE message, check the $SHOWNOTICES global
+	($err =~ /NOTICE/ and !$SHOWNOTICES) and return;
+
 	$status =~ s/\n$//;
 
 	print BOLD RED "**DIAG**";

@@ -61,6 +61,9 @@ my $xaxis_ppn = 0;
 my $xaxis_ppn_nodeview = 0;
 my $follow_symlinks = 0;
 
+# this is a global that print_job_err() looks at
+our $SHOWNOTICES = 0;
+
 # this is a string buffer to hold interesting details of what output_parse
 # was asked to do and what data it found. we'll use this later to possibly record
 # in gnuplot files used to generate plots to leave a trail of how and where
@@ -122,6 +125,7 @@ GetOptions( 'ident=s' => \$ident,
 			'follow_symlinks' => \$follow_symlinks,
 			'walltimedata|walldata' => \$walldata,
 			'showpassed' => \$showpassed,
+			'shownotices' => \$SHOWNOTICES,
 );
 
 if (defined $help) {
@@ -907,6 +911,10 @@ sub parse_output_file {
 						print BOLD GREEN "$stamp";
 						print RESET "\n";
 					}
+
+					# for a Cbench NOTICE, set jobpassed to 1 to make the whitespace
+					# printing better
+					($status =~ /NOTICE/ and !$SHOWNOTICES) and $jobpassed = 1;
 				}
 
 				# on job success update data
@@ -1893,5 +1901,10 @@ sub usage {
 			"                      if found, add walltime as a datapoint for each job\n".
 			"   --showpassed       In a similar fashion to the --diagnose output, show jobs\n".
 			"                      that passed explicitly\n".
+			"   --shownotices      When the --diagnose flag is used, also print out info\n".
+			"                      about jobs that returned a Cbench NOTICE status. The NOTICE status\n".
+			"                      means the job neither passed nor failed but encountered a known\n".
+			"                      condition that it did not like.  An example of this is an Mpi\n".
+			"                      test that will not run on one process\n".
             "   --debug <level>  turn on debugging at the specified level\n";
 }
