@@ -18,7 +18,7 @@ $(SRC): $(TAR)
 	$(MAKE) -C src -f Makefile.cbench clean
 
 $(TAR):
-	wget $(URL)
+	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
