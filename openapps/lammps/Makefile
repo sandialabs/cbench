@@ -10,29 +10,27 @@ URL=http://lammps.sandia.gov/tars/$(TAR)
 # this doesn't matter for our uses
 LAMMPSPATH=$(CBENCHOME)/openapps/$(SRC)/$(SRC)-*
 
-#for use by the install script
-export LAMMPSDIR=$(CBENCHOME)/openapps/$(SRC)/lammps-src
-export LAMMPSMACHINE=spirit
-
-EXECS = $(LAMMPSDIR)/src/make/lmp_$(LAMMPSMACHINE)
+EXECS = $(LAMMPSDIR)/src/MAKE/lmp_cbench
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
+normal: $(SRC)
+	make -C -f Makefile.cbench
+
 $(SRC): $(TAR)
 	[ ! -d $(SRC) ] && tar zxf $(TAR)
-	ln -sf $(LAMMPSPATH) lammps-src
-	@$(CBENCHOME)/openapps/lammps/install_lammps
+	ln -sf $(LAMMPSPATH) src
 
 $(TAR):
 	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
-	/bin/rm -f $(LAMMPSDIR)
+	/bin/rm -f src
 	/bin/rm -rf $(LAMMPSPATH)
 
 distclean:
-	/bin/rm -rf $(TAR) $(LAMMPSDIR)-src
+	/bin/rm -rf $(TAR) $(SRC) src
 
 install uninstall:
 	$(do-$@)
