@@ -68,6 +68,9 @@ GetOptions(
     'scaled' => \$scaled,
     'scaled-only' => \$scaled_only,
     'scale-factor=s' => \$scale_factor,
+	'gazebo' => \$gazebo,
+	'gazebohome|gazhome=s' => \$gazebo_home,
+	'gazeboconfig|gazconfig=s' => \$gazebo_config, 
 );
 
 if (defined $help) {
@@ -91,6 +94,14 @@ if (defined $joblaunchargs) {
 		"Old joblaunch_extraargs = \"$joblaunch_extraargs\", New joblaunch_extraargs = \"$joblaunchargs\"");
 	$joblaunch_extraargs = $joblaunchargs;
 }
+
+# Gazebo mode stuff
+(defined $gazebo and (!defined $gazebo_home or !defined $gazebo_config)) and
+		die "--gazebo requires --gazebohome and --gazeboconfig parameters";
+# Gazebo submit config file we'll append to
+my $submitconfig_file = "$gazebo_home/submit_configs/$gazebo_config";
+# this variable is where we'll incrementally build the Gazebo submit config file
+my $submitconfig = "";
 
 $bench_test = get_bench_test();
 $testset_path = "$bench_test/$testset";
@@ -171,6 +182,10 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 	# prevent oversubscription of processes to processors
 	($ppn > $procs_per_node) and next;
 
+	# Gazebo mode special case
+	# we only want to generate jobs for the $procs_per_node ppn case
+	($ppn != $procs_per_node) and next;
+
 	# inner loop iterates of the various run sizes (i.e. number of
 	# processors in a parallel job) in the @run_sizes array as
 	# defined in cbench.pl
@@ -211,6 +226,52 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 
 			# build the full job name
 			$jobname = "$job-".$ppn."ppn-$numprocs";
+
+			# Check for Gazebo mode which takes advantage of the gen_jobs smarts
+			# but does things completely differently
+			if (defined $gazebo) {
+				# gazebo doesn't deal with odd process counts so far
+				next unless power_of_two($numprocs);
+
+				# gazebo name for the cbench job
+				my $gazname =  uc($testset)."-$job";
+				# add a line to the Gazebo submit config file
+				$submitconfig .= "$gazname $numprocs 50 - $default_walltime *\n";
+
+				# build up the test_exec directory for the job
+				(! -d "$gazebo_home\/test_exec\/$gazname") and mkdir "$gazebo_home\/test_exec\/$gazname",0750;
+				# symlink the cbench gazebo wrapper
+				(! -l "$gazebo_home\/test_exec\/$gazname/run") and 
+					system("/bin/ln -s $bench_test/tools/cbench_gazebo_runjob.sh $gazebo_home\/test_exec\/$gazname/run");
+
+				# build the test_exec/$gazname/config file contents
+				my $testconfig = "
+\$test_config{'AUTHOR'} = \"Cbench\";
+\$test_config{'VERSION'} = \"$cbench_version\";
+\$test_config{'COMPILER'} = \"\";
+\$test_config{'MPILIB'} = \"\";
+\$test_config{'JOBSIZE'} = \"\";
+\$test_config{'NPES'} = \"2\";
+\$test_config{'TIMELIMIT'} = \"$default_walltime\";
+\$test_config{'TARGET_WD'} = \"\";
+\$test_config{'TEST_PARAMS'} = \"\";
+\$test_config{'CMD'} = \"run\";
+\@legend = ( );
+# The following are non-standard vars that the cbench wrapper uses to figure
+# out what to do. We rely on the property of Gazebo that these vars will end
+# up in the environment of the running job, and thus we can see them.
+\$test_config{'CBENCHTEST'} = \"$bench_test\";
+\$test_config{'CBENCH_JOB'} = \"$job\";
+\$test_config{'CBENCH_TESTSET'} = \"$testset\";
+";
+				# write out the config file
+				open (EXECCONFIG,">$gazebo_home\/test_exec\/$gazname/config") or die
+					"Could not write $gazebo_home\/test_exec\/$gazname/config ($!)";
+				print EXECCONFIG $testconfig;
+				close(EXECCONFIG);
+
+				next;
+			}
 
 			# All Cbench jobs are isolated within their own named directory.
 			# These dirs are withing the test ident directory and are
@@ -264,6 +325,14 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 	}
 }
 
+# Gazebo mode stuff
+if (defined $gazebo) {
+	open (SUBMITCONFIG,">>$submitconfig_file") or die
+		"Could not write $submitconfig_file ($!)";
+	print SUBMITCONFIG $submitconfig;
+	#print $submitconfig;
+	close(SUBMITCONFIG);
+}
 
 sub custom_gen_joblist {
 	my $ppn = shift;
