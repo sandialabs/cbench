@@ -952,7 +952,7 @@ sub parse_output_file {
 				$statusdata{$status}++;
 
 				# updated job failure diagnostic data
-				if ($status ne 'PASSED') {
+				if ($status ne 'PASSED' and $status ne 'NOTICE') {
 					$jobdiag_data{$np}{$filedata->{$k}}++;
 					$jobpassed = 0;
 
