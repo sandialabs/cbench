@@ -263,6 +263,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 \$test_config{'CBENCHTEST'} = \"$bench_test\";
 \$test_config{'CBENCH_JOB'} = \"$job\";
 \$test_config{'CBENCH_TESTSET'} = \"$testset\";
+\$test_config{'CBENCH_TESTIDENT'} = \"$ident\";
 ";
 				# write out the config file
 				open (EXECCONFIG,">$gazebo_home\/test_exec\/$gazname/config") or die
@@ -766,6 +767,9 @@ sub usage {
 		  "   --threads <num>  Tell Cbench to use the specified number of threads per\n".
 		  "                    process where applicable. This is usually equivalent to\n".
 		  "                    setting OMP_NUM_THREADS environment variable\n".
+		  "   --gazebo               Gazebo mode of operation\n".
+		  "   --gazebohome <path>    Where the Gazebo tree is located\n".
+		  "   --gazeboconfig <name>  Name of the Gazebo submit_config that will be APPENDED to\n".
           "   --debug <level>  Turn on debugging at the specified level\n";
     if ( defined $ENV{LAMMPSDIR} or $testset =~ /lammps/ ) {
         print "   \nLAMMPS scaling options:\n".

@@ -42,9 +42,11 @@ my $core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency
 my $testsets = $core_testsets;
 
 my $gazebo_config = 'cbench_config';
+my $ident = 'gazebo';
 
 GetOptions( 'ident=s' => \$ident,
 			'debug:i' => \$DEBUG,
+			'help' => \$help,
 			'testsets=s' => \$testsets,
 			'gazebohome|gazhome=s' => \$gazebo_home,
 			'gazeboconfig|gazconfig=s' => \$gazebo_config, 
@@ -52,6 +54,11 @@ GetOptions( 'ident=s' => \$ident,
 			'maxprocs=i' => \$maxprocs,
 			'procs=i' => \$procs,
 );
+
+if (defined $help) {
+	usage();
+	exit;
+}
 
 # clean out existing submit_config if there is one
 system("/bin/rm -f $gazebo_home/submit_configs/$gazebo_config 1>/dev/null 2>&1");
@@ -68,7 +75,7 @@ foreach my $set (@testset_list) {
 
 	print "Hooking Cbench ".uc($set)." testset into Gazebo\n";
 	# --gazebo --testset latency --maxprocs 16 --gazhome /home/jbogden/tlcc/gazebo+cbench/Gazebo --gazeboconfig config_cbench
-	my $cmd = "./$set\_gen_jobs.pl --gazebo --gazhome $gazebo_home --gazeboconfig $gazebo_config";
+	my $cmd = "./$set\_gen_jobs.pl --ident $ident --gazebo --gazhome $gazebo_home --gazeboconfig $gazebo_config";
 	(defined $minprocs) and $cmd .= " --minprocs $minprocs";
 	(defined $maxprocs) and $cmd .= " --maxprocs $maxprocs";
 	(defined $procs) and $cmd .= " --procs $procs";
@@ -80,3 +87,20 @@ foreach my $set (@testset_list) {
 }
 
 print "Wrote Gazebo submit config here: $gazebo_home/submit_configs/$gazebo_config\n";
+
+
+sub usage {
+    print "USAGE: $0 \n";
+    print "Cbench script to hook a Cbench testing tree into the Gazebo test framework\n".
+          "   --ident           Identifying string for the test. Defaults to \'gazebo\'\n".
+		  "   --testsets <list> Comma separated list of Cbench testset names to hook\n".
+		  "                     into Gazebo\n".
+		  "   --gazebohome <path>    Where the Gazebo tree is located\n".
+		  "   --gazeboconfig <name>  Name of the Gazebo submit_config that will be APPENDED to\n".
+          "   --maxprocs       The maximum number of processors to generate\n".
+          "                    jobs for\n".
+          "   --minprocs       The minimum number of processors to generate\n".
+          "                    jobs for\n".
+          "   --procs          Only generate jobs for a single processor count\n".
+          "   --debug <level>  Turn on debugging at the specified level\n";
+}
