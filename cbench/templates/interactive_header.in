@@ -10,9 +10,21 @@
 # this tells us what type of cbench job this is
 CBENCH_RUN_TYPE=RUN_TYPE_HERE
 
-# generate a unique job identifier, it can be used for uniquely
-# naming output files
-JOBID=`date +%j%H%M`
+# if we are running under Gazebo, it should have set JOBID in the
+# environment appropriately
+if [ "$CBENCH_GAZEBO" == "YES" ]; then
+	if [ -z "$JOBID" ]; then
+		# why didn't Gazebo set the JOBID????
+		cbench_echo "Warning: did not find JOBID set by Gazebo"
+		JOBID=`date +%j%H%M`
+	else
+		cbench_echo "Cbench using Gazebo JOBID $JOBID"
+	fi
+else
+	# generate a unique job identifier, it can be used for uniquely
+	# naming output files
+	JOBID=`date +%j%H%M`
+fi
 
 # init files to catch stdout/stderr
 JOBDIR="TESTSET_PATH_HERE/IDENT_HERE/JOBNAME_HERE"

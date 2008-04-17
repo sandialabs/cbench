@@ -67,6 +67,7 @@ GetOptions( 'ident=s' => \$ident,
 		'delay=i' => \$delay,
 		'polldelay=i' => \$polldelay,
 		'echooutput' => \$echooutput,
+		'gazebo' => \$gazebo,
 		'testset=s' => \$testset,
 		'dryrun' => \$DRYRUN,
 		'debug:i' => \$DEBUG,
@@ -99,6 +100,7 @@ if (defined $waitall and !defined $throttledbatch) {
 (!defined $repeat) and $repeat = "1";
 (!defined $batchargs) and $batchargs = " ";
 (defined $echooutput) and $optdata{echooutput} = 1;
+(defined $gazebo) and $optdata{gazebo} = 1;
 
 if (defined $procs) {
 	$minprocs = $procs;
@@ -195,6 +197,7 @@ sub usage {
 		  "    --echooutput           For the --interactive mode, echo the output of the\n".
 		  "                           jobs that are run as well as saving it to *.o* \n".
 		  "                           output files\n".
+		  "    --gazebo               Gazebo mode of operation\n".
 		  "    --debug <level>        Debug level\n".
           "    --dryrun               Do everything but start jobs to see what would happen\n";
 }
