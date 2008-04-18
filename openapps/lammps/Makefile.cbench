@@ -1,0 +1,43 @@
+include $(CBENCHOME)/make.def
+
+SHELL = /bin/sh
+.IGNORE:
+
+# System-specific settings
+
+# NOTE: you may need to invoke (by typing or in your .cshrc)
+#   module load libraries/fftw-2.1.5-openmpi-1.1.2-ofed-intel-9.1
+# before building LAMMPS
+
+CC =		$(CXX)
+CCFLAGS +=	-DFFT_FFTW -I$(FFTWINCLUDE)
+DEPFLAGS =	-M
+LINK =		$(CC)
+LINKFLAGS =	-L$(FFTWLIB)
+USRLIB =	-lfftw -lstdc++
+SYSLIB =	-lm
+SIZE =		size
+
+# Link rule
+
+$(EXE):	$(OBJ)
+	$(LINK) $(LINKFLAGS) $(OBJ) $(USRLIB) $(SYSLIB) -o $(EXE)
+	$(SIZE) $(EXE)
+
+# Library target
+ 
+lib:    $(OBJ)
+	$(ARCHIVE) $(ARFLAGS) $(EXE) $(OBJ)
+
+# Compilation rules
+
+%.o:%.cpp
+	$(CC) $(CCFLAGS) -c $<
+
+%.d:%.cpp
+	$(CC) $(CCFLAGS) $(DEPFLAGS) $< > $@
+
+# Individual dependencies
+
+DEPENDS = $(OBJ:.o=.d)
+include $(DEPENDS)
