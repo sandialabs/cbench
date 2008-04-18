@@ -190,6 +190,24 @@ ifndef LAPACKLIB
   endif
 endif
 
+ifndef FFTWLIB
+  ifdef FFTW_LIB
+  	FFTWLIB=$(FFTW_LIB)
+  	FFTWINCLUDE=$(FFTW_LIB)/../include
+  else
+    ifdef MKL_LIB
+	  FFTWLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lmkl_lapack
+    else
+      ifdef ACML_LIB
+        FFTWLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
+        FFTWINCLUDE=$(ACML_LIB)/../include
+      else
+        FFTWlIB = PLEASE_DEFINE_FFTWLIB_IN_make.def
+      endif
+    endif
+  endif
+endif
+
 
 ###### Architecture and Compiler specific Make configs
 
