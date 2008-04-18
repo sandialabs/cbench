@@ -5,12 +5,12 @@
 DIRLIST := $(filter-out Make%, $(shell ls))
 
 default:
-	$(MAKE) TARGET=all $(DIRLIST)
+	$(MAKE) PASSTARGET=all $(DIRLIST)
 
 %:
-	$(MAKE) TARGET=$@ $(DIRLIST)
+	$(MAKE) PASSTARGET=$@ $(DIRLIST)
 
 .PHONY: $(DIRLIST)
 $(DIRLIST):
-	$(MAKE) -C $@ $(TARGET)
+	$(MAKE) -C $@ $(PASSTARGET)
 
