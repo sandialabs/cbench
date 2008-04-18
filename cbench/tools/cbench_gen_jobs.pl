@@ -184,7 +184,9 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 
 	# Gazebo mode special case
 	# we only want to generate jobs for the $procs_per_node ppn case
-	($ppn != $procs_per_node) and next;
+	if (defined $gazebo) {
+		($ppn != $procs_per_node) and next;
+	}
 
 	# inner loop iterates of the various run sizes (i.e. number of
 	# processors in a parallel job) in the @run_sizes array as
