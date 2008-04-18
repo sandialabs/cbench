@@ -2,9 +2,11 @@ include $(CBENCHOME)/make.def
 
 MPQC_VERSION = 2.3.1
 MPQC = mpqc-$(MPQC_VERSION)
-NUM_CPUS = $(shell /usr/bin/getconf _NPROCESSORS_ONLN)
+NUM_CPUS := $(shell /usr/bin/getconf _NPROCESSORS_ONLN)
 
 default: .make-$(MPQC)
+
+all:
 
 .make-$(MPQC): .configure-$(MPQC)
 	(cd $(MPQC); make -j$(NUM_CPUS))
@@ -45,3 +47,6 @@ clean:
 
 quickclean:
 	make -C $(MPQC) distclean
+
+distclean: clean
+	rm -rf $(MPQC)

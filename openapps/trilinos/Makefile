@@ -20,6 +20,8 @@ export FFLAGS
 export BLASLIB
 export LAPACKLIB
 
+all: $(SRC)/EPETRA_MPI_OPT/$(BENCH_SRC)/$(BENCH_EXEC_RENAMED)
+
 $(SRC)/EPETRA_MPI_OPT/$(BENCH_SRC)/$(BENCH_EXEC_RENAMED): $(SRC)
 	cd $(SRC)/EPETRA_MPI_OPT && ../../configure_wrapper && $(MAKE) && $(MAKE) install
 	cd $(SRC)/EPETRA_MPI_OPT/$(BENCH_SRC) && $(MAKE) && mv $(BENCH_EXEC) $(BENCH_EXEC_RENAMED)
@@ -30,11 +32,11 @@ $(SRC): $(TAR) $(BENCH_TAR)
 	cd $(SRC) && mkdir EPETRA_MPI_OPT && cd EPETRA_MPI_OPT && tar zxf ../../$(BENCH_TAR)
 
 $(TAR):
-	wget $(URL)
+	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
 $(BENCH_TAR):
-	wget $(BENCH_URL)
+	$(call download-url,$(BENCH_URL))
 	-[ -e $(BENCH_TAR) ] && touch $(BENCH_TAR)
 
 clean:

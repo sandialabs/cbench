@@ -10,7 +10,7 @@ EXECS = $(SRC)/test_HPCCG
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
-normal: $(SRC)
+all normal: $(SRC)
 	cd $(SRC) && ln -sf ../Makefile.cbench Makefile.cbench
 	$(MAKE) CXX=$(CXX) LINKER=$(CXX) -C $(SRC) -f Makefile.cbench
 
