@@ -6,9 +6,7 @@ SRC=lammps
 TAR=$(SRC).tar.gz
 URL=http://lammps.sandia.gov/tars/$(TAR)
 
-#the date at the end of the extracted lammps source will vary depending on the release version;
-# this doesn't matter for our uses
-LAMMPSPATH=$(CBENCHOME)/openapps/$(SRC)/$(SRC)-*
+# note - this make process will strip off Lammps version (date) from the extracted source directory
 
 EXECS = $(SRC)/src/MAKE/lmp_cbench
 INSTALLDIR = $(bin_dir)
