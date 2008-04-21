@@ -79,9 +79,9 @@ for $f (`/bin/ls -1`) {
 	(defined $DEBUG) and $cmd .= "--debug $DEBUG ";
     $cmd .= join(' ',@ARGV);
 
+	($dryrun) and $cmd .= " --dryrun";
 	($DEBUG) and print "DEBUG: cmd=$cmd\n";
-	($dryrun) and print "$cmd\n";
-	system($cmd) unless $dryrun;
+	system($cmd);
 	
 	chdir $pwd;
 }
