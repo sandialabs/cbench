@@ -131,6 +131,8 @@
 #include <time.h>
 /* --- for uname(): */
 #include <sys/utsname.h> 
+/* --- for strlen(), strcpy(), strcat(): */
+#include <string.h> 
  
 #ifdef _OPENMP
 #  include <omp.h>
