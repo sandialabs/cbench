@@ -839,7 +839,7 @@ sub start_jobs {
 
 		# process the filename based on regex in $match
 		my $matchstr = "$match";
-		next unless ($i =~ /$matchstr/i);
+		next unless ($i =~ /$matchstr/);
 
 		# number of processors in the job
 		my ($bench,$ppn,$num_proc) = ($i =~ /^(\S+)\-(\S+)ppn\-(\d+)$/);
