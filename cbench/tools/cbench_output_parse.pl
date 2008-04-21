@@ -972,6 +972,15 @@ sub parse_output_file {
 						print GREEN, "$fileid";
 						print RESET ")";
 						print RESET "\n";
+
+						print BOLD MAGENTA "**FILESTAT**";
+						print RESET "(";
+						print GREEN, "$fileid";
+						print RESET ")";
+						$stamp = ctime($fstats->mtime);
+						print BOLD MAGENTA " last modified: ";
+						print BOLD GREEN "$stamp";
+						print RESET "\n";
 						print "-------------------------------------------------------------\n";
 					}
 				}
@@ -1867,6 +1876,7 @@ sub usage {
 			"                                      used on the command line\n".
 			"   --xlabel <string> Tell gnuplot to use the specified string as the x-axis\n".
 			"                     label\n".
+			"   --keyinside       Tell gnuplot to put the legend or key inside the plot\n".
 			"   --dplot <num>,dplotarams  Use the STAB dplot utility to plot the\n".
 			"                    the statistical distribution of data for <num> \n".
 			"                    processors. Dplotting can only be used for a single\n".
