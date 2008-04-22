@@ -27,7 +27,7 @@ $(TAR):
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
-	make -C $(SRC)/src clean
+	make -C $(SRC)/src clean-all
 
 distclean:
 	/bin/rm -rf $(TAR) $(SRC) src
