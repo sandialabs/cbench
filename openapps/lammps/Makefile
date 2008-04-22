@@ -8,7 +8,7 @@ URL=http://lammps.sandia.gov/tars/$(TAR)
 
 # note - this make process will strip off Lammps version (date) from the extracted source directory
 
-EXECS = $(SRC)/src/MAKE/lmp_cbench
+EXECS = $(SRC)/src/lmp_cbench
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
