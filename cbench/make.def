@@ -120,8 +120,8 @@ ifeq ($(COMPILER),pathscale)
   PLAINCC = pathcc
   PLAINCXX = pathcc
   NOOPT_FLAGS = -O0
-  NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
-  OPENMP_ENABLE = ENABLE_OPENMP_FOR_PATHSCALE_UNKNOWN 
+  NOUNROLL_FLAGS = -LNO:full_unroll=0 -LNO:full_unroll_outer=0
+  OPENMP_ENABLE = -openmp
 endif
 
 # we should know our compilers now
