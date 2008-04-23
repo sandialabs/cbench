@@ -237,7 +237,7 @@ ifeq ($(ARCH),x86_64)
   ifeq ($(COMPILER),pathscale)
   COMMON_FLAGS = 
   FFLAGS =
-  OPTFLAGS = -O3 -mcpu=opteron
+  OPTFLAGS = -O3 -march=barcelona
   MPILIB =
   endif
 
