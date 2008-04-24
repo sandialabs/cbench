@@ -221,7 +221,6 @@ foreach my $set (@testset_list) {
 		# rsync requested files
 		if (exists $special_testset_files{$set}{rsync}) {
 			foreach my $file (keys %{$special_testset_files{$set}{rsync}}) {
-                                print "trying to rsync $CBENCHOME/$file to $bench_test/$special_testset_files{$set}{rsync}{$file}\n";
 				my $cmd = "rsync -a $CBENCHOME/$file $bench_test/$special_testset_files{$set}{rsync}{$file}";
 				(! -d "$bench_test/$special_testset_files{$set}{rsync}{$file}") and
 					system("mkdir -p $bench_test/$special_testset_files{$set}{rsync}{$file}");
