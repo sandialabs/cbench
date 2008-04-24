@@ -55,7 +55,7 @@ GetOptions(
 
 # this is a list of all the supported Cbench testsets that will
 # be installed if the --allsets parameter is given
-my $core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown";
+my $core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown lammps";
 
 # this hash defines files that need to be installed into various
 # testsets that are atypical, i.e. non generic
@@ -91,6 +91,11 @@ my $core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency
 			"templates/xhpl_dat.in",
 		],
 	},
+        'lammps' => {
+                'rsync' => {
+                        "openapps/lammps/lammps/bench/" => "lammps/bench/",
+                },
+        },
 );
 
 # get the testing tree location
@@ -147,7 +152,7 @@ if (defined $testtop) {
 	@files = ("templates/*");
 	rsync_filelist(\@files,"$bench_test/templates");
 
-	# create an init files that can be sourced
+	# create init files that can be sourced
 	print "  Writing $bench_test/cbench-init.{sh.csh}...\n";
 	my $cbinitfile="$bench_test/cbench-init";
 	open (CBINIT, ">$cbinitfile.sh") or die "Can't create CBENCH INIT FILE $cbinitfile.sh $!";
@@ -216,6 +221,7 @@ foreach my $set (@testset_list) {
 		# rsync requested files
 		if (exists $special_testset_files{$set}{rsync}) {
 			foreach my $file (keys %{$special_testset_files{$set}{rsync}}) {
+                                print "trying to rsync $CBENCHOME/$file to $bench_test/$special_testset_files{$set}{rsync}{$file}\n";
 				my $cmd = "rsync -a $CBENCHOME/$file $bench_test/$special_testset_files{$set}{rsync}{$file}";
 				(! -d "$bench_test/$special_testset_files{$set}{rsync}{$file}") and
 					system("mkdir -p $bench_test/$special_testset_files{$set}{rsync}{$file}");

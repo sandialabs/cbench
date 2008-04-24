@@ -423,7 +423,7 @@ define do-lammps-install
 	@echo "---------------------------------------------------------"; \
 	echo "----- Installing \"lammps\" test set"; \
 	echo "---------------------------------------------------------"; \
-	$(BENCH_HOME)/sbin/install_lammps; 
+        $(MAKE) -C $(BENCH_HOME)/openapps/lammps;
 endef
 
 define download-url

@@ -2634,27 +2634,14 @@ sub CATCH {
 	$main::INTsignalled = 1;
 }
 
-#
-# Copy LAMMPS input and data files to CBENCHTEST for use during 
-# test runs
-#
-sub install_lammps_files {
-	my $dest = shift;
-	my $testset = shift;
-	my $lammps_dir = $ENV{LAMMPSDIR};
-
-	(! -d $dest) and mkdir $dest,0750;
-	
-	system("cp $lammps_dir/bench/in.* $dest");
-	system("cp $lammps_dir/bench/data* $dest");
-}
 
 #
 # Substitute the absolute path of the data file into the in.* file
 # for certain LAMMPS jobs
 #
 sub lammps_file_substitute {
-	my $lammps_bench = "$ENV{CBENCHTEST}/lammps/bench";
+	#my $lammps_bench = "$ENV{CBENCHTEST}/lammps/bench";
+	my $lammps_bench = shift;
 
 	#LAMMPS benchmark/example codes requiring data files are:
 	# rhodo, chute, chain, meam, rigid, peptide, and micelle

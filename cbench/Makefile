@@ -33,7 +33,7 @@ OPEN_SUBDIRS = opensource/b_eff opensource/mpi_latency \
                opensource/ior_bench opensource/iozone opensource/rotate \
                opensource/HPLlinpack opensource/IMB opensource/osutests \
                opensource/lanl  opensource/stab \
-               opensource/perftest opensource/mpi_examples opensource/mpi_slowcpu opensource/mpi_malloc
+               opensource/perftest opensource/mpi_examples opensource/mpi_slowcpu opensource/mpi_malloc \
 
 OPENEXTRAS_SUBDIRS = opensource/NPB opensource/hpcc
 
@@ -114,8 +114,10 @@ updatecbench:
 	@sbin/install_cbenchtest --testtop --allsets
 
 # compile and install LAMMPS
-installlammps: install 
+lammps: install 
+	$(do-lammps-install)
 	@sbin/install_cbenchtest --testset lammps
+	$(BENCH_HOME)/openapps/lammps/install_lammps
 
 #cbench-tests-rpm: 
 
