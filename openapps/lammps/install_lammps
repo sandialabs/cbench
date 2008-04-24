@@ -30,13 +30,7 @@
 $BENCH_HOME = $ENV{CBENCHOME} ? $ENV{CBENCHOME} :
     "$ENV{HOME}\/cbench";
 
-
-# check for necessary environment variables
-$ENV{LAMMPSDIR} or die "Error: Must set LAMMPSDIR environment variable to install LAMMPS (see doc/INSTALL)\n";
-$ENV{LAMMPSMACHINE} or die "Error: Must set LAMMPSMACHINE environment variable to install LAMMPS (see doc/INSTALL)\n";
-
-$machine = $ENV{LAMMPSMACHINE};
-$lammps_dir = $ENV{LAMMPSDIR};
+$lammps_dir = "$ENV{CBENCHTEST}/lammps";
 
 unshift @INC, "$BENCH_HOME";
 require "cbench.pl";
@@ -47,29 +41,7 @@ $testset = 'lammps';
 $testset_path = "$bench_test/$testset";
 $DEBUG and print "DEBUG: $bench_test $testset_path\n";
 
-# build the directory tree
-mk_test_dir($testset,$bench_test);
+# Modify the input files so their paths are correct
+lammps_file_substitute("$lammps_dir/bench");
 
-#using the machine name in LAMMPSMACHINE, execute the make process from within LAMMPS
-
-#check for a makefile corresponding to the current machine ($LAMMPSMACHINE)
-(-e "$lammps_dir/src/MAKE/Makefile.$machine") or die "Could not find Makefile.$machine at $lammps_dir/src/MAKE/Makefile.$machine.  Perhaps a LAMMPS environment variable is wrong?\n";
-
-###
-# execute make process for LAMMPS
-###
-system("echo 'Building LAMMPS...'; make -C $lammps_dir/src/ $machine");
-
-# set up the list of things to install and do it
-@files = (
-	"$ENV{CBENCHOME}/openapps/$testset\*.in",
-);
-
-rsync_filelist(\@files,$testset_path);
-
-install_lammps_files("$testset_path/bench/",$testset); 
-
-# Copy the LAMMPS input and data files to $CBENCHTEST/lammps/bench
-lammps_file_substitute();
-
-print "\nInstallation of LAMMPS is complete.  Please export\n\nLAMMPSDIR=$lammps_dir\n\nand\n\nLAMMPSMACHINE=$machine\n\nso that your environment is properly set up for LAMMPPS runs\n\n";
+print "\nInstallation of LAMMPS is complete.  Please export\n\nLAMMPSDIR=$lammps_dir\n\n so that your environment is properly set up for LAMMPPS runs\n\n";

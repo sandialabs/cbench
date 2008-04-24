@@ -5,9 +5,7 @@ SHELL = /bin/sh
 
 # System-specific settings
 
-# NOTE: you may need to invoke (by typing or in your .cshrc)
-#   module load libraries/fftw-2.1.5-openmpi-1.1.2-ofed-intel-9.1
-# before building LAMMPS
+# NOTE: On Sandia systems, you will need load the appropriate fftw module before building LAMMPS
 
 CC =		$(CXX)
 CCFLAGS =	-DFFT_FFTW -I$(FFTWINCLUDE) $(CFLAGS)
