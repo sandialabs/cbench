@@ -63,7 +63,7 @@ for $f (`/bin/ls -1`) {
 	(! -d $f) and next;
 	# ignore certain directories because they are not test sets or are
 	# uniquely behaving test sets like nodehwtest
-	($f =~ /nodehwtest|perllib|bin|sbin|mpich/) and next;
+	($f =~ /nodehwtest|perllib|bin|sbin|mpich|tools|templates/) and next;
 	(defined $tsetexclude and $f =~ /$tsetexclude/) and next;
 	(defined $tsetinclude) and next unless $f =~ /$tsetinclude/;
 	
