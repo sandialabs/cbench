@@ -55,7 +55,7 @@ GetOptions(
 
 # this is a list of all the supported Cbench testsets that will
 # be installed if the --allsets parameter is given
-my $core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown lammps";
+my $core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown hpccg trilinos lammps";
 
 # this hash defines files that need to be installed into various
 # testsets that are atypical, i.e. non generic
