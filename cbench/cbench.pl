@@ -40,21 +40,9 @@ $TASKSET = "/usr/bin/taskset";
 
 
 #
-# variable to hold all the test sets that are supported
-#
-@bench_tests = qw(
-bandwidth
-collective
-hpcc
-io
-latency
-linpack
-mpioverhead
-mpisanity
-nodehwtest
-npb
-rotate
-);
+# this is a list of all the supported Cbench testsets that will
+# be installed in the absence of the user picking specific ones
+$core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown hpccg trilinos lammps";
 
 
 # An array of run sizes (number of processes) that can be used in

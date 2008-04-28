@@ -53,10 +53,6 @@ GetOptions(
 	exit 1;
 };
 
-# this is a list of all the supported Cbench testsets that will
-# be installed if the --allsets parameter is given
-my $core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown hpccg trilinos lammps";
-
 # this hash defines files that need to be installed into various
 # testsets that are atypical, i.e. non generic
 %special_testset_files = (
@@ -221,6 +217,12 @@ foreach my $set (@testset_list) {
 		# rsync requested files
 		if (exists $special_testset_files{$set}{rsync}) {
 			foreach my $file (keys %{$special_testset_files{$set}{rsync}}) {
+				# check for existence of source 
+				if ( ! -d "$CBENCHOME/$file") {
+					warning_print("rsync source \'$CBENCHOME/$file\', does not exist.");
+					next;
+				}
+
 				my $cmd = "rsync -a $CBENCHOME/$file $bench_test/$special_testset_files{$set}{rsync}{$file}";
 				(! -d "$bench_test/$special_testset_files{$set}{rsync}{$file}") and
 					system("mkdir -p $bench_test/$special_testset_files{$set}{rsync}{$file}");

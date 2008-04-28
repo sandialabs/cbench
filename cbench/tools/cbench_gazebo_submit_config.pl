@@ -36,9 +36,6 @@ use lib "$ENV{CBENCHOME}\/perllib";
 
 use Getopt::Long;
 
-# this is a list of all the supported Cbench testsets that can
-# be installed
-my $core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown";
 my $testsets = $core_testsets;
 
 my $gazebo_config = 'cbench_config';
