@@ -12,29 +12,45 @@ cbench_run_cmd()
 
 	# add stdin file to command line if required
 	if [ -n "$STDIN_FILE" ] ; then
-		local finalcmd="$cmd < $STDIN_FILE"
+		# echo out the command-line we'll exec for posterity
+		cbench_echo "Cbench joblaunch cmd line: $cmd < $STDIN_FILE"
+
+		# the simple batch mode case, we don't worry about catching any output
+		if [ "$CBENCH_RUN_TYPE" == "BATCH" ]; then
+		    $cmd < $STDIN_FILE
+			return
+		fi
+
+		# the interactive mode case with echoing of the output requested
+		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a "$CBENCH_ECHO_OUTPUT" == "YES" ]; then
+		    $cmd < $STDIN_FILE 2>&1 | tee -a $STDOUT_FILE 
+			return
+		fi
+
+		# the simple interactive mode case with just catching the output to file
+		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a -z "$CBENCH_ECHO_OUTPUT" ]; then
+		    $cmd < $STDIN_FILE >> $STDOUT_FILE 2>&1
+		fi
 	else
-		local finalcmd="$cmd"
-	fi
+		# echo out the command-line we'll exec for posterity
+		cbench_echo "Cbench joblaunch cmd line: $cmd"
 
-	# echo out the command-line we'll exec for posterity
-	cbench_echo "Cbench joblaunch cmd line: $finalcmd"
+		# the simple batch mode case, we don't worry about catching any output
+		if [ "$CBENCH_RUN_TYPE" == "BATCH" ]; then
+		    $cmd
+			return
+		fi
 
-	# the simple batch mode case, we don't worry about catching any output
-    if [ "$CBENCH_RUN_TYPE" == "BATCH" ]; then
-	    $finalcmd
-		return
-	fi
+		# the interactive mode case with echoing of the output requested
+		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a "$CBENCH_ECHO_OUTPUT" == "YES" ]; then
+		    $cmd 2>&1 | tee -a $STDOUT_FILE 
+			return
+		fi
 
-	# the interactive mode case with echoing of the output requested
-    if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a "$CBENCH_ECHO_OUTPUT" == "YES" ]; then
-	    $finalcmd 2>&1 | tee -a $STDOUT_FILE 
-		return
-	fi
-
-	# the simple interactive mode case with just catching the output to file
-    if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a -z "$CBENCH_ECHO_OUTPUT" ]; then
-	    $finalcmd >> $STDOUT_FILE 2>&1
+		# the simple interactive mode case with just catching the output to file
+		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a -z "$CBENCH_ECHO_OUTPUT" ]; then
+		    $cmd >> $STDOUT_FILE 2>&1
+		fi
 	fi
 }
 
