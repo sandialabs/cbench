@@ -42,6 +42,7 @@ use Statistics::Descriptive;
 use Data::Dumper;
 use Time::localtime;
 use File::stat;
+use Date::Manip;
 use Term::ANSIColor qw(:constants color);
 $Term::ANSIColor::AUTORESET = 1;
 
@@ -116,8 +117,9 @@ GetOptions( 'ident=s' => \$ident,
 			'walltimedata|walldata' => \$walldata,
 			'showpassed' => \$showpassed,
 			'shownotices' => \$SHOWNOTICES,
-			'jobid:i' => \$jobid_match,
+			'jobid=i' => \$jobid_match,
 			'gazebo' => \$gazebo,
+			'report:s' => \$report,
 );
 
 if (defined $help) {
@@ -214,6 +216,20 @@ my %statusdata = ();
 my $total_files_parsed = 0;
 my $total_files_examined = 0;
 my $total_jobs_parsed = 0;
+
+# in the --report modes, we need to store more data in different ways
+#
+# we want the walltime data in --report mode
+my %reportdata = (
+	'firstjob_stamp' => 9999999999,
+	'lastjob_stamp' => 0,
+	'accum_wallclock_minutes' => 0.0,
+	'accum_nodehour_minutes' => 0.0,
+);
+if (defined $report) {
+	$walldata = 1;
+}
+
 
 # load all theh hw_test modules, we'll need them for parsing
 # the output files
@@ -687,6 +703,8 @@ if (defined $listfound) {
 	push @invocation_data, $tmp; 
 }
 
+(defined $report) and report_to_stdout();
+
 print GREEN "\nParse Summary:\n--------------\n";
 print "Total Files Parsed = $total_files_parsed\n";
 push @invocation_data, "# Total Files Parsed = $total_files_parsed\n";
@@ -926,6 +944,11 @@ sub parse_output_file {
 		# try to help with memory reclaimation
 		@output_bufrefs = undef;
 
+		# record the current testset we are in to facilitate the hash data
+		# structure inserting that follows
+		my $currtestset = $testset;
+		(defined $meta) and $currtestset = $metaset;
+
 		my $jobpassed = 1;
 		my @keylist = keys %{$filedata};
 		foreach my $k (@keylist) {
@@ -960,10 +983,18 @@ sub parse_output_file {
 					# for a Cbench NOTICE, set jobpassed to 1 to make the whitespace
 					# printing better
 					($status =~ /NOTICE/ and !$SHOWNOTICES) and $jobpassed = 1;
-				}
 
+					if (defined $report) {
+						if (! exists $reportdata{testsets}{$testident}{$currtestset}{$bench})  {
+							$reportdata{testsets}{$testident}{$currtestset}{$bench}{passed} = 0;
+							$reportdata{testsets}{$testident}{$currtestset}{$bench}{failed} = 0;
+							$reportdata{testsets}{$testident}{$currtestset}{$bench}{notice} = 0;
+						}
+						$reportdata{testsets}{$testident}{$currtestset}{$bench}{failed}++;
+					}
+				}
 				# on job success update data
-				if ($status eq 'PASSED') {
+				elsif ($status eq 'PASSED') {
 					$success_data{$np}{'PASSED'}++;
 
 					if (defined $showpassed) {
@@ -972,18 +1003,37 @@ sub parse_output_file {
 						print GREEN, "$fileid";
 						print RESET ")";
 						print RESET "\n";
-
-						print BOLD MAGENTA "**FILESTAT**";
-						print RESET "(";
-						print GREEN, "$fileid";
-						print RESET ")";
-						$stamp = ctime($fstats->mtime);
-						print BOLD MAGENTA " last modified: ";
-						print BOLD GREEN "$stamp";
-						print RESET "\n";
+						if (defined $filestats) {
+							print BOLD MAGENTA "**FILESTAT**";
+							print RESET "(";
+							print GREEN, "$fileid";
+							print RESET ")";
+							$stamp = ctime($fstats->mtime);
+							print BOLD MAGENTA " last modified: ";
+							print BOLD GREEN "$stamp";
+							print RESET "\n";
+						}
 						print "-------------------------------------------------------------\n";
 					}
+
+					if (defined $report) {
+						if (! exists $reportdata{testsets}{$testident}{$currtestset}{$bench})  {
+							$reportdata{testsets}{$testident}{$currtestset}{$bench}{passed} = 0;
+							$reportdata{testsets}{$testident}{$currtestset}{$bench}{failed} = 0;
+							$reportdata{testsets}{$testident}{$currtestset}{$bench}{notice} = 0;
+						}
+						$reportdata{testsets}{$testident}{$currtestset}{$bench}{passed}++;
+					}
 				}
+				elsif ($status eq 'NOTICE' and defined $report) {
+					if (! exists $reportdata{testsets}{$testident}{$currtestset}{$bench})  {
+						$reportdata{testsets}{$testident}{$currtestset}{$bench}{passed} = 0;
+						$reportdata{testsets}{$testident}{$currtestset}{$bench}{failed} = 0;
+						$reportdata{testsets}{$testident}{$currtestset}{$bench}{notice} = 0;
+					}
+					$reportdata{testsets}{$testident}{$currtestset}{$bench}{notice}++;
+				}
+
 				$success_data{$np}{'TOTAL'}++;
 				
 				next;
@@ -1017,11 +1067,43 @@ sub parse_output_file {
 				# insert into our data hash
 				my $key = "DATA_walltime";
 				push @{$data{$testident}{$ppnstr}{$bench}{$np}{$key}}, ($1/60.0);
+
+				# poke some data into the report data structure
+				if (defined $report) {
+					$reportdata{accum_wallclock_minutes} +=  $1;
+					$reportdata{accum_nodehour_minutes} +=  $1 * calc_num_nodes($np,$ppn);
+
+					$reportdata{testsets}{$testident}{$currtestset}{$bench}{runtime} += ($1/60.0);
+
 			}
 		}
+	}
 
-		(defined $DEBUG and $DEBUG > 2) and print
-			"DEBUG:parse_output_file() Finished core buffer parsing...\n";
+	# if we are in the --report modes, we have more work to do
+	if (defined $report) {
+		# we want the start and end timestamps of the job
+		my ($startraw, $endraw, $start, $end);
+		if ($embedded_info_buf =~ /\nCbench\s+start\s+timestamp:\s+(\S+)\n/) {
+			$startraw = $1;
+			my $tmp = ParseDate($startraw);
+			$start = UnixDate($tmp,"%s");
+		}
+		if ($embedded_info_buf =~ /\nCbench\s+end\s+timestamp:\s+(\S+)\n/) {
+			$endraw = $1;
+			my $tmp = ParseDate($endraw);
+			$end = UnixDate($tmp,"%s");
+		}
+
+		# update the report data structure
+		($start < $reportdata{firstjob_stamp}) and $reportdata{firstjob_stamp} = $start;
+		($end > $reportdata{lastjob_stamp}) and $reportdata{lastjob_stamp} = $end;
+
+		debug_print(3,"DEBUG:parse_output_file() timestamps: $startraw, $endraw, $start, $end, $reportdata{firstjob_stamp}, $reportdata{lastjob_stamp}");
+
+	}
+
+	(defined $DEBUG and $DEBUG > 2) and print
+		"DEBUG:parse_output_file() Finished core buffer parsing...\n";
 
 		# if the custom parse filters are enabled, then we need to look at both
 		# the STDOUT, and STDERR files for matches to the custom parse filters
@@ -1832,6 +1914,51 @@ sub normalize_value {
 }
 
 
+sub report_to_stdout {
+	
+	print GREEN "\nDetailed Workload Report:\n----------------------------------\n";
+
+	# job workload summary
+	foreach my $ident (sort keys %{$reportdata{testsets}}) {
+		print "\n";
+		print BOLD CYAN "Job Summary for Test Identifier \'$ident\'\n";
+		foreach my $tset (sort keys %{$reportdata{testsets}{$ident}}) {
+			print BOLD YELLOW uc($tset)." testset\n";
+			printf "  %20s %6s %6s %6s %15s\n",'Test   ','Passed','Failed','Notice','Runtime(minutes)';
+			printf "  %20s %6s %6s %6s %15s\n",'====================','======',
+				'======','======','===============',;
+			foreach my $bench (sort keys %{$reportdata{testsets}{$ident}{$tset}}) {
+				printf "  ".color('bold white')."%20s ".color('bold green')."%6s ".color('bold red')."%6s ".color('bold magenta')."%6s ".color('reset')."%13.2f\n",$bench,
+					$reportdata{testsets}{$ident}{$tset}{$bench}{passed},
+					$reportdata{testsets}{$ident}{$tset}{$bench}{failed},
+					$reportdata{testsets}{$ident}{$tset}{$bench}{notice},
+					$reportdata{testsets}{$ident}{$tset}{$bench}{runtime};
+			}
+		}
+	}
+
+	print "\n\n";
+	# print out time info for for all the runs we found
+	my $tmp = UnixDate("epoch $reportdata{firstjob_stamp}","%Y-%m-%d %H:%M");
+	printf color('bold white')."First Job Started:".color('reset')." %s\n",$tmp;
+	my $tmp = UnixDate("epoch $reportdata{lastjob_stamp}","%Y-%m-%d %H:%M");
+	printf color('bold white')."Last Job Finished:".color('reset')." %s\n",$tmp;
+	my $elapsed_secs = $reportdata{lastjob_stamp} - $reportdata{firstjob_stamp};
+	printf color('bold white')."Total Elapsed Time:".color('reset')." %.2f hours (%.2f minutes or %0.2f days)\n",
+		$elapsed_secs/(60*60),$elapsed_secs/60,$elapsed_secs/(60*60*24);
+	
+	printf color('bold white')."Accumulated Wallclock Time:".color('reset')." %.2f hours (%.2f minutes or %0.2f days)\n",
+		$reportdata{accum_wallclock_minutes}/(60*60),$reportdata{accum_wallclock_minutes}/60,
+		$reportdata{accum_wallclock_minutes}/(60*60*24);
+
+	printf color('bold white')."Accumulated Node-hour Time:".color('reset')." %.2f node-hours\n",
+		$reportdata{accum_nodehour_minutes}/(60*60);
+
+
+}
+
+
+
 sub usage {
     print   "USAGE: $0 \n";
     print   "Cbench script to analyze job output in the $testset test set\n".
@@ -1965,5 +2092,6 @@ sub usage {
 			"                      specific job identified by the specified number\n".
 			"   --gazebo           Outputs results of the parse in a format that is friendly\n".
 			"                      to being run under the Gazebo testing system\n".
+			"   --report           Generate a detailed workload report for all parsed jobs\n".
             "   --debug <level>  turn on debugging at the specified level\n";
 }
