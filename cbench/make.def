@@ -39,9 +39,13 @@ ARCH = $(shell uname -m)
 BENCH_HOME = $(CBENCHOME)
 BENCH_TEST = $(CBENCHTEST)
 COMPILER=$(COMPILERCOLLECTION)
-MPICH = $(MPIHOME)
 
-BUILD_PATH = $(MPICH)/bin/
+ifndef MPIBINNAME
+  BUILD_PATH = $(MPIHOME)/bin/
+else
+  BUILD_PATH = $(MPIHOME)/$(MPIBINNAME)/
+endif
+
 CC = $(BUILD_PATH)mpicc
 CCC = $(BUILD_PATH)mpicxx
 CXX = $(BUILD_PATH)mpicxx
@@ -51,7 +55,7 @@ F77 = $(BUILD_PATH)mpif77
 # for sure. This would be a nice thing for configure.... :)
 #F77 = $(BUILD_PATH)mpif90
 F90 = $(BUILD_PATH)mpif90
-INCLUDES = -I$(MPICH)/include
+INCLUDES = -I$(MPIHOME)/include
 
 ###### Compiler specific general configs
 ifeq ($(COMPILER),intel)
@@ -192,8 +196,8 @@ endif
 
 ifndef FFTWLIB
   ifdef FFTW_LIB
-  	FFTWLIB=$(FFTW_LIB)
-  	FFTWINCLUDE=$(FFTW_LIB)/../include
+  	FFTWLIB=-Wl,-rpath,$(FFTW_LIB) -L$(FFTW_LIB)
+  	FFTWINCLUDE=$(FFTW_INCLUDE)
   else
     ifdef MKL_LIB
 	  FFTWLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lmkl_lapack
@@ -242,7 +246,7 @@ ifeq ($(ARCH),x86_64)
   endif
 
   ifeq ($(COMPILER),intel32)
-  INCLUDES = -I$(MPICH)/include
+  INCLUDES = -I$(MPIHOME)/include
   COMMON_FLAGS = -Wl,-melf_i386
   OPTFLAGS = -O3
   MPILIB =
