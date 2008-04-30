@@ -122,18 +122,19 @@ sub parse {
 
 		#capture total loop time for X steps and Y atoms
 		if ($l =~ /Loop time of ([\d\.]+).*for (\d+) steps with (\d+) atoms/) {
-			$data{"loop time ($2 steps, $3 atoms)"} = $1;
+			#$data{"loop time ($2 steps, $3 atoms)"} = $1;
+			$data{"looptime"} = $1;
 		}
 
 		#capture FFT time
 		if ($l =~ /FFT time.*= ([\d\.]+)/) {
-			$data{'FFT time'} = $1;
+			$data{'FFTtime'} = $1;
 		}
 
 		#capture FFT Gflps
 		if ($l =~ /FFT Gflps.*= ([\d\.]+) ([\d\.]+)/) {
-			$data{'FFT Gflps 3d'} = $1;
-			$data{'FFT Gflps 1d'} = $2;
+			$data{'FFTGflops3d'} = $1;
+			$data{'FFTGflops1d'} = $2;
 		}
     }
 
@@ -142,12 +143,6 @@ sub parse {
     }
     elsif ($status =~ /UNSUCCESSFUL/) {
 		$data{'STATUS'} = "FAILED VERIFICATION";
-		$data{'memory'} = 'NODATA';
-		$data{'loop time'} = 'NODATA';
-		$data{'steps'} = 'NODATA';
-		$data{'atoms'} = 'NODATA';
-		$data{'FFT time'} = 'NODATA';
-		$data{'FFT Gflps'} = 'NODATA';
     }
     else {
 	$data{'STATUS'} = "ERROR($status)";
@@ -244,9 +239,10 @@ sub _init {
     # info
     %{$self->{METRIC_UNITS}} = (
 	'memory' => 'MBytes',
-	'loop time' => 'seconds',
-	'FFT time' => 'seconds',
-	'FFT Gflps' => 'Gflps',
+	'looptime' => 'seconds',
+	'FFTtime' => 'seconds',
+	'FFTGflops3d' => 'Gflops',
+	'FFTGflops1d' => 'Gflops',
     );
 
     return 1;
