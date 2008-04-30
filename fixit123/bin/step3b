@@ -232,6 +232,9 @@ foreach $l (@output) {
     elsif ($l =~ /PASSED =\s+(\d+)/) {
     	$passed_jobs += $1;
     }
+    elsif ($l =~ /NOTICE =\s+(\d+)/) {
+    	$passed_jobs += $1;
+    }
 	elsif ($l =~ /ERROR\((\S+)\) =\s+(\d+)/) {
 		($1 eq 'NOTBUILT') and $passed_jobs += $2;
 	}
