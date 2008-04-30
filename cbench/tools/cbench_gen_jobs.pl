@@ -669,7 +669,7 @@ sub lammps_gen_joblist {
     my $ppn = shift;
     my $numprocs = shift;
 
-    my @scaled_joblist = qw(rhodo.scaled chain.scaled);
+    my @scaled_joblist = qw(rhodo.scaled chain.scaled lj.scaled);
     my @normal_joblist = qw(rhodo chain lj); #this is only a temporary list; LAMMPS has many more codes use 
     debug_print(3, "DEBUG: entering lammps_gen_joblist($ppn,$numprocs)\n");
 
@@ -734,8 +734,12 @@ sub lammps_gen_innerloop {
 
 	#set up the scaling parameters based on this jobsize
     if ( $jobname =~ /scaled/ ) {
-        $scaling_params = lammps_get_scaling_params($numprocs, $scale_factor);
-		debug_print(2,"DEBUG:lammps_gen_innerloop() scaling_params=$scaling_params");
+		my $scale_factor;
+		($job =~ /lj\.scaled|eam.scaled/) and $scale_factor = '20 20 20';
+		($job !~ /lj\.scaled/) and $scale_factor = '1 1 1';
+
+        my $scaling_params = lammps_get_scaling_params($numprocs, $scale_factor);
+		debug_print(2,"DEBUG:lammps_gen_innerloop($job) scaling_params=$scaling_params");
         $$outbuf =~ s/SCALING_PARAMS_HERE/$scaling_params/gs;
     }
 	else {
