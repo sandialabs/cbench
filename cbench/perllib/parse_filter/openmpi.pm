@@ -99,6 +99,10 @@ our %parse_filters = (
 	'\[(\S+)\:\S+\].*(mca_oob_tcp_peer_try_connect:\s+connect to (\S+) failed:.*)$' =>
 		'OMPI says on node $1 \'$2\'',
 
+	# [tcompute2:32649] MPI_ABORT invoked on rank 0 in communicator MPI_COMM_WORLD with errorcode 1
+	'\[(\S+)\:\S+\]\s+MPI_ABORT invoked on rank\s+(\S+)\s+in.*' =>
+		'OMPI saw MPI_ABORT on node $1 (rank $2)',
+
 );
 
 1;
