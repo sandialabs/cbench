@@ -716,8 +716,21 @@ sub lammps_gen_innerloop {
 
     debug_print(3,"DEBUG: copying files to: $testset_path\/$ident\/$jobname\n");
 
+	# since the job templates point to the input deck with a path, we don't seem to need
+	# to copy it into the jobs working directory
+	#
 	#copy modified lammps in.* files to each jobdir
-    $jobname !~ /scaled/ and lammps_copy_files("$testset_path\/$ident\/$jobname", $job);
+    #$jobname !~ /scaled/ and lammps_copy_files("$testset_path\/$ident\/$jobname", $job);
+
+	# symlink any data files into the jobs directory from the directory holding all the input
+	# decks and data files that only need to be read
+	#
+	# this way we don't have to muck with the input decks path to the data files, they just
+	# look in the CWD
+	my $jobbase = $job;
+	$jobbase =~ s/\.scaled//;
+	(-f "$testset_path\/$ident\/$jobname\/data.$jobbase") and 
+		system("/bin/ln -sf $testset_path/bench/data.$jobbase $testset_path\/$ident\/$jobname\/data.$jobbase");
 
 	#set up the scaling parameters based on this jobsize
     if ( $jobname =~ /scaled/ ) {
@@ -773,12 +786,9 @@ sub usage {
 		  "   --gazebohome <path>    Where the Gazebo tree is located\n".
 		  "   --gazeboconfig <name>  Name of the Gazebo submit_config that will be APPENDED to\n".
           "   --debug <level>  Turn on debugging at the specified level\n";
-    if ( defined $ENV{LAMMPSDIR} or $testset =~ /lammps/ ) {
-        print "   \nLAMMPS scaling options:\n".
-            "   --scaled                  Generate scaled jobs along with normal jobs\n".
-            "   --scaled-only             Generate scaled jobs only\n".
-            "   --scaled-factor <factor>  The additional factor by which you would like to \n".
-            "                             scale the x,y,z values in the scaling benchmarks\n";
-    }
-
+	print "   \nLAMMPS scaling options:\n".
+          "   --scaled                  Generate scaled jobs along with normal jobs\n".
+          "   --scaled-only             Generate scaled jobs only\n".
+          "   --scaled-factor <factor>  The additional factor by which you would like to \n".
+          "                             scale the x,y,z values in the scaling benchmarks\n";
 }
