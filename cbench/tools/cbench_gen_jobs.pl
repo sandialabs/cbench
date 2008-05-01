@@ -66,8 +66,8 @@ GetOptions(
 	'memory_util_factors|mem_factors=s' => \$new_memory_util_factors,
 	'threads|ompthreads|ompnumthreads=i' => \$OMPNUMTHREADS,
     'scaled' => \$scaled,
-    'scaled-only' => \$scaled_only,
-    'scale-factor=s' => \$scale_factor,
+    'scaled_only' => \$scaled_only,
+    'scale_factor=i' => \$scale_factor,
 	'gazebo' => \$gazebo,
 	'gazebohome|gazhome=s' => \$gazebo_home,
 	'gazeboconfig|gazconfig=s' => \$gazebo_config, 
@@ -660,9 +660,7 @@ sub trilinos_epetratest_gen_innerloop {
 }
 
 sub lammps_gen_init {
-    # check for LAMMPS-specific environment variables
-    $ENV{LAMMPSDIR} or die "Error: Must set LAMMPSDIR environment variable to install LAMMPS (see doc/INSTALL)\n";
-    $ENV{LAMMPSMACHINE} or die "Error: Must set LAMMPSMACHINE environment variable to install LAMMPS (see doc/INSTALL)\n";
+	# no-op for now
 }
 
 sub lammps_gen_joblist {
@@ -714,7 +712,7 @@ sub lammps_gen_innerloop {
 
     debug_print(3,"DEBUG: entering custom_lammps_innerloop()\n");
 
-    debug_print(3,"DEBUG: copying files to: $testset_path\/$ident\/$jobname\n");
+    debug_print(2,"DEBUG:lammps_gen_innerloop() populating files in: $testset_path\/$ident\/$jobname\n");
 
 	# since the job templates point to the input deck with a path, we don't seem to need
 	# to copy it into the jobs working directory
@@ -729,16 +727,22 @@ sub lammps_gen_innerloop {
 	# look in the CWD
 	my $jobbase = $job;
 	$jobbase =~ s/\.scaled//;
-	(-f "$testset_path\/$ident\/$jobname\/data.$jobbase") and 
+	if (-f "$testset_path\/bench\/data.$jobbase") { 
+		debug_print(2,"DEBUG:lammps_gen_innerloop() symlinking $testset_path\/bench\/data.$jobbase\n");
 		system("/bin/ln -sf $testset_path/bench/data.$jobbase $testset_path\/$ident\/$jobname\/data.$jobbase");
+	}
 
 	#set up the scaling parameters based on this jobsize
     if ( $jobname =~ /scaled/ ) {
-		my $scale_factor;
-		($job =~ /lj\.scaled|eam.scaled/) and $scale_factor = '20 20 20';
-		($job !~ /lj\.scaled/) and $scale_factor = '1 1 1';
+		my $scale = 1;
+		(defined $scale_factor) and $scale = $scale_factor;
 
-        my $scaling_params = lammps_get_scaling_params($numprocs, $scale_factor);
+		# according to LAMMPS readme file, LJ and EAM decks need to have Px,Py,Pz a factor
+		# of 20 greater than other decks
+		($job =~ /lj\.scaled|eam.scaled/) and $scale = 20 * $scale;
+
+		my $factors = "$scale $scale $scale";
+        my $scaling_params = lammps_get_scaling_params($numprocs, $factors);
 		debug_print(2,"DEBUG:lammps_gen_innerloop($job) scaling_params=$scaling_params");
         $$outbuf =~ s/SCALING_PARAMS_HERE/$scaling_params/gs;
     }
@@ -792,7 +796,9 @@ sub usage {
           "   --debug <level>  Turn on debugging at the specified level\n";
 	print "   \nLAMMPS scaling options:\n".
           "   --scaled                  Generate scaled jobs along with normal jobs\n".
-          "   --scaled-only             Generate scaled jobs only\n".
-          "   --scaled-factor <factor>  The additional factor by which you would like to \n".
-          "                             scale the x,y,z values in the scaling benchmarks\n";
+          "   --scaled_only             Generate scaled jobs only\n".
+          "   --scale_factor <factor>   The additional factor by which you would like to \n".
+          "                             scale the x,y,z values in the scaling benchmarks\n".
+		  "                             For example:\n".
+		  "                               --scaled_factor 20\n";
 }
