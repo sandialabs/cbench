@@ -59,6 +59,7 @@ GetOptions(
 	'testdir=s' => \$testdir,
 	'jobcbenchtest=s' => \$JOBCBENCHTEST,
 	'testset=s' => \$testset,
+	'match=s' => \$match,
 	'debug:i' => \$DEBUG,
 	'help' => \$help,
 	'redundant' => \$redundant,
@@ -228,6 +229,14 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 
 			# build the full job name
 			$jobname = "$job-".$ppn."ppn-$numprocs";
+
+			# if --match param was used, only process jobs matching the regex
+			if (defined $match) {
+				my $matchstr = "$match";
+				next unless ($jobname =~ /$matchstr/);
+			}
+
+			debug_print(1,"DEBUG: Generating for $jobname\n");
 
 			# Check for Gazebo mode which takes advantage of the gen_jobs smarts
 			# but does things completely differently
@@ -773,6 +782,11 @@ sub usage {
           "   --runsizes       Comma separated list of run sizes, i.e. processor\n".
           "                    counts, to generate jobs for.  This overrides\n".
           "                    the default array of run sizes declared in cbench.pl\n".
+          "   --match          This limits the generation of jobs to\n" .
+          "                    jobs with a jobname that matches the specified\n" .
+          "                    regex string. For example,\n" .
+          "                      --match 2ppn\n" .
+          "                    would only generate 2 ppn tests\n" .
           "   --testdir <path> Path to use for filesystem testing which also determines\n".
           "                    the filesystem to use implicitly\n".
 		  "   --jobcbenchtest <path>  Specify an alternate CBENCHTEST path used when\n".
