@@ -1257,7 +1257,8 @@ sub run_process_per_cpu {
 			}
 		}
 		
-		(defined $DEBUG) and print "DEBUG:run_process_per_cpu() cmd=$cmd\n";
+		my $t = time;
+		(defined $DEBUG) and print "DEBUG:run_process_per_cpu($t) cpu=$cpu cmd=$cmd\n";
 
 		# fork off a child to run the command
 		unless ($child = open3($in, $out, $err, "$cmd")) {
@@ -1267,8 +1268,9 @@ sub run_process_per_cpu {
 
 		# we are the parent
 		$main::childpids{$child} = 1;
+		my $t = time;
 		(defined $DEBUG and $DEBUG > 1 ) and print 
-			"DEBUG:run_process_per_cpu() started child process $child\n";
+			"DEBUG:run_process_per_cpu($t) started child process $child\n";
 
 		# close stdin handle immediately to avoid deadlocks
 		close $in;
@@ -1288,6 +1290,9 @@ sub run_process_per_cpu {
 		$selector->add($out,$err);
 	}
 
+	my $t = time;
+	debug_print(2,"DEBUG:run_process_per_cpu($t) started all children\n");
+
 	# poll for the output from all the remote forked processes
 	while (my @ready = $selector->can_read) {
 		foreach (@ready) {
@@ -1301,16 +1306,20 @@ sub run_process_per_cpu {
 		}
 	}
 
+	my $t = time;
+	debug_print(2,"DEBUG:run_process_per_cpu($t) exited forked process polling loop\n");
+
 	# wait for the children to finish in a non-blocking fashion
 	for (keys %main::childpids) {
 		if (waitpid($_,&WNOHANG)) {
 			# child is gone
 			delete $main::childpids{$_};
 			
+			my $t = time;
 			(defined $DEBUG and $DEBUG > 1) and print
-				"DEBUG:run_process_per_cpu() child $_ is gone\n";
+				"DEBUG:run_process_per_cpu($t) child $_ is gone\n";
 		}
-		sleep 10;
+		sleep 1;
 	}
 
 	# now we need to return a nice collated buffer with a little
