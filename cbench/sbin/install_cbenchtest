@@ -203,7 +203,7 @@ foreach my $set (@testset_list) {
 			($file =~ /no such/i) and next;
 			chomp $file;
 			my ($filename) = $file =~ /\/(\S+)$/;
-			testset_symlink_file("$file","$testset_path/$filename",$force);
+                            testset_symlink_file("$file","$testset_path/$filename",$force);
 		}
 
 		# symlink install atypical files
