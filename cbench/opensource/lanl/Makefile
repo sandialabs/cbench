@@ -7,6 +7,7 @@ ifeq ($(CBENCH_STANDALONE),yes)
   EXECS = psnap-1.0/psnap.$(MPICH_CH)
   default_tgt := local
   MPIHOME = $(CBENCHOME)/opensource/mpich
+  MPIBINNAME = bin
 else
   #$(warning ================ NORMAL MPI COMPILE)
   EXECS = psnap-1.0/psnap

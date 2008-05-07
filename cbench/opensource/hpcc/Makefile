@@ -11,6 +11,7 @@ ifeq ($(CBENCH_STANDALONE),yes)
   EXECS = $(SRC)/hpcc.$(MPICH_CH)
   default_tgt := local
   MPIHOME = $(CBENCHOME)/opensource/mpich
+  MPIBINNAME = bin
 else
   #$(warning ================ NORMAL MPI COMPILE)
   EXECS = $(SRC)/hpcc

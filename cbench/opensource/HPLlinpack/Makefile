@@ -7,6 +7,7 @@ ifeq ($(CBENCH_STANDALONE),yes)
   EXECS = hpl/bin/cbench/xhpl.$(MPICH_CH)
   default_tgt := local
   MPIHOME = $(CBENCHOME)/opensource/mpich
+  MPIBINNAME = bin
 else
   #$(warning ================ NORMAL MPI COMPILE)
   EXECS = hpl/bin/cbench/xhpl
