@@ -426,6 +426,7 @@ sub build_nodehwtest_cmdline {
 	(defined $match) and $cmdstring .= " --match \'$match\' ";
 	(defined $exclude) and $cmdstring .= " --exclude \'$exclude\' ";
 	(defined $class) and $cmdstring .= " --class \'$class\' ";
+	(defined $DEBUG) and $cmdstring .= " --debug $DEBUG ";
 
 	return $cmdstring;
 }

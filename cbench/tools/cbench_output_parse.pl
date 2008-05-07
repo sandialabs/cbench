@@ -1008,7 +1008,7 @@ sub parse_output_file {
 							print RESET "(";
 							print GREEN, "$fileid";
 							print RESET ")";
-							$stamp = ctime($fstats->mtime);
+							(defined $fstats) and $stamp = ctime($fstats->mtime);
 							print BOLD MAGENTA " last modified: ";
 							print BOLD GREEN "$stamp";
 							print RESET "\n";
