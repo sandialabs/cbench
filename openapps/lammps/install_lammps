@@ -43,5 +43,3 @@ $DEBUG and print "DEBUG: $bench_test $testset_path\n";
 
 # Modify the input files so their paths are correct
 lammps_file_substitute("$lammps_dir/bench");
-
-print "\nInstallation of LAMMPS is complete.  Please export\n\nLAMMPSDIR=$lammps_dir\n\n so that your environment is properly set up for LAMMPPS runs\n\n";
