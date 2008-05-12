@@ -103,7 +103,6 @@ sub openmpi_joblaunch_cmdbuild {
 	# set this to support Openmpi 1.2 and newer features
 	my $openmpi12_stuff = 1;
 
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 	# if we use nolocal, and fail to specify extra job nodes, set it
 	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
 
@@ -118,7 +117,11 @@ sub openmpi_joblaunch_cmdbuild {
 	}
 	
 	$cmd .= " -np $numprocs ";
-	
+
+	# putting this last so that it can act as extra launcher arguments, or as
+	# a wrapper of some sort (numa_wrapper, valgrind, etc)
+	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
+
 	return $cmd;
 }
 
@@ -170,12 +173,15 @@ sub prun_joblaunch_cmdbuild {
 		$cmd = "prun";
 	}
 	
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 	# if we use nolocal, and fail to specify extra job nodes, set it
 	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
 	
 	$cmd .= " -N $numnodes -n $numprocs";
-	
+
+	# putting this last so that it can act as extra launcher arguments, or as
+	# a wrapper of some sort (numa_wrapper, valgrind, etc)
+	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
+
 	return $cmd;
 }
 
@@ -199,14 +205,17 @@ sub mpiexec_joblaunch_cmdbuild {
 		$cmd = "mpiexec";
 	}
 	
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 	# if we use nolocal, and fail to specify extra job nodes, set it
 	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
 	
 	($ppn == 1) and $cmd .= " -pernode";
 	
 	$cmd .= " -np $numprocs ";
-	
+
+	# putting this last so that it can act as extra launcher arguments, or as
+	# a wrapper of some sort (numa_wrapper, valgrind, etc)
+	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
+
 	return $cmd;
 }
 
@@ -223,7 +232,6 @@ sub slurm_joblaunch_cmdbuild {
 		$cmd = "srun";
 	}
 
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 	# if we use nolocal, and fail to specify extra job nodes, set it
 	#FIXME - does slurm support this?
 	#$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
@@ -231,6 +239,10 @@ sub slurm_joblaunch_cmdbuild {
 	#FIXME - how should we handle each MPI-specific launch style under slurm?
 	# see: https://computing.llnl.gov/linux/slurm/quickstart.html#mpi
 	$cmd .= " -n $numprocs --ntasks-per-node $ppn ";
+
+	# putting this last so that it can act as extra launcher arguments, or as
+	# a wrapper of some sort (numa_wrapper, valgrind, etc)
+	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 
 	return $cmd;
 }
@@ -283,7 +295,6 @@ sub mpirun_prun_joblaunch_cmdbuild {
 		$cmd = "mpirun.prun";
 	}
 	
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 	# if we use nolocal, and fail to specify extra job nodes, set it
 	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
 	
@@ -291,6 +302,10 @@ sub mpirun_prun_joblaunch_cmdbuild {
 	
 	$cmd .= " -np $numprocs ";
 	
+	# putting this last so that it can act as extra launcher arguments, or as
+	# a wrapper of some sort (numa_wrapper, valgrind, etc)
+	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
+
 	return $cmd;
 }
 
@@ -310,13 +325,16 @@ sub mpirun_joblaunch_cmdbuild {
 		$cmd = "mpirun";
 	}
 
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 	# if we use nolocal, and fail to specify extra job nodes, set it
 	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
 
 	#($ppn == 1) and $cmd .= " -pernode";
 
 	$cmd .= " -np $numprocs ";
+
+	# putting this last so that it can act as extra launcher arguments, or as
+	# a wrapper of some sort (numa_wrapper, valgrind, etc)
+	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 
 	return $cmd;
 }
@@ -338,13 +356,16 @@ sub mpirun_ch_p4_joblaunch_cmdbuild {
 		$cmd = "mpirun";
 	}
 
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 	# if we use nolocal, and fail to specify extra job nodes, set it
 	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
 
 	#($ppn == 1) and $cmd .= " -pernode";
 
 	$cmd .= " -machine p4 -np $numprocs ";
+
+	# putting this last so that it can act as extra launcher arguments, or as
+	# a wrapper of some sort (numa_wrapper, valgrind, etc)
+	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 
 	return $cmd;
 }
@@ -368,14 +389,17 @@ sub yod_joblaunch_cmdbuild {
 		$cmd = "yod";
 	}
 	
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
 	# if we use nolocal, and fail to specify extra job nodes, set it
 	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
 	
 	($ppn == 2) and $cmd .= " -VN";
 	
 	$cmd .= " -sz $numprocs ";
-	
+
+	# putting this last so that it can act as extra launcher arguments, or as
+	# a wrapper of some sort (numa_wrapper, valgrind, etc)
+	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
+
 	return $cmd;
 }
 
