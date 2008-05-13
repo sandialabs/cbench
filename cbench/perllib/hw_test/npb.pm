@@ -124,8 +124,10 @@ sub run {
 			# lu.D seems to be not so well behaved on a single node with
 			# less than maybe 16GB of memory
 			/lu.D/ and next;
+			my $date = `/bin/date`;
+			chomp $date;
 			chomp $_;
-			print $ofh "====> $_\n";
+			print $ofh "====> $_ , $date\n";
 			@buf = `$path/$_ 2>&1`;
 			print $ofh @buf;
 			# clear out the buffer for the next binary/iteration
@@ -166,6 +168,7 @@ sub parse {
 	my $error = 0;
 	my $test;
 	my $mops_tmp;
+	my $time_tmp;
 	my $status;
 	
 	# parse the buffer
@@ -182,14 +185,19 @@ sub parse {
     	elsif (/Mop\/s total\s+=\s+(\d+\.\d+)/) {
 			$mops_tmp = $1;
     	}
+    	elsif (/Time in seconds\s+=\s+(\d+\.\d+)/) {
+			$time_tmp = $1/60;
+    	}
     	elsif (/Verification\s+=\s+(\S+)/) {
 			$status = $1;
 			if ($status =~ /SUCCESSFUL/) {
 				if (defined $data{$test}) {
-					$data{$test} = main::max($mops_tmp,$data{$test});
+					$data{"$test\_mops"} = main::max($mops_tmp,$data{"$test\_mops"});
+					$data{"$test\_minutes"} = main::max($time_tmp,$data{"$test\minutes"});
 				}
 				else {
-					$data{$test} = $mops_tmp;
+					$data{"$test\_mops"} = $mops_tmp;
+					$data{"$test\_minutes"} = $time_tmp;
 				}
 			}
 			else {
