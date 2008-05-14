@@ -1222,21 +1222,42 @@ sub parse_output_file {
 
 			# extract nodelist if it is there
 			my $embedded_nodelist_raw;
-			($embedded_nodelist_raw) = $embedded_info_buf =~ /\nCbench \S+ nodelist:([\s+\w+]+)\n/;
+			($embedded_nodelist_raw) = $embedded_info_buf =~ /\nCbench\s+\S*\s*nodelist:\s+(\S.*)\n/;
 			debug_print(3,"DEBUG: embedded_nodelist_raw: $embedded_nodelist_raw\n");
 
 			# if we found the embedded nodelist, phew, just sanity check it
 			# and record the data
 			if (length $embedded_nodelist_raw > 2) {
 				debug_print(2,"DEBUG: found embedded nodelist for nodediag\n");
+
 				my %nodelisthash;
-				my $cnt = 0;
-				foreach my $k (split(/ /,$embedded_nodelist_raw)) {
-					if ($k =~ /\S+/) {
-						$nodelisthash{$cnt} = $k;
-						$cnt++;
+
+				# so far we know about two styles of node lists, Torque/pbs and
+				# slurm/pdsh
+				if ($embedded_nodelist_raw =~ /\[.*\]/) {
+					# slurm style
+					my %tmphash;
+					pdshlist_to_hash($embedded_nodelist_raw,\%tmphash);
+
+					# so %tmphash isn't quite in the right structure so we need to
+					# convert it
+					my $cnt = 0;
+					foreach my $k (keys %tmphash) {
+							$nodelisthash{$cnt} = $k;
+							$cnt++;
 					}
 				}
+				else {
+					# torque style
+					my $cnt = 0;
+					foreach my $k (split(/ /,$embedded_nodelist_raw)) {
+						if ($k =~ /\S+/) {
+							$nodelisthash{$cnt} = $k;
+							$cnt++;
+						}
+					}
+				}
+
 				$nodelistdata = \%nodelisthash;	
 			}
 			else {
