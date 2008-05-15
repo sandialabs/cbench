@@ -113,7 +113,7 @@ ifeq ($(COMPILER),pgi)
   FORT = pgf77
   PLAINF77 = pgf77
   PLAINCC = pgcc
-  PLAINCXX = pgcc
+  PLAINCXX = pgCC
   NOOPT_FLAGS = -O0
   NOUNROLL_FLAGS = -Mnounroll
   OPENMP_ENABLE = -mp

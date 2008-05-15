@@ -27,10 +27,10 @@
 $cluster_name = $ENV{CBENCHCLUSTER} ? $ENV{CBENCHCLUSTER} : "test";
 
 # Total number of nodes in the cluster
-$max_nodes = 256;
+$max_nodes = 1;
 
 # Number of processors in a node
-$procs_per_node = 2;
+$procs_per_node = 4;
 
 # Total number of processors in the cluster to build/run benchmarks on
 # (assuming a homogeneous cluster, which is more often the case)
@@ -50,7 +50,7 @@ $max_procs = $max_nodes * $procs_per_node;
 # 1GB of RAM per processor.
 #
 # This is specified in MBytes.  So 1GB is specified as 1024 for example.
-$memory_per_node = 1024;
+$memory_per_node = 2048;
 #$memory_per_node = 5120;
 $memory_per_processor = $memory_per_node / $procs_per_node;
 
