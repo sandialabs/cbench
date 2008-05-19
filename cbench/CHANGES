@@ -5,10 +5,100 @@
 A __brief__ summary of changes in each release of Cbench.
 
 * future Cbench release (1.2.0)
-	* updated to hpcc v 1.2.0
 	* updated to IMB v 3.1
 	* memtester 4.0.8
-	* added Slurm batch system support
+	* added Slurm batch system (sbatch) and job launching (srun) support
+	* several updates to the logic used for job generation with respect to
+	  multi-core multi-socket node complexities; --redundant flag
+	* capability for job templates to specifiy a file to be fed in via stdin
+	  on the job launch command line
+	* the multiple tools/*_gen_jobs.pl scripts were combined into an extensible
+	  grand unified gen_jobs_generic.pl script
+	* the core test harness scripts (gen, start, and output parse) were renamed
+	  to cbench_gen_jobs.pl, cbench_start_jobs.pl, and cbench_output_parse.pl
+	  and are suitable to be in the default PATH
+	* the core cbench scripts attempt to figure out what testset they are being
+	  invoked for
+	* --testset command line override for cbench_output_parse.pl
+	* added --xaxis_ppn and --xaxis_ppn_nodeview output parse options to slice
+	  data differently w.r.t. procs per node
+	* consistent sorting of gnuplot data series labels, i.e. the legend
+	* added HPCCG, LAMMPS, and Trilinos Epetra benchmark support and integration
+	  in the Cbench Openapps tree
+	* rewrote the sbin/install* scripting framework into a single extensible
+	  sbin/install_cbench install script
+	* testsets are now installed using mainly symlinks to the core files at the top
+	  of the Cbench testing tree to remove needless duplication of code and to make
+	  updating things in the testing tree easier
+	* beta support for the --combobatch cbench_start_jobs mode (ticket #108)
+	* support for OSU message rate benchmark in the 'bandwidth' testset
+	* add --joblaunch_extraargs to let the user override cluster.def's
+	  $joblaunch_extraargs at gen_jobs time, similar to how they can
+	  override batch_extraargs at start_jobs time
+	* support an arbitrary filename extension for batch scripts, as
+	  defined by the <batchsystem>_batch_extension() function
+	* made the IMB output_parse module smarter and more dynamic
+	* added the 'shakedown' testset which we use for doing a medium hard set of
+	  test jobs across a cluster to requalify it for production after a full cluster
+	  downtime
+	* update current testset benchmarks to handle the one process case
+	  gracefully if the benchmark likes 2 or more processes,  i.e. generate a
+	  CBENCH NOTICE for the parser so that they aren't counted as errors
+	* assume for the COMPILERCOLLECTION=gcc case that we are using Gcc 4.X with
+	  Gfortran; COMPILERCOLLECTION=gcc3 can be used to get the older gcc behavior
+	* in job scripts, set OMP_NUM_THREADS explicitly based on number of processors,
+	  ppn, and number of nodes assuming maximum utilization of cores on a node
+		* also controllable via the cbench_gen_jobs.pl --threads flag
+	* add --nodes parameter to cbench_start_jobs.pl
+	* add --nodes, --maxnodes, --minnodes to cbench_output_parse.pl
+	* fixes to HP Linpack and HPCC for memory buffer byte count arithmetic when 
+	  we are dealing with buffers above ~16GB in size
+	* add --memory_util_factors command line override for the cluster.def setting
+	  to cbench_gen_jobs.pl
+	* added some nice cbench_output_parse.pl graphing options:
+	  --speedup, --paralleleff, --scaledparalleleff
+	* several more variations to compiling STREAMS tests including more Openmp
+	  versions
+	* add the --follow_symlinks option to parse through directories that are
+	  symlinks for cbench_output_parse.pl
+	* updated to mpiGraph 0-1.3
+	* cbench_output_parse.pl add --walltimedata option to extract and report
+	  elapsed walltime data
+	* added a workload oriented cbench_output_parse.pl view of job data via the
+	  --report option
+	* support in the Cbench make system for OpenMP compiled binaries, binaries
+	  needing LAPACK and FFTW linkages
+	* beta quality capability for Cbench to integrate itself into the LANL
+	  (Los Alamos National Lab) Gazebo test harness framework
+	* cbench_output_parse.pl will not print CBENCH NOTICEs by default in the --diag
+	  mode anymore, the --shownotice option is also required
+	* add the --showpassed cbench_output_parse.pl option
+	* ticket #7  HPCC source code tweaks
+	* ticket #9  remove script duplication in the cbench testing tree
+	* ticket #34  installing from source tree to test tree w/ bin identifiers
+	* ticket #57  add BEGIN block check for proper Cbench env variables
+	* ticket #63  nodehwtest_output_parse option to explicitly show tests that were
+	  in a target values file but not in parsed data
+	* ticket #90  upgrade to hpcc 1.2.0
+	* ticket #96  shakedown testset
+	* ticket #33  nodehwtest_parse_helper.pl improvements
+	* ticket #53  rework HP linpack setup to be a tarball plus patches
+	* ticket #70  add a random test ordering option to node_hw_test
+	* ticket #80  always show the correct filename with the --diag option of
+	  output_parse
+	* ticket #81  add some gcc4, gfortan compiled STREAMS binaries to the streams
+	  build
+	* ticket #83  capability to measure actual walltime of jobs
+	* ticket #97  update torque_header.in to grab nodeset used during a job
+	* ticket #99  update shakedown  IMB test to use smaller buffers
+	* ticket #100  --normalize dataval=NUMPROCS output_parse option
+	* ticket #101  job templates should test for 1 process runs and abort with notice
+	  if they won't run correctly
+	* ticket #103  npb -mcmodel compile fix for Intel (maybe gcc equivalent too?)
+	* ticket #111  IMB output_parse module needs update
+	* ticket #113  existing testset benchmarks and output parsers should deal with
+	  1 process failures gracefully
+	* ticket #117  gen_jobs needs a --mem_util_factor command line parameter
 
 * Cbench release (1.1.5)
 	* fix a bug with the HPL/HPCC N parameter calulation when using > 1ppn
