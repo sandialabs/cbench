@@ -13,6 +13,9 @@ INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
 all: $(SRC)
+	make -C $(SRC)/lib/poems -f Makefile.cbench
+	make -C $(SRC)/lib/meam -f Makefile.cbench
+	make -C $(SRC)/src yes-all
 	make -C $(SRC)/src cbench
 
 $(SRC): $(TAR)
@@ -20,6 +23,8 @@ $(SRC): $(TAR)
 	mv lammps-* $(SRC)
 	ln -sf $(SRC) src
 	cd $(SRC)/src/MAKE; ln -sf ../../../Makefile.cbench .
+	cd $(SRC)/lib/poems; ln -sf ../../../Makefile.cbench-poems Makefile.cbench
+	cd $(SRC)/lib/meam; ln -sf ../../../Makefile.cbench-meam Makefile.cbench
 	touch $(SRC)
 
 $(TAR):

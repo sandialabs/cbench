@@ -8,11 +8,11 @@ SHELL = /bin/sh
 # NOTE: On Sandia systems, you will need load the appropriate fftw module before building LAMMPS
 
 CC =		$(CXX)
-CCFLAGS =	-DFFT_FFTW -I$(FFTWINCLUDE) $(CFLAGS)
+CCFLAGS =	-DFFT_FFTW -I$(FFTWINCLUDE) $(CFLAGS) -I../../lib -I../../lib/poems
 DEPFLAGS =	-M
-LINK =		$(CC)
-LINKFLAGS =	$(FFTWLIB)
-USRLIB =	-lfftw -lstdc++
+LINK =		$(F90)
+LINKFLAGS =	-nofor-main $(FFTWLIB) -L../../lib/meam -L../../lib/poems
+USRLIB =	-lfftw -lstdc++ -lpoems -lmeam
 SYSLIB =	-lm
 SIZE =		size
 
