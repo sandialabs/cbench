@@ -29,10 +29,12 @@
 #
 
 # need to know where everything cbench lives!
-use lib ($ENV{CBENCHOME} ? $ENV{CBENCHOME} : "$ENV{HOME}\/cbench");
-$BENCH_HOME = $ENV{CBENCHOME} ? $ENV{CBENCHOME} :
-    "$ENV{HOME}\/cbench";
+BEGIN {
+    die "Please define CBENCHOME!\n" if !defined($ENV{CBENCHOME});
+}
+use lib $ENV{CBENCHOME};
 require "cbench.pl";
+$CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
 # add Cbench perl library to the Perl search path
 use lib ($ENV{CBENCHOME} ? "$ENV{CBENCHOME}\/perllib" :

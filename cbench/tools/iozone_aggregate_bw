@@ -29,11 +29,12 @@
 #
 
 # need to know where everything cbench lives!
-$BENCH_HOME = $ENV{CBENCHOME} ? $ENV{CBENCHOME} :
-    "$ENV{HOME}\/cbench";
-
-unshift @INC, "$BENCH_HOME";
+BEGIN {
+	die "Please define CBENCHOME!\n" if !defined($ENV{CBENCHOME});
+}
+use lib $ENV{CBENCHOME};
 require "cbench.pl";
+$CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
 use Getopt::Long;
 use IPC::Open3;

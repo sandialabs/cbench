@@ -29,10 +29,12 @@
 # this is the shortest distance for versioned Cbench packaging for now.
 
 # need to know where everything cbench lives!
-use lib ($ENV{CBENCHOME} ? $ENV{CBENCHOME} : "$ENV{HOME}\/cbench");
-$BENCH_HOME = $ENV{CBENCHOME} ? $ENV{CBENCHOME} :
-    "$ENV{HOME}\/cbench";
+BEGIN {
+	die "Please define CBENCHOME!\n" if !defined($ENV{CBENCHOME});
+}
+use lib $ENV{CBENCHOME};
 require "cbench.pl";
+$CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
 use Getopt::Long;
 use File::Find;
