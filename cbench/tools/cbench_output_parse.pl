@@ -2089,7 +2089,7 @@ sub usage {
 			"                       metrics with these units plot against it instead\n".
 			"                       of the default left-hand y-axis.\n".
 			"   --usecwd          Override the path to the nodehwtest that is determined\n".
-			"                     and use the currend working directory\n".
+			"                     and use the current working directory\n".
 			"   --numcolumns <num>  Number of columns used for text output of parsed data.\n".
 			"                       The default is 2.\n".
 			"   --xaxis_ppn          Put PPN on the x-axis and organize the data series\n".
