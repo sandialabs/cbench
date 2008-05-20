@@ -788,10 +788,10 @@ sub build_job_templates {
 		$templates->{$jobname}{'interactive'} .= "\n######## Cbench $jobfile ########\n";
 		$templates->{$jobname}{'interactive'} .= $job_template;
 
-		if ($DEBUG and $DEBUG < 3) {
+		if ($DEBUG and $DEBUG <= 3) {
 			print "DEBUG: found and processed job template $testset\_$jobname.in\n";
 		}
-		elsif ($DEBUG > 2) {
+		elsif ($DEBUG > 3) {
 			print "DEBUG:  batch job template $testset\_$jobname.in\n" .
 				"====================================================\n".
 				$templates->{$jobname}{'batch'} .
@@ -1690,6 +1690,80 @@ sub path_is_writeable {
 }
 
 # Search for and attempt to load all modules found in the
+# Cbench gen_jobs library. This subroutine provides the core
+# of the dynamic 'plug-in' functionality for the Cbench
+# job generating framework.
+#
+# The routine expects a reference to a hash as input.
+#
+# The routine populates the hash with keys named for a
+# genjobs module that was successfully loaded and values
+# that are a reference to a parse  object that was created
+# with the loaded module.
+sub load_genjobs_modules {
+	die "load_genjobs_modules() takes one arguments as input"
+		if (@_ != 1);
+	
+	my $href = shift;
+
+	@raw_modules = ();
+
+	# Get a list of all the Perl modules in the Cbench genjobs library,
+	# CBENCHOME/perllib/gen_jobs by default. We also look in a list
+	# of locations specified by the CBENCHADDONS environment variable.
+	my @dirs = ("$BENCH_HOME/perllib/gen_jobs");
+	my @addons = get_cbench_addons();
+	if (defined @addons) {
+		foreach (@addons) {
+			push @dirs, "$_/perllib/gen_jobs";
+			# add this to the Perl lib path
+			unshift @INC, "$_/perllib";
+		}
+	}
+	debug_print(3, "DEBUG:load_genjobs_modules() dirs=@dirs");
+	foreach my $dir (@dirs) {
+		if (opendir(BIN, $dir)) { 
+			while( defined (my $file = readdir BIN) ) {
+				next if $file =~ /^\.\.?$/;  # skip . and ..
+				next unless $file =~ /^\S+\.pm$/;  # only process .pm files
+				debug_print(2, "DEBUG: found $file\n");
+				($mod) = $file =~ /(\S+)\.pm/;
+				push @raw_modules, $mod;
+			}
+			closedir(BIN);
+		}
+		else {
+			debug_print(1,"WARNING: Can't open $dir: $!");
+		}
+	}
+
+	# For each parse module we found, try to 'require' it and see if
+	# we can use it properly. Need to make sure that CBENCHADDON directories
+	# are in the lib path
+	for (@raw_modules) {
+		eval "require gen_jobs::$_";
+		#require gen_jobs::purple;
+		if ($@ =~ /Can't locate gen_jobs/) {
+			warning_print("$_ gen_jobs module not supported.  (gen_jobs::$_ not found)\n");
+		} elsif ($@) {
+			warning_print("Error loading 'gen_jobs::$_'.\n\n$@\n");
+		}
+		else {
+			my $tobj = "gen_jobs::$_"->new();
+			if ($tobj) {
+				# success! save the module name and object ref
+				$$href{$_} = $tobj;
+				debug_print(1, "DEBUG: loaded gen_jobs::$_ module\n");
+			}
+			else {
+				warning_print("Error initializing gen_jobs::$_ object!\n");
+			}
+		}
+	}
+}
+
+
+# Search for and attempt to load all modules found in the
 # Cbench hw_test library. This subroutine provides the core
 # of the dynamic 'plug-in' functionality for the Cbench
 # hw_test framework.
@@ -1703,7 +1777,7 @@ sub path_is_writeable {
 # with the loaded module.
 sub load_hwtest_modules {
 	die "load_hwtest_modules() takes two arguments as input"
-	if (@_ != 2);
+		if (@_ != 2);
 	
 	my $href = shift;
 	my $ofh = shift;
@@ -2337,7 +2411,20 @@ sub mk_test_dir {
 	(! -d "$bench_test\/$testset") and mkdir "$bench_test\/$testset",0750;
 }
 
-# parse make.def and return a correct BENCH_TEST path
+# process the CBENCHADDONS environment variable
+sub get_cbench_addons {
+	if ($ENV{CBENCHADDONS}) {
+		debug_print(2,"DEBUG: found CBENCHADDONS: $ENV{CBENCHADDONS}\n");
+		return split(':',$ENV{CBENCHADDONS});
+	}
+	else {
+		debug_print(2,"DEBUG: no CBENCHADDONS found\n");
+		return;
+	}
+}
+
+
+# return a correct BENCH_TEST/CBENCHTEST path
 sub get_bench_test {
 
 	if ($ENV{CBENCHTEST}) {
@@ -2453,6 +2540,71 @@ sub compute_PQ {
 
 	debug_print(1,"compute_PQ() failed for numprocs=$numprocs\n");
 	return @PQ;
+}
+
+# return the integer cube root of an integer
+# the cube root must an even integer or return 0
+sub int_cube_root {
+	my $num = shift;
+
+	# this is just laziness to get around Perl floating-point rounding
+	# stuff
+	my %cuberoots = (
+		8 => 2,
+		27 => 3,
+		64 => 4,
+		125 => 5,
+		216 => 6,
+		343 => 7,
+		512 => 8,
+		729 => 9,
+		1000 => 10,
+		1331 => 11,
+		1728 => 12,
+		2197 => 13,
+		2744 => 14,
+		3375 => 15,
+		4096 => 16,
+		4913 => 17,
+		5832 => 18,
+		6859 => 19,
+		8000 => 20,
+		9261 => 21,
+		10648 => 22,
+		12167 => 23,
+		13824 => 24,
+		15625 => 25,
+	);
+
+	(defined $cuberoots{$num}) and return $cuberoots{$num};
+	return 0;
+}
+
+# return a triplet of integer factors for a given integer
+# used for decomposing a number of processors to x,y,z
+# integer components
+sub three_int_factors {
+	my $num = shift;
+
+	my %fact = (
+		8 => '2,2,2',
+		32 => '4,4,2',
+		64 => '4,4,4',
+		128 => '8,4,4',
+		256 => '8,8,4',
+		512 => '8,8,8',
+		784 => '16,7,7',
+		1024 => '16,8,8',
+		1296 => '16,9,9',
+		1920 => '16,12,10',
+		2048 => '16,16,8',
+		3840 => '16,16,15',
+		3920 => '20,14,14',
+		4096 => '16,16,16',
+		8192 => '32,16,16',
+	);
+	(defined $fact{$num}) and return $fact{$num};
+	return '';
 }
 
 # Kill children that have been forked by Cbench testing
