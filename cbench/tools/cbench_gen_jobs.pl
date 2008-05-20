@@ -32,7 +32,10 @@ use lib $ENV{CBENCHOME};
 require "cbench.pl";
 $CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
+# add Cbench perl library to the Perl search path
+use lib "$ENV{CBENCHOME}\/perllib";
 # enable/disable color support appropriately
+
 detect_color_support();
 
 use Getopt::Long;
@@ -147,6 +150,32 @@ if (!defined $testdir and $testset =~ /^io|shakedown/) {
 	},
 );
 
+# load any gen_jobs modules
+my %genjobs_modules;
+load_genjobs_modules(\%genjobs_modules);
+
+# now we need to add hook the gen_jobs modules into the %custom_gen_hash
+# structure
+foreach my $mod (keys %genjobs_modules) {
+	# first query what we might need to put into the testset specific overload
+	my %tmp = $genjobs_modules{$mod}->testset_hash();
+	my $keys = keys %tmp;
+	print Dumper (%tmp);
+	if ($keys > 0) {
+		%{$custom_gen_hash{testset}{$mod}} = %tmp;
+	}
+
+	# second query what we might need to put into the benchmark specific overload
+	my %tmp = $genjobs_modules{$mod}->benchmark_hash();
+	my $keys = keys %tmp;
+	print Dumper (%tmp);
+	if ($keys > 0) {
+		%{$custom_gen_hash{benchmark}{$mod}} = %tmp;
+	}
+
+	print Dumper (%custom_gen_hash);
+}
+
 # find and read in the job templates for the testset
 my %templates = ();
 build_job_templates($testset,\%templates);
@@ -154,7 +183,8 @@ build_job_templates($testset,\%templates);
 # it in this context
 delete $templates{combobatch};
 # by default the list of jobs is the list of templates found
-my @job_list = keys %templates;
+our @job_list = keys %templates;
+debug_print(2,"DEBUG: default job_list= @job_list");
 
 #print Dumper(%custom_gen_hash);
 #print Dumper(%templates);
@@ -176,6 +206,13 @@ custom_gen_init($testset);
 # if the user passed in a set of runsizes on the command line, convert
 # to an array and replace the default @run_sizes array from cbench.pl
 (defined $runsizes) and use_custom_runsizes($runsizes);
+
+# at this point we have the array of runsizes, i.e. mpi process counts,
+# that the user wants to generate for. some tests/benchmarks only support
+# specific numbers of mpi processes (e.g. only powers of two).
+# we'll give any benchmark/testset the chance to filter the list of
+# runsizes here
+@run_sizes = custom_gen_runsizes(\@run_sizes);
 
 # outer loop iterates over the various ppn cases as defined in
 # the max_ppn_procs hash in cluster.def
@@ -200,9 +237,9 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 		($numprocs > $max_procs) and next;
 
 		# honor any max/min processor count arguments from the command line
-		(defined $maxprocs_cmdline) and ($numprocs > $maxprocs_cmdline) and next;
-		(defined $minprocs_cmdline) and ($numprocs < $minprocs_cmdline) and next;
-		(defined $procs_cmdline) and ($numprocs != $procs_cmdline) and next;
+		((defined $maxprocs_cmdline) and ($numprocs > $maxprocs_cmdline)) and next;
+		((defined $minprocs_cmdline) and ($numprocs < $minprocs_cmdline)) and next;
+		((defined $procs_cmdline) and ($numprocs != $procs_cmdline)) and next;
 
 		# iterate over the job templates we need to process
 		foreach $job (custom_gen_joblist($ppn,$numprocs)) {
@@ -346,6 +383,25 @@ if (defined $gazebo) {
 	close(SUBMITCONFIG);
 }
 
+
+
+sub custom_gen_runsizes {
+	my $sizes = shift;
+
+	debug_print(3,"DEBUG: entering custom_gen_runsizes($sizes)\n");
+
+	# run any specific custom runsizes list subroutine
+	if (exists $custom_gen_hash{testset}{$testset}{runsizes}) {
+		debug_print(2,"DEBUG:custom_gen_runsizes() calling $custom_gen_hash{testset}{$testset}{runsizes}\n");
+		my $funcname = "$custom_gen_hash{testset}{$testset}{runsizes}";
+		*func = \&$funcname;
+		return func($sizes);
+	}
+	else {
+		return @sizes;
+	}
+}
+
 sub custom_gen_joblist {
 	my $ppn = shift;
 	my $numprocs = shift;
@@ -367,6 +423,14 @@ sub custom_gen_init {
 	my $testset = shift;
 
 	debug_print(3,"DEBUG: entering custom_gen_init()\n");
+
+	#  do any testset specific gen_init called for
+	if (exists $custom_gen_hash{testset}{$testset}{init}) {
+		debug_print(2,"DEBUG:custom_gen_init() calling $custom_gen_hash{testset}{$testset}{init} \n");
+		my $funcname = "$custom_gen_hash{testset}{$testset}{init}";
+		*func = \&$funcname;
+		func($testset);	
+	}
 
 	# loop through the benchmarks/tests/apps found to find any benchmark
 	# specific generate stuff to init
