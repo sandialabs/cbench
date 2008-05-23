@@ -60,6 +60,7 @@ GetOptions(
 	'small' => \$SMALL,
 	'numcpus=i' => \$NUMCPUS,
 	'maxmem=i' => \$MAXMEM,
+	'memory_util_factors|mem_factors=s' => \$new_memory_util_factors,
 	'debug:i' => \$DEBUG,
 	'help' => \$help,
 );
@@ -88,6 +89,12 @@ $testset = 'nodehwtest';
 $bench_test = get_bench_test();
 $testset_path = "$bench_test/$testset";
 $DEBUG and print "DEBUG: $bench_test $testset_path\n";
+
+if (defined $new_memory_util_factors) {
+	@memory_util_factors = split(',',$new_memory_util_factors);
+	debug_print(1,"DEBUG: overriding memory_util_factors array from command line ".
+		"with @memory_util_factors");
+}
 
 # output file path
 # if it does not exist, create it but warn about the event
@@ -252,7 +259,7 @@ for $i (1..$iterations) {
 		$tobj->run() unless defined $dryrun;
 		
 		# pause just a tiny bit to allow the OS to regroup
-		sleep(5) unless defined $dryrun;
+		sleep(1) unless defined $dryrun;
 
 		$iter_end = time;
 		$total_delta = ($iter_end - $start) / 60;
@@ -332,6 +339,9 @@ sub usage {
 		"                         --maxmem 1024\n".
 		"                      would only use 1024MB or 1GB of memory for any tests\n".
 		"                      that utilize free memory detection.\n".
+		"   --memory_util_factors  Override the cluster.def \@memory_util_factors array.\n".
+		"                          For example:\n".
+		"                            --memory_util_factors 0.10,0.77,0.85\n".  
 		"   --dryrun           Do everything but actually run the tests\n" .
 		"   --quiet            Output as little as possible during run\n".
 		"   --debug <level>    Turn on debugging at the specified level\n";
