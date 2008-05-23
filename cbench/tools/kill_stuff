@@ -5,12 +5,14 @@ GetOptions(
 	'match=s' => \$match,
 	'force' => \$force,
 	'debug' => \$DEBUG,
+	'signal=s' => \$signal,
 );
 
 if (! defined $match) {
 	print "NEED --match parameter\n";
 	exit;
 }
+(! defined $signal) and $signal = "9";
 
 @ps = `ps wax`;
 
@@ -23,6 +25,6 @@ foreach (@ps) {
 	next unless /$match/;
 	#print "$_";
 	($pid, $state, $name) = /^\s*(\d+)\s+\S+\s+(\S+)\s+\S+\s+(.*)$/;	
-	print "kill $pid ($state) ($name)\n";
-	system("kill -9 $pid &");
+	print "signal $signal kill $pid ($state) ($name)\n";
+	system("kill -$signal $pid &");
 }
