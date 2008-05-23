@@ -1492,8 +1492,8 @@ sub linux_useable_memory {
 	my $buffer_reuse_factor = 0.1;
 
 	if (defined $MAXMEM) {
-		(defined $DEBUG and $DEBUG > 1 ) and print 
-			"DEBUG:linux_useable_memory() overriding by MAXMEM var, num=$MAXMEM\n";
+		debug_print(2,
+			"DEBUG:linux_useable_memory() overriding by MAXMEM var, num=$MAXMEM\n");
 		return ($MAXMEM * 1024);
 	}
 
@@ -2181,13 +2181,7 @@ sub std_substitute {
 	$string =~ s/NUM_PROCS_HERE/$numprocs/gs;
 	$string =~ s/NUM_NODES_HERE/$numnodes/gs;
 	$string =~ s/NUM_PPN_HERE/$ppn/gs;
-	# calc the threads per mpi process for the job
-	# we by default assume we want to utilize all cores on a node
-	# which we can get from procs_per_node in cluster.def
-	# 
-	# we also check for an explicit setting via the OMPNUMTHREADS global
-	$temp = $procs_per_node / (($numprocs < $ppn) ? $numprocs : $ppn);
-	(defined $OMPNUMTHREADS) and $temp = $OMPNUMTHREADS;
+	$temp = calc_num_threads($numprocs,$ppn);
 	$string =~ s/NUM_THREADS_PER_PROCESS_HERE/$temp/gs;
 	$string =~ s/JOBNAME_HERE/$jobname/gs;
 	$string =~ s/JOBSCRIPT_HERE/$jobname\.$batch_extension/gs;
@@ -2223,6 +2217,22 @@ sub calc_num_nodes {
 	
 	return $num_nodes;
 }
+
+# Calculate the number of threads we think we want to use per process (MPI
+# or non-mpi process). We attempt to control this ultimately by setting
+# the OMP_NUM_TRHEADS environment variable, but not in this subroutine.
+# We by default assume we want to utilize all cores on a node
+# which we can get from procs_per_node in cluster.def
+sub calc_num_threads {
+	my $numprocs = shift;
+	my $ppn = shift;
+
+	my $temp = int ($procs_per_node / (($numprocs < $ppn) ? $numprocs : $ppn));
+	(defined $OMPNUMTHREADS) and $temp = $OMPNUMTHREADS;
+
+	return $temp;
+}
+
 
 # Replace the default @run_sizes array (from the top of
 # cbench.pl) with a custom one probably from values
