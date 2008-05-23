@@ -39,48 +39,12 @@ This module will only work if the Cbench local mpich version of
 Linpack (xhpl) has been compiled and installed into the nodehwtest test
 set.
 
-=head1 Cbench hw_test SYNOPSIS
-
-This is a module for the Cbench hw_test framework. The Cbench hw_test
-framework uses simple Perl object modules like this to provide "plug-in"
-hardware testing functionality.  Each module encapsulates the intelligence
-to run a certain hardrware test or closely related tests and also 
-analyze the output from the tests and summarize the data. Cbench utilities
-like node_hw_test use these modules.
-
-These hw_test modules are written as Perl objects simply because it was
-a good clean way to deal with the dynamic "plug-in"  type model the Cbench
-hw_test framework is using.  One shouldn't be scared by the fact that they
-are objects.  The object oriented usage is very basic.  Most of the methods
-are generic and won't need to be changed for any new hw_test modules that
-are written.
-
-See doc/README.hw_test for more information on the Cbench hardware
-testing framework.
-
 =cut
 
 ###############################################################
 #
 # Public methods
 #
-
-
-=head1 PUBLIC METHODS
-
-=over 4
-
-=item B<new()> - Create a new hw_test object
-
-Should be called with a parameter that is an open filehandle.
-
-  $obj = hw_test::cpuinfo->new(*FH);
-
-The filehandle parameter is where output from the testing encapsulated
-in this hw_test object is printed to. If no parameter is given,
-STDOUT is assumed.
-
-=cut
 
 sub new {
 	my $type = shift;
@@ -91,21 +55,6 @@ sub new {
 	return $self;
 }
 
-
-=item B<run()> - Responsible for actually running the test(s)
-that this hw_test module encapsulates.
-
-  $obj = hw_test::cpuinfo->new(*FH);
-  $obj->run();
-
-The output from tesstreamsting should be sent to the output file
-handle for the object, $self->{outhandle}.
-
-The implementation of the run() routine/method for a hw_test
-module encompasses the first 50% of the work in creating a new
-hw_test module.
-
-=cut
 
 # private variable, how many iterations do we run each time
 # run() is called
@@ -153,70 +102,74 @@ sub run {
 	close(IN);
 	$/ = "\n";
 
-	# search and replace 
-	my @Nvals = main::compute_N(1,1);
-	my $num_Nvals = @Nvals;
-	my $outbuf = $xhpldat;	
-	$outbuf =~ s/XHPL_NUM_N_HERE/$num_Nvals/gs;
-	$outbuf =~ s/XHPL_N_HERE/@Nvals/gs;
-    $outbuf =~ s/XHPL_P_HERE/1/gs;
-    $outbuf =~ s/XHPL_Q_HERE/1/gs;
+	# we need to honor the --maxmem command line param
+	if (defined $main::MAXMEM) {
+		main::debug_print(2,
+			"DEBUG:$shortpackage.run() overriding by MAXMEM var, num=$main::MAXMEM\n");
+		$main::memory_per_node = $main::MAXMEM;
+		$main::memory_per_processor = $main::memory_per_node / $main::procs_per_node;
+	}
 
-	# write out the generated hpccinf.txt file
-	$file = "$rundir\/HPL.dat";
-	open (OUT,">$file") or do {
-		print "ERROR:$shortpackage.run() Could not write $file ($!)\n";
-		return;
-	};
-	print OUT $outbuf;
-	close(OUT);
-
-	# need a simple hosts file for mpirun
+	# need a simple hosts file for mpirun with enough entries for the core
+	# count on the node
 	$file = "$rundir\/hostlist";
 	open (OUT,">$file") or do {
 		print "ERROR:$shortpackage.run() Could not write $file ($!)\n";
 		return;
 	};
-	print OUT "$main::hn\n";
-	print OUT "$main::hn\n";
+	for (1..$main::procs_per_node) {
+		print OUT "$main::hn\n";
+	}
 	close(OUT);
 
-	#
-	# Ok, should be ready to run Linpack
-	my $cmd = "$mpirun -machine shmem ".
-		"-machinefile $rundir\/hostlist -np 1 $path/xhpl.ch_shmem";
-	(defined $main::DEBUG) and print
-		"DEBUG:$shortpackage\.run() cmd = $cmd\n";
-	main::run_single_process("$cmd",\@buf);
+	# Determine the ppn values we will run the test at.
+	# FIXME: for the time being we will just run at a single value
+	#        until the parse() sub gets updated with better logic 
+	#        to handle multiple runs
+	my @ppnlist = ($main::nodehwtest_xhpl_ppn);
 
-	# save output
-	print $ofh @buf;
+	# loop to run linpack
+	foreach my $ppn (@ppnlist) {
+		# need to setup the HPL.dat appropriately
+		my @Nvals = main::compute_N($ppn,$ppn);
+		my ($P, $Q) = main::compute_PQ($ppn);
+		my $num_Nvals = @Nvals;
+		my $outbuf = $xhpldat;	
+		$outbuf =~ s/XHPL_NUM_N_HERE/$num_Nvals/gs;
+		$outbuf =~ s/XHPL_N_HERE/@Nvals/gs;
+		$outbuf =~ s/XHPL_P_HERE/$P/gs;
+		$outbuf =~ s/XHPL_Q_HERE/$Q/gs;
+
+		# write out the generated hpccinf.txt file
+		$file = "$rundir\/HPL.dat";
+		open (OUT,">$file") or do {
+			print "ERROR:$shortpackage.run() Could not write $file ($!)\n";
+			return;
+		};
+		print OUT $outbuf;
+		close(OUT);
+
+		# setup OMP_NUM_THREADS
+		my $threads = main::calc_num_threads($ppn,$ppn);
+		main::debug_print(1,"DEBUG:$shortpackage.run() setting OMP_NUM_THREADS=$threads for ppn=$ppn\n");
+		$ENV{'OMP_NUM_THREADS'} = $threads;
+
+		#
+		# Ok, should be ready to run Linpack
+		my $cmd = "$mpirun -machine shmem ".
+			"-machinefile $rundir\/hostlist -np $ppn $path/xhpl.ch_shmem";
+		main::debug_print(1,"DEBUG:$shortpackage\.run() cmd = $cmd\n");
+		print $ofh "====> $ppn"."ppn\n";
+		main::run_single_process("$cmd",\@buf);
+
+		# save output
+		print $ofh @buf;
+		# clear out the buffer for the next binary/iteration
+		$#buf = -1;
+	}
 
 	chdir $pwd;
 }
-
-=item B<parse()> - Responsible for actually parsing the output
-from the test(s) that this hw_test module encapsulates and 
-returning a hash reference with the extracted data.
-
-parse() takes a reference to a buffer (array) as the single input
-
-  $obj = hw_test::cpuinfo->new(*FH);
-  $obj->run();
-  .
-  read the output from run() in from the output file it
-  went to and put it in @buf
-  .
-  $datahashref = $obj->parse(\@buf);
-  for $k (keys %{$datahashref}) {
-  print "$k => $datahashref->{$k}\n";
-  }
-
-The implementation of the parse() routine/method for a hw_test
-module encompasses the second 50% of the work in creating a new
-hw_test module.
-
-=cut
 
 sub parse {
 	my $self = shift;
@@ -377,22 +330,10 @@ xhplendrecord:
 	return \%data;
 }
 
-=item B<name()> - Return the name of the hw_test module
-
-For example: hw_test::cpuinfo
-
-=cut
-
 sub name {
 	my $self = shift;
 	return $self->{NAME};
 }
-
-=item B<test_class()> - Return the test_class of the hw_test module
-
-For example: cpu, memory, disk, ...
-
-=cut
 
 sub test_class {
 	my $self = shift;
@@ -405,17 +346,6 @@ sub test_class {
 #
 # "Private" methods
 #
-
-=head1 PRIVATE METHODS
-
-=over 4
-
-=item B<_init> - parse arguments for B<new()>
-
-Parse the arguments passed to B<new()> and sets the
-appropriate object variables and such.
-
-=cut
 
 sub _init {
 	my $self = shift;
