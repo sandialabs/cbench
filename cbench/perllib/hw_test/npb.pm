@@ -121,9 +121,12 @@ sub run {
 	
 	for my $i (1..$iterations) {
 		for	(@binlist) {
-			# lu.D seems to be not so well behaved on a single node with
-			# less than maybe 16GB of memory
-			/lu.D/ and next;
+			# the D class single process NPB jobs can take a really long
+			# time to run (some ~20+ hours) so only run them if we are
+			# configured too
+			if (!$main::nodehwtest_npb_longjobs and /\.D$/) {
+				next;
+			}
 			my $date = `/bin/date`;
 			chomp $date;
 			chomp $_;
