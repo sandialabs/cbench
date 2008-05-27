@@ -521,10 +521,13 @@ sub parse_output_file {
 	
 	my $iter = 0;
 	my $tmod = '';
+	my $lastmod ='';
 	my $inheader = 1;
 	my $linegrab = 0;
 	my @buf = ();
 	my $i = 0;
+	my $elapsed1 = 0;
+	my $elapsed2 = 0;
 
 	while ($i < $numlines) {
 		# look for Cbench markers in the output since they are
@@ -568,8 +571,31 @@ sub parse_output_file {
                 $nodehashref->{$node}->{'iterations'}++;
 			}
 			elsif ($txtbuf[$i] =~ /$cbench_mark_prefix\s+MODULE/) {
+				$lastmod = $tmod;
 				($tmod) = $txtbuf[$i] =~
 					/$cbench_mark_prefix\s+MODULE\s+(\S+)/;	
+			}
+			elsif ($txtbuf[$i] =~ /$cbench_mark_prefix\s+TIMESTAMP elapsed=(\d+\.\d+)\s+min,/ and $lastmod ne '') {
+				$elapsed2 = $1;
+				my $delta = $elapsed2 - $elapsed1;
+				$elapsed1 = $elapsed2;
+				debug_print(2,"DEBUG: parse_output_file() elapsed=$elapsed1 delta=$delta tmod=$lastmod\n");
+
+				# record elapsed time data for this module
+				my $k = "$lastmod"."_elapsed";
+				debug_print(3,"DEBUG: parse_output_file() $k => $delta\n");
+				if (! exists $nodehashref->{$node}->{$k}) {
+					my @newarray = ();
+					$nodehashref->{$node}->{$k} = \@newarray;
+				}
+				push @{$nodehashref->{$node}->{$k}}, $delta;
+				
+				if (defined $characterize) {
+					if (! exists $statvars{$k}) {
+						$statvars{$k} = Statistics::Descriptive::Full->new();
+					}
+					$statvars{$k}->add_data($delta);
+				}
 			}
 
 			$i++;
