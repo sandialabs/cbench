@@ -157,6 +157,9 @@ $nodehwtest_xhpl_ppn = 1;
 # tests that can take many hours to run with a single process.
 $nodehwtest_npb_longjobs = 0;
 
+# This controls how many minutes the stress_cpu module runts the test
+$nodehwtest_stress_minutes = 120;
+
 # @nodehwtest_local_filesystems() array is used to tell disk testing modules, e.g.
 # iozone.pm, local filesystems they can use to test local disks. It is optional,
 # but if you are not running NODEHWTEST stuff as root, you'll probably need it. The

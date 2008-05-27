@@ -81,7 +81,7 @@ sub run {
 	my $numthreads = $numcores;
 
 	# how many seconds to run the testing? 
-	my $numseconds = 30 * 60;
+	my $numseconds = $main::nodehwtest_stress_minutes * 60;
 	
 	if (defined $main::SMALL) {
 		(defined $main::DEBUG) and print
