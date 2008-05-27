@@ -110,7 +110,7 @@ ifeq ($(COMPILER),gcc3)
 #  F_LIB = $(FMPI_LIB)
 endif
 ifeq ($(COMPILER),pgi)
-  FORT = pgf77
+  FORT = pgf90
   PLAINF77 = pgf77
   PLAINCC = pgcc
   PLAINCXX = pgCC
