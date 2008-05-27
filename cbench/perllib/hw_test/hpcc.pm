@@ -39,25 +39,6 @@ This module will only work if the Cbench local mpich version of
 HPCC has been compiled and installed into the nodehwtest test
 set.
 
-=head1 Cbench hw_test SYNOPSIS
-
-This is a module for the Cbench hw_test framework. The Cbench hw_test
-framework uses simple Perl object modules like this to provide "plug-in"
-hardware testing functionality.  Each module encapsulates the intelligence
-to run a certain hardrware test or closely related tests and also 
-analyze the output from the tests and summarize the data. Cbench utilities
-like node_hw_test use these modules.
-
-These hw_test modules are written as Perl objects simply because it was
-a good clean way to deal with the dynamic "plug-in"  type model the Cbench
-hw_test framework is using.  One shouldn't be scared by the fact that they
-are objects.  The object oriented usage is very basic.  Most of the methods
-are generic and won't need to be changed for any new hw_test modules that
-are written.
-
-See doc/README.hw_test for more information on the Cbench hardware
-testing framework.
-
 =cut
 
 ###############################################################
@@ -65,22 +46,6 @@ testing framework.
 # Public methods
 #
 
-
-=head1 PUBLIC METHODS
-
-=over 4
-
-=item B<new()> - Create a new hw_test object
-
-Should be called with a parameter that is an open filehandle.
-
-  $obj = hw_test::cpuinfo->new(*FH);
-
-The filehandle parameter is where output from the testing encapsulated
-in this hw_test object is printed to. If no parameter is given,
-STDOUT is assumed.
-
-=cut
 
 sub new {
 	my $type = shift;
@@ -91,21 +56,6 @@ sub new {
 	return $self;
 }
 
-
-=item B<run()> - Responsible for actually running the test(s)
-that this hw_test module encapsulates.
-
-  $obj = hw_test::cpuinfo->new(*FH);
-  $obj->run();
-
-The output from tesstreamsting should be sent to the output file
-handle for the object, $self->{outhandle}.
-
-The implementation of the run() routine/method for a hw_test
-module encompasses the first 50% of the work in creating a new
-hw_test module.
-
-=cut
 
 # private variable, how many iterations do we run each time
 # run() is called
@@ -187,6 +137,14 @@ sub run {
 	print OUT "$main::hn\n";
 	close(OUT);
 
+	# since hpcc can link with optimized BLAS libs and the libs
+	# usually get the best performance using multiple threads within
+	# the lib as opposed to multiple process instances of nodeperf,
+	# we will assume that we only need to start one instance of
+	# nodeperf
+	my $numcpus = main::linux_num_cpus();
+	$ENV{'OMP_NUM_THREADS'} = $numcpus;
+
 	#
 	# Ok, should be ready to run HPCC
 	my $cmd = "$mpirun -machine shmem ".
@@ -210,29 +168,6 @@ sub run {
 	chdir $pwd;
 }
 
-=item B<parse()> - Responsible for actually parsing the output
-from the test(s) that this hw_test module encapsulates and 
-returning a hash reference with the extracted data.
-
-parse() takes a reference to a buffer (array) as the single input
-
-  $obj = hw_test::cpuinfo->new(*FH);
-  $obj->run();
-  .
-  read the output from run() in from the output file it
-  went to and put it in @buf
-  .
-  $datahashref = $obj->parse(\@buf);
-  for $k (keys %{$datahashref}) {
-  print "$k => $datahashref->{$k}\n";
-  }
-
-The implementation of the parse() routine/method for a hw_test
-module encompasses the second 50% of the work in creating a new
-hw_test module.
-
-=cut
-
 sub parse {
 	my $self = shift;
 	my $bufref = shift;
@@ -240,10 +175,18 @@ sub parse {
 	my %data;
 	my $key;
 	my $fail = 0;
+	my $completed = 0;
+	my $started = 0;
 
 	# parse the buffer
 	foreach (@$bufref) {
-		if ($_ =~ /HPL_Tflops=(\d+\.\d+)/) {
+		if (/HPC Challenge Benchmark/) {
+			$started = 1;
+		}
+		elsif (/Begin of Summary/) {
+			$completed = 1;
+		}
+		elsif ($_ =~ /HPL_Tflops=(\d+\.\d+)/) {
 			$key = "$self->{SHORTNAME}\_hpl_gflops";
 			$data{$key} = $1 * 1000;
 		}
@@ -271,28 +214,26 @@ sub parse {
 			$fail++;
 		}
 	}
-
-	$key = "$self->{SHORTNAME}\_fail";
-	$data{$key} = $fail;
+	
+	if ($started and $completed) {
+		$key = "$self->{SHORTNAME}\_fail";
+		$data{$key} = $fail;
+	}
+	elsif ($started and !$completed) {
+		$key = "$self->{SHORTNAME}\_didnotfinish";
+		$data{$key} = 1;
+	}
+	else {
+		$key = "$self->{SHORTNAME}\_runerror";
+		$data{$key} = 1;
+	}
 	return \%data;
 }
-
-=item B<name()> - Return the name of the hw_test module
-
-For example: hw_test::cpuinfo
-
-=cut
 
 sub name {
 	my $self = shift;
 	return $self->{NAME};
 }
-
-=item B<test_class()> - Return the test_class of the hw_test module
-
-For example: cpu, memory, disk, ...
-
-=cut
 
 sub test_class {
 	my $self = shift;
@@ -305,17 +246,6 @@ sub test_class {
 #
 # "Private" methods
 #
-
-=head1 PRIVATE METHODS
-
-=over 4
-
-=item B<_init> - parse arguments for B<new()>
-
-Parse the arguments passed to B<new()> and sets the
-appropriate object variables and such.
-
-=cut
 
 sub _init {
 	my $self = shift;
