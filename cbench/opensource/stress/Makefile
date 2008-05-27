@@ -13,7 +13,7 @@ $(EXEC): $(SRC) .patched
 	$(MAKE) -C $(SRC)
 
 clean: 
-	$(MAKE) -C $(SRC) clean
+	-$(MAKE) -C $(SRC) clean
 
 distclean:
 	/bin/rm -rf $(SRC) .patched src

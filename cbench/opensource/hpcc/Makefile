@@ -44,13 +44,13 @@ local: normal
 xerbla:
 	$(CC) $(OPTFLAGS) -c xerbla.c
 
-clean: $(SRC) make.def	
-	[ -d $(SRC) ] && $(MAKE) -C $(SRC) arch=cbench clean
+clean: 
+	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) arch=cbench clean
 	/bin/rm -f $(SRC)/hpcc.$(MPICH_CH)
-	[ -d $(HPL) ] && cd $(HPL) && $(MAKE) arch=cbench clean_arch_all
+	-[ -d $(HPL) ] && $(MAKE) -C $(HPL) arch=cbench clean_arch_all
 	/bin/rm -rf $(HPL)/bin
-	find ./$(SRC) -name make.def -print -exec /bin/rm -f {} \;
-	[ -d $(HPL) ] && cd $(HPL) && /bin/rm -f Make.cbench
+	-find ./$(SRC) -name make.def -print -exec /bin/rm -f {} \;
+	-[ -d $(HPL) ] && cd $(HPL) && /bin/rm -f Make.cbench
 	/bin/rm -f xerbla.o
 
 distclean:
