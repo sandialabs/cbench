@@ -85,8 +85,7 @@ sub run {
 	my $rundir = File::Temp::tempdir(CLEANUP => 1);
 	my $pwd = `/bin/pwd`;
 
-	(defined $main::DEBUG) and print
-		"DEBUG:$shortpackage\.run() temp directory = $rundir\n";
+	main::debug_print(1,"DEBUG:$shortpackage\.run() temp directory = $rundir\n");
 	
 	# build the requisite content in the directory for HPCC to run
 	#
@@ -179,8 +178,16 @@ sub parse {
 	my $key;
 	my $fail = 0;
 
+	# strip the buffer of stderr output that can show up non-deterministically
+	# in the output stream and confuses the assumptions during parsing
+	my @cleanbuf = ();
+	foreach (@{$bufref}) {
+		/memfree\s+=\s+\d+\s+/ and next;
+		push @cleanbuf, $_;
+	}
+
 	# prepare to parse the buffer
-	my $txtbuf = \@$bufref;
+	my $txtbuf = \@cleanbuf;
 	my $numlines = scalar @{$txtbuf}; 
 
 	# NOTE: The linpack output file can have multiple results within it.
@@ -196,6 +203,8 @@ sub parse {
 	my $local_total_tests = 'nodata1';
 	my $local_passed_tests = 'nodata2';
 	my $local_failed_tests = 'nodata3';
+	my $resultsok = 0;
+	my $resultsfound = 0;
 	my $total_time = 0;
     while ($i < $numlines) {
         ($txtbuf->[$i] =~ /matrix A is randomly generated/) and $status = 'STARTED';
@@ -209,6 +218,7 @@ sub parse {
 
 		($txtbuf->[$i] =~ /Finished.*$/) and $found_endrecord = 1 and do {
 			$status = 'FINISHED' unless $status =~ /ALLOC/;
+			main::debug_print(3,"DEBUG:$shortpackage.parse() ENDRECORD");
 		};
 
 		$found_endrecord and goto xhplendrecord;
@@ -223,8 +233,8 @@ sub parse {
         # this check to keep from overflowing our buffer as
         # we parse....
 		if ($i + 6 > $numlines) {
-			(defined $main::DEBUG and $main::DEBUG > 2) and print
-				"parsing ended, buffer would overflow\n";
+			main::debug_print(3,"DEBUG:$shortpackage.parse() ".
+				"parsing ended, buffer would overflow\n");
 			last;
 		}
 
@@ -232,7 +242,7 @@ sub parse {
 		# result gigaflops number is 2 lines down in the buffer
 		$i += 2;
         my $l =  $txtbuf->[$i];
-        chomp $l;
+        #chomp $l;
 		my ($exp, $mantissa, $exp_str);
 		# matches a result line with Gflops in exponent notation
         if ($l =~ /(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)e\+(\d+)/) {
@@ -241,6 +251,7 @@ sub parse {
 			$mantissa = $7;
 			$exp_str = 'e+';
 			$gflops = $mantissa * (10 ** $exp);
+			$resultsfound++;
         }
 		# matches a result line without exponent notation
         elsif ($l =~ /(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/) {
@@ -249,15 +260,22 @@ sub parse {
 			$exp = 'noexp';
 			$gflops = $mantissa;
 			$exp_str = 'noexp';
+			$resultsfound++;
         }
+		else {
+			main::debug_print(3,"DEBUG:$shortpackage.parse() Warning, expected result line, found $l");
+		}
 
 
 		# check for the PASSED or FAILED status of the result
 		$i += 2;
 		my $pass = 0;
-		$pass = ($txtbuf->[$i++] =~ /PASSED/);
-		$pass += ($txtbuf->[$i++] =~ /PASSED/);
-		$pass += ($txtbuf->[$i] =~ /PASSED/);
+		#main::debug_print(1,"$txtbuf->[$i]");
+		#main::debug_print(1,"$txtbuf->[$i+1]");
+		#main::debug_print(1,"$txtbuf->[$i+2]");
+		$pass = ($txtbuf->[$i++] =~ /Ax-b.*eps.*PASSED/);
+		$pass += ($txtbuf->[$i++] =~ /Ax-b.*eps.*PASSED/);
+		$pass += ($txtbuf->[$i] =~ /Ax-b.*eps.*PASSED/);
 
 		# if the parsed Gigaflops result passed and if the result is the max
 		# of any previous results from this file, then record it locally
@@ -267,10 +285,11 @@ sub parse {
 			if ($gflops > $local_max_gflops) {
 				$local_max_gflops = $gflops;
 			}
+			main::debug_print(3,"DEBUG:$shortpackage.parse() RESULTCHECK $pass of 3 PASSED, $local_max_gflops\n");
+			$resultsok++;
 		}
 
-		(defined $main::DEBUG and $main::DEBUG > 2) and print
-			"RESULT, $gflops, $mantissa, $exp, $exp_str, $pass, $status\n";
+		main::debug_print(3,"DEBUG:$shortpackage.parse() RESULT, $gflops, $mantissa, $exp, $exp_str, $pass, $status\n");
 
 		# we finished parsing a test result, prime the loop for finding the next
 		# result in case there are multiple results in the output
@@ -280,23 +299,26 @@ sub parse {
 
 xhplendrecord:
         $l =  $txtbuf->[$i];
-        chomp $l;
-        if ($l =~ /Finished\s+(\d+)\s+tests with the following.*$/) {
+        #chomp $l;
+        if ($l =~ /Finished\s+(\d+)\s+tests with the following.*/) {
 			$local_total_tests = $1;
 		}
-		elsif ($l =~ /\s+(\d+)\s+tests completed and passed.*$/) {
+		elsif ($l =~ /\s+(\d+)\s+tests completed and passed.*/) {
 			$local_passed_tests = $1;
 		}
-		elsif ($l =~ /\s+(\d+)\s+tests completed and failed.*$/) {
+		elsif ($l =~ /\s+(\d+)\s+tests completed and failed.*/) {
 			$local_failed_tests = $1;
 		}			
 
 		$i++;
 	}
+	
+	# zero our temp buffer for hopeful memory reclaimation
+	$#cleanbuf = -1;
 
-	(defined $main::DEBUG and $main::DEBUG > 2) and print
+	main::debug_print(3,"DEBUG:$shortpackage.parse() ".
 		"ENDPARSE, $local_max_gflops, $local_total_tests, $local_passed_tests, ".
-		"$local_failed_tests, $status\n";
+		"$local_failed_tests, $status\n");
 
 	# only if all tests in the output file PASSED do we flag this overall
 	# linpack benchmark as having completed correctly
@@ -309,12 +331,19 @@ xhplendrecord:
 	elsif ($status =~ /FINISHED/ and $local_passed_tests < $local_total_tests) {
 		$status = 'FAILED RESIDUALS';
 	}
+	elsif (!$found_endrecord) {
+		$status = 'FAILED';
+		$local_failed_tests = $resultsfound;
+		$key = "$self->{SHORTNAME}\_noendrecord";
+		$data{$key} = 1;
+		main::debug_print(1,"DEBUG:$shortpackage.parse() WARNING: no end record found");
+		main::debug_print(3,"DEBUG:$shortpackage.parse() NOENDRECORD resultsfound=$resultsfound resultsok=$resultsok");
+	}
 	else {
-		$status = 'FAILED'
+		$status = 'FAILED';
 	}
 
-	(defined $main::DEBUG and $main::DEBUG > 2) and print
-		"ENDSTATUSCHECK, $status\n";
+	main::debug_print(3,"DEBUG:$shortpackage.parse() ENDSTATUSCHECK, $status\n");
 
 	if ($status =~ /COMPLETED/) {
 		$key = "$self->{SHORTNAME}\_gflops";
