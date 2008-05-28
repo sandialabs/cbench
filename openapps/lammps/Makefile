@@ -13,10 +13,10 @@ INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
 all: $(SRC)
-	make -C $(SRC)/lib/poems -f Makefile.cbench
+	$(MAKE) -C $(SRC)/lib/poems -f Makefile.cbench
 	make -C $(SRC)/lib/meam -f Makefile.cbench
-	make -C $(SRC)/src yes-all
-	make -C $(SRC)/src cbench
+	$(MAKE) -C $(SRC)/src yes-all
+	$(MAKE) -C $(SRC)/src cbench
 
 $(SRC): $(TAR)
 	[ ! -d $(SRC) ] && tar zxf $(TAR)
@@ -32,6 +32,8 @@ $(TAR):
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
+	make -C $(SRC)/lib/poems -f Makefile.cbench clean
+	make -C $(SRC)/lib/meam -f Makefile.cbench clean
 	make -C $(SRC)/src clean-all
 
 distclean:

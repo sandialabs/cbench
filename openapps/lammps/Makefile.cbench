@@ -6,12 +6,22 @@ SHELL = /bin/sh
 # System-specific settings
 
 # NOTE: On Sandia systems, you will need load the appropriate fftw module before building LAMMPS
+# Because LAMMPS has both Fortran and C++ components, linking requires special options
 
 CC =		$(CXX)
 CCFLAGS =	-DFFT_FFTW -I$(FFTWINCLUDE) $(CFLAGS) -I../../lib -I../../lib/poems
 DEPFLAGS =	-M
-LINK =		$(F90)
-LINKFLAGS =	-nofor-main $(FFTWLIB) -L../../lib/meam -L../../lib/poems
+LINK =		$(CXX)
+
+LINKFLAGS =	$(FFTWLIB) -L../../lib/meam -L../../lib/poems
+ifeq ($(COMPILER),pgi)
+  LINKFLAGS += -pgf90libs
+endif
+ifeq ($(COMPILERCOLLECTION),intel)
+  LINK = $(F90)
+  LINKFLAGS += $(NOFORTMAIN_FLAG)
+endif
+
 USRLIB =	-lfftw -lstdc++ -lpoems -lmeam
 SYSLIB =	-lm
 SIZE =		size
@@ -30,10 +40,10 @@ lib:    $(OBJ)
 # Compilation rules
 
 %.o:%.cpp
-	$(CC) $(CCFLAGS) -c $<
+	$(CXX) $(CCFLAGS) -c $<
 
 %.d:%.cpp
-	$(CC) $(CCFLAGS) $(DEPFLAGS) $< > $@
+	$(CXX) $(CCFLAGS) $(DEPFLAGS) $< > $@
 
 # Individual dependencies
 
