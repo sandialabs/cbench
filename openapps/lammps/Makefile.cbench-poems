@@ -77,6 +77,13 @@ LINKFLAGS =	$(CFLAGS)
 USRLIB =
 SYSLIB =
 
+# Allow some sketchy typecasting done by LAMMPS to be ignored
+ifeq ($(COMPILERCOLLECTION),gcc)
+  CCFLAGS += -fpermissive
+endif
+ifeq ($(COMPILERCOLLECTION),pathscale)
+  CCFLAGS += -fpermissive
+endif
 # ------ MAKE PROCEDURE ------
 
 lib: 	$(OBJ)

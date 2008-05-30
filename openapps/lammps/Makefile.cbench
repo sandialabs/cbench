@@ -10,21 +10,27 @@ SHELL = /bin/sh
 
 CC =		$(CXX)
 CCFLAGS =	-DFFT_FFTW -I$(FFTWINCLUDE) $(CFLAGS) -I../../lib -I../../lib/poems
+
 DEPFLAGS =	-M
 LINK =		$(CXX)
+LINKFLAGS =	$(FFTWLIB) -L../../lib/meam -L../../lib/poems -L/usr/lib
+USRLIB =	-lfftw -lstdc++ -lpoems -lmeam
+SYSLIB =	-lm
+SIZE =		size
 
-LINKFLAGS =	$(FFTWLIB) -L../../lib/meam -L../../lib/poems
 ifeq ($(COMPILER),pgi)
   LINKFLAGS += -pgf90libs
 endif
 ifeq ($(COMPILERCOLLECTION),intel)
   LINK = $(F90)
-  LINKFLAGS += $(NOFORTMAIN_FLAG)
+  LINKFLAGS += $(NOMAIN_FLAG)
 endif
-
-USRLIB =	-lfftw -lstdc++ -lpoems -lmeam
-SYSLIB =	-lm
-SIZE =		size
+ifeq ($(COMPILERCOLLECTION),pathscale)
+  LINKFLAGS += -lpathfortran
+endif
+ifeq ($(COMPILERCOLLECTION),gcc)
+  LINKFLAGS += -lgfortran
+endif
 
 # Link rule
 
