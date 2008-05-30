@@ -65,6 +65,7 @@ ifeq ($(COMPILER),intel)
   PLAINCXX = icpc
   NOOPT_FLAGS = -O0
   NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
+  NOMAIN_FLAG = -nofor-main
   OPENMP_ENABLE = -openmp
 endif
 ifeq ($(COMPILER),intel32)
@@ -240,7 +241,7 @@ ifeq ($(ARCH),x86_64)
 
   ifeq ($(COMPILER),pathscale)
   COMMON_FLAGS = 
-  FFLAGS =
+  FFLAGS += -fno-second-underscore
   OPTFLAGS = -O3 -march=barcelona
   MPILIB =
   endif
