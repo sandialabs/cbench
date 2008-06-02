@@ -873,7 +873,8 @@ sub usage {
 		  "   --gazebohome <path>    Where the Gazebo tree is located\n".
 		  "   --gazeboconfig <name>  Name of the Gazebo submit_config that will be APPENDED to\n".
           "   --debug <level>  Turn on debugging at the specified level\n";
-	print "   \nLAMMPS scaling options:\n".
+    # only print the LAMMPS options when it is a lammps testset
+	($0 =~ /lammps/) and print "   \nLAMMPS scaling options:\n".
           "   --scaled                  Generate scaled jobs along with normal jobs\n".
           "   --scaled_only             Generate scaled jobs only\n".
           "   --scale_factor <factor>   The additional factor by which you would like to \n".
