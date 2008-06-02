@@ -213,6 +213,7 @@ custom_gen_init($testset);
 # we'll give any benchmark/testset the chance to filter the list of
 # runsizes here
 @run_sizes = custom_gen_runsizes(\@run_sizes);
+#@run_sizes = qw/1 2 4 8 16/;
 
 # outer loop iterates over the various ppn cases as defined in
 # the max_ppn_procs hash in cluster.def
@@ -398,7 +399,7 @@ sub custom_gen_runsizes {
 		return func($sizes);
 	}
 	else {
-		return @sizes;
+		return @$sizes;
 	}
 }
 
