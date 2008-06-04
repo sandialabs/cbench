@@ -528,6 +528,7 @@ sub parse_output_file {
 	my $i = 0;
 	my $elapsed1 = 0;
 	my $elapsed2 = 0;
+	my $timestamp = 0;
 
 	while ($i < $numlines) {
 		# look for Cbench markers in the output since they are
@@ -575,14 +576,20 @@ sub parse_output_file {
 				($tmod) = $txtbuf[$i] =~
 					/$cbench_mark_prefix\s+MODULE\s+(\S+)/;	
 			}
-			elsif ($txtbuf[$i] =~ /$cbench_mark_prefix\s+TIMESTAMP elapsed=(\d+\.\d+)\s+min,/ and $lastmod ne '') {
+			#elsif ($txtbuf[$i] =~ /$cbench_mark_prefix\s+TIMESTAMP elapsed=(\d+\.\d+)\s+min,/ and $lastmod ne '') {
+			elsif ($txtbuf[$i] =~ /$cbench_mark_prefix\s+TIMESTAMP elapsed=(\d+\.\d+)\s+min,/) {
 				$elapsed2 = $1;
 				my $delta = $elapsed2 - $elapsed1;
 				$elapsed1 = $elapsed2;
-				debug_print(2,"DEBUG: parse_output_file() elapsed=$elapsed1 delta=$delta tmod=$lastmod\n");
+				$timestamp++;
+				debug_print(2,"DEBUG: parse_output_file() elapsed=$elapsed1 delta=$delta tmod=$tmod lastmod=$lastmod timestamp=$timestamp\n");
+				
+				# ignore the first timestamp in the file
+				($timestamp < 2) and ($i++ and next);
 
 				# record elapsed time data for this module
 				my $k = "$lastmod"."_elapsed";
+				($timestamp == 2) and $k = "$tmod"."_elapsed";
 				debug_print(3,"DEBUG: parse_output_file() $k => $delta\n");
 				if (! exists $nodehashref->{$node}->{$k}) {
 					my @newarray = ();
