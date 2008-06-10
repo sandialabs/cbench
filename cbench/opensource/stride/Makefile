@@ -12,7 +12,7 @@ normal: $(SRC)
 	$(MAKE) -C src -f Makefile.cbench
 
 $(SRC): $(TAR)
-	[ ! -d $(SRC) ] && tar zxf $(TAR)
+	-[ ! -d $(SRC) ] && tar zxf $(TAR)
 	ln -sf $(SRC)/src src
 	cd src && ln -sf ../../Makefile.cbench
 	$(MAKE) -C src -f Makefile.cbench clean
