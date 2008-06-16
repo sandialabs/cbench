@@ -51,9 +51,9 @@ $EXEC --file $FILE --gtabspercent 100 --test meminfo_mem_total --text "total mem
 $EXEC --file $FILE --negpercent 300 --test '.*' --text 'more than 300% below standard deviation'  | grep -v ctcs_memtst_incomplete>> $TEMP
 
 # these checks try to flag slower running nodes...
-$EXEC --file $FILE --ltactual 11 --test hpcc_hpl_gflops --text "slow HPCC linpack" >> $TEMP
-$EXEC --file $FILE --ltactual 11 --test xhpl_gflops --text "slow linpack" >> $TEMP
-$EXEC --file $FILE --ltactual 11000 --test nodeperf_mflops --text 'slow nodeperf'  >> $TEMP
+$EXEC --file $FILE --ltactual 10 --test hpcc_hpl_gflops --text "slow HPCC linpack" >> $TEMP
+$EXEC --file $FILE --ltactual 10 --test xhpl_gflops --text "slow linpack" >> $TEMP
+$EXEC --file $FILE --ltactual 10000 --test nodeperf_mflops --text 'slow nodeperf'  >> $TEMP
 
 # these checks try to flag really slow running nodes...
 #$EXEC --file $FILE --ltactual 11 --test hpcc_hpl --text "slow linpack" >> $TEMP
