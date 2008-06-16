@@ -458,3 +458,19 @@ hp_ping_ilo() {
 		return 1
 	fi
 }
+
+hp_xw9400_bios_check() {
+	local goodver=$1
+        echo
+        echo -n "Checking to see if xw9400 BIOS version is $goodver: "
+        if [ `/usr/sbin/dmidecode | head -20 | grep Version | awk '{print $3}'` = $goodver ]; then
+                echo_success 
+	        return 0
+        else
+                echo_failure 
+		echo
+                echo -n "BIOS version is incorrect - Found BIOS version:  "
+		/usr/sbin/dmidecode | head -20 | grep Version | awk '{print $3}'
+                return 1
+        fi
+}
