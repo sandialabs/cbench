@@ -21,7 +21,7 @@
 ###############################################################################
 
 
-package hw_test::matmult;
+package hw_test::stride;
 
 use strict;
 
@@ -30,9 +30,9 @@ my ($shortpackage) = $package =~ /hw_test::(\S+)/;
 
 =head1 NAME
 
-matmult
+stride
 
-Cbench hw_test module that uses the LLNL Matmult test
+Cbench hw_test module that uses the LLNL stride test
 
 =cut
 
@@ -79,84 +79,52 @@ sub run {
 	}
 	push @numacases,"anycore";
 
-	# build an array of thread counts
-	my @threadcases = ();
-	# one way is all powers of two up through total core count
-	for (1..$numcores) {
-		main::power_of_two($_) and push @threadcases, $_;
-	}
-	# another way is pick some interesting counts
-	@threadcases = ($cores_per_socket, $numcores);
-
 	my @buf = ();
 
-	# the following parameters and logic were ported from the runit.{mmc,mmf}
-	# scripts of matmult
-	my $maxrep = 5000;
-	my @size_list = qw/128 256 1024 2048/;
+	my @binlist = qw/strid3.Opt strid3c.Opt vecop.Opt vecopc.Opt cache.Opt cachec.Opt striddot.Opt cachedot.Opt/;
 
 	if (defined $main::SMALL) {
 		main::debug_print(1,"DEBUG:$shortpackage\.run() doing SMALL mode runs\n");
-		$maxrep = 1000;
+		@binlist = qw/strid3.Opt strid3c.Opt/;
 	}
 
-	foreach my $size (@size_list) {
-		my $nrep = int ($maxrep / $size);
-		# make sure nrep is nonzero
-		($nrep == 0) and $nrep = 1;
+	foreach my $numacode (@numacases) {
+		foreach my $stride (@binlist) {
+			# check for the binary since it isn't necessarily built
+			if (! -x "$path/$stride") {
+				print $ofh "ERROR: $path/$stride does not exist\n";
+				next;
+			}
 
-		foreach my $nthreads (@threadcases) {
-			# matmult is an OpenMP dependent test fundamentally
-			$ENV{'OMP_NUM_THREADS'} = $nthreads;
+			# make a string to identify this test case
+			my $casename = "$numacode"."_$stride";
 
-			foreach my $numacode (@numacases) {
-				foreach my $mm (qw/mmc mmf/) {
-					# check for the binary since it isn't necessarily built
-					if (! -x "$path/$mm") {
-						print $ofh "ERROR: $path/$mm does not exist\n";
-						next;
-					}
+			# build the command line we'll run
+			# start with numactl stuff 
+			my $cmd = numactl_cmdline($numacode);
+			# now append the actually running of the test binary
+			$cmd .= " $path/$stride";
+			main::debug_print(2,"DEBUG: $shortpackage\.run($casename) cmd=$cmd\n");
 
-					# make a string to identify this test case
-					my $casename = "$nthreads"."threads_$numacode"."_$mm"."$size";
+			# run the actual testcase
+			main::debug_print(1,"DEBUG: $shortpackage\.run() running testcase $casename\n");
+			my $start = time;
+			main::run_single_process("$cmd 2>&1",\@buf);
+			my $end = time;
 
-					# test for overallocation conditions w.r.t. numactl and sockets
-					# and cores per socket and such
-					if ($numacode =~ /socket/ and ($nthreads > $cores_per_socket)) {
-						# for now we are skipping the overallocation cases... they
-						# might be useful though i suppose
-						main::debug_print(1,"DEBUG: $shortpackage\.run($casename) skipping ".
-							"due to core overallocation");
-						next;
-					}
+			testcase_add_output($ofh,$casename,\@buf);
 
-					# build the command line we'll run
-					# start with numactl stuff 
-					my $cmd = numactl_cmdline($numacode);
-					# now append the actually running of the test binary
-					$cmd .= " $path/$mm $nthreads $nrep $size $size $size";
-					main::debug_print(2,"DEBUG: $shortpackage\.run($casename) cmd=$cmd\n");
+			# clear out the buffer for the next binary/iteration
+			$#buf = -1;
 
-					# run the actual testcase
-					my $start = time;
-					main::run_single_process("$cmd 2>&1",\@buf);
-					my $end = time;
+			# compute number of minutes the matmult run took
+			my $delta = ($end - $start) / 60;
+			print $ofh "$stride Elapsed Time: $delta minutes\n";
 
-					testcase_add_output($ofh,$casename,\@buf);
-
-					# clear out the buffer for the next binary/iteration
-					$#buf = -1;
-
-					# compute number of minutes the matmult run took
-					my $delta = ($end - $start) / 60;
-					print $ofh "$mm Elapsed Time: $delta minutes\n";
-
-					# check for SIGINT
-					if ($main::INTsignalled) {
-						main::debug_print(1,"DEBUG:$shortpackage\.run() SIGINT seen...exiting\n");
-						return;
-					}
-				}
+			# check for SIGINT
+			if ($main::INTsignalled) {
+				main::debug_print(1,"DEBUG:$shortpackage\.run() SIGINT seen...exiting\n");
+				return;
 			}
 		}
 	}
@@ -318,14 +286,7 @@ sub _parse {
 	my $name = shift;
 
 	foreach (@$bufref) {
-		if (/Average speedup is\s+(\S+)/) {
-			my $tmp = $1;
-			my $key = "$shortpackage\_$name\_speedup";
-			main::debug_print(3,"DEBUG:$shortpackage\.parse() $name speedup $tmp, $key");
-			$$data{$key} = main::max($$data{$key},$tmp);
-
-		}
-		elsif (/Elapsed Time:\s+(\d+[\.\d+]*)\s+minutes/) {
+		if (/Elapsed Time:\s+(\d+[\.\d+]*)\s+minutes/) {
 			my $tmp = $1;
 			my $key = "$shortpackage\_$name\_elapsed";
 			main::debug_print(3,"DEBUG:$shortpackage\.parse() $name elapsed $tmp, $key");
