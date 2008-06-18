@@ -63,11 +63,34 @@ sub run {
 	# path to the binaries
 	my $path = "$main::bench_test/$main::TESTBINPATH";
 	
-	# how many cpu cores
+	# how many cpu cores and sockets
 	my $numcores = main::linux_num_cpus();
+	my $numsockets = main::linux_num_sockets();
+	my $cores_per_socket = int ($numcores / $numsockets);
+
+	# build an array encoding the test cases we want to do with respect to
+	# numactl options. encode test cases for each physical socket and running
+	# on any core Linux sees fit
+	#
+	# FIXME: i'm just making this up as i go right now, but it might be good
+	# to have an encoding scheme or something more formal. for now i just
+	# need to get something working and see how it goes.
+	my @numacases = ();
+	for (0..$numsockets-1) {
+		push @numacases,"socket$_";
+	}
+	push @numacases,"anycore";
+
+	# build an array of thread counts
+	my @threadcases = ();
+	# one way is all powers of two up through total core count
+	for (1..$numcores) {
+		main::power_of_two($_) and push @threadcases, $_;
+	}
+	# another way is pick some interesting counts
+	@threadcases = ($cores_per_socket, $numcores);
 
 	my @buf = ();
-	my $cmd = '';
 
 	# the following parameters and logic were ported from the runit.{mmc,mmf}
 	# scripts of matmult
@@ -81,36 +104,56 @@ sub run {
 
 	foreach my $size (@size_list) {
 		my $nrep = int ($maxrep / $size);
+		# make sure nrep is nonzero
 		($nrep == 0) and $nrep = 1;
 
-		# matmult is an OpenMP dependent test fundamentally, so max out the
-		# thread load
-		$ENV{'OMP_NUM_THREADS'} = $numcores;
-		foreach my $mm (qw/mmc mmf/) {
-			# check for the binary since it isn't necessarily built
-			if (! -x "$path/$mm") {
-				print $ofh "ERROR: $path/$mm does not exist\n";
-				next;
+		foreach my $nthreads (@threadcases) {
+			# matmult is an OpenMP dependent test fundamentally
+			$ENV{'OMP_NUM_THREADS'} = $nthreads;
+
+			foreach my $numacode (@numacases) {
+				foreach my $mm (qw/mmc mmf/) {
+					# check for the binary since it isn't necessarily built
+					if (! -x "$path/$mm") {
+						print $ofh "ERROR: $path/$mm does not exist\n";
+						next;
+					}
+
+					# make a string to identify this test case
+					my $casename = "$nthreads"."threads_$numacode"."_$mm"."$size";
+
+					# test for overallocation conditions w.r.t. numactl and sockets
+					# and cores per socket and such
+					if ($numacode =~ /socket/ and ($nthreads > $cores_per_socket)) {
+						# for now we are skipping the overallocation cases... they
+						# might be useful though i suppose
+						main::debug_print(1,"DEBUG: $shortpackage\.run($casename) skipping ".
+							"due to core overallocation");
+						next;
+					}
+
+					# build the command line we'll run
+					# start with numactl stuff 
+					my $cmd = numactl_cmdline($numacode);
+					# now append the actually running of the test binary
+					$cmd .= " $path/$mm $nthreads $nrep $size $size $size";
+					main::debug_print(2,"DEBUG: $shortpackage\.run($casename) cmd=$cmd\n");
+
+					# run the actual testcase
+					my $start = time;
+					main::run_single_process("$cmd 2>&1",\@buf);
+					my $end = time;
+
+					testcase_add_output($ofh,$casename,\@buf);
+
+					# clear out the buffer for the next binary/iteration
+					$#buf = -1;
+
+					# compute number of minutes the stress run took
+					my $delta = ($end - $start) / 60;
+					print $ofh "$mm Elapsed Time: $delta minutes\n";
+				}
 			}
-
-			$cmd = "$path/$mm $numcores $nrep $size $size $size";
-			main::debug_print(2,"DEBUG: $shortpackage\.run() cmd=$cmd\n");
-
-			my $date = `/bin/date`;
-			chomp $date;
-			print $ofh "====> $mm, $date\n";
-
-			my $start = time;
-			main::run_single_process("$cmd 2>&1",\@buf);
-			my $end = time;
-
-			print $ofh @buf;
-			# clear out the buffer for the next binary/iteration
-			$#buf = -1;
-
-			# compute number of minutes the stress run took
-			my $delta = ($end - $start) / 60;
-			print $ofh "$mm Elapsed Time: $delta minutes\n";
 		}
 	}
 }
@@ -120,51 +163,14 @@ sub parse {
 	my $self = shift;
 	my $bufref = shift;
 
-	my %data;
-	my $binary = "NADA";
-	my $speedup_tmp = "NADA";
-	my $elapsed_tmp = 'NADA';
-	my $elapsed = 0;
+	my %data = ();
 
 	# parse the buffer
-	# NOTE: matmult runs a mmc and mmf binary with multiple
-	#       parameter combinations
-	foreach (@$bufref) {
-		if (/====> (\S+),/) {
-			if ($binary eq 'NADA') {
-				$binary = $1;
-			}
-			else {
-				my $key = "$self->{SHORTNAME}_$binary\_speedup";
-				($speedup_tmp ne 'NADA') and $data{$key} = main::max($data{$key},$speedup_tmp);
-				($speedup_tmp ne 'NADA') and $elapsed += $elapsed_tmp;
-
-				# reset stuff for output from the next binary
-				$speedup_tmp = 'NADA';
-				$elapsed_tmp = 'NADA';
-				$binary = $1;
-			}
-		}
-		elsif (/Average speedup is\s+(\S+)/) {
-			$speedup_tmp = $1;
-			main::debug_print(3,"DEBUG:$shortpackage\.parse() $binary speedup $speedup_tmp");
-		}
-		elsif (/Elapsed Time:\s+(\d+\.\d+)\s+minutes/) {
-			$elapsed_tmp = $1;
-			main::debug_print(3,"DEBUG:$shortpackage\.parse() $binary elapsed $elapsed_tmp");
-		}
-
-		main::debug_print(3,"DEBUG:$shortpackage\.parse() process $binary, $elapsed");
-	}
-
-	# build the hash with the data retrieved from parsing
-	my $key = "$self->{SHORTNAME}_$binary\_speedup";
-	($speedup_tmp ne 'NADA') and $data{$key} = main::max($data{$key},$speedup_tmp);
-	my $key = "$self->{SHORTNAME}_elapsed";
-	($speedup_tmp ne 'NADA') and $elapsed += $elapsed_tmp;
-	$data{$key} = $elapsed;
-	#my $key = "$self->{SHORTNAME}\_failed";
-	#$data{$key} = $failed;
+	# NOTE: matmult runs a number of different testcases so we use
+	#       a helper routine,parse_testcases_inbuf, to iterate over the
+	#       testcase in the output buffer. we give parse_testcases_inbuf()
+	#       a ref to a subroutine to do the real parsing of data points
+	_parse_testcases_inbuf($bufref,\&_parse,\%data);
 
 	return \%data;
 }
@@ -210,6 +216,118 @@ sub _init {
 	$self->{SHORTNAME} = $shortpackage;
 	
 	return 1;
+}
+
+###############################################################
+#
+# some utility internal subroutines
+#
+
+sub numactl_cmdline {
+	my $code = shift;
+
+	my $cmdline = '';
+	my $numactl = '/usr/bin/numactl';
+
+	# check for numactl supporting the cpunodebind option
+	undef $/;
+	my $tmp = `$numactl 2>&1 | grep cpunodebind`;
+	$/ = "\n";
+	my $have_cpunodebind = ($tmp =~ /cpunodebind/);
+
+	if ($code =~ /^socket(\d+)/) {
+		($have_cpunodebind) and $cmdline .= "$numactl --preferred=$1 --cpunodebind=$1 ";
+		(!$have_cpunodebind) and $cmdline .= "$numactl --preferred=$1 --cpubind=$1 ";
+	}
+	if ($code eq 'anycore') {
+		# just let linux do what it wants
+	}
+
+	return $cmdline;
+}
+
+sub testcase_add_output {
+	my $ofh = shift;
+	my $name = shift;
+	my $bufref = shift;
+
+	my $date = `/bin/date`;
+	chomp $date;
+
+	print $ofh "==testcase==> $name at $date\n";
+	print $ofh @{$bufref};
+}
+
+sub _parse_testcases_inbuf {
+	my $bufref = shift;
+	my $parsesub = shift;
+	my $data = shift;
+
+	my @tmpbuf = ();
+	my $linegrab = 0;
+	my $case = '';
+	foreach my $l (@$bufref) {
+		if ($l =~ /==testcase==> (\S+)\sat\s/ and !$linegrab) {
+			# start grabbing lines for the first test case
+			$case = $1;
+			$linegrab = 1;
+			main::debug_print(3,"DEBUG:$shortpackage\.parse_testcases_inbuf() found case $case\n");
+		}
+		elsif ($l =~ /==testcase==> (\S+)\sat\s/ and $linegrab) {
+			# reached the next test case... so parse the lines
+			# we've been grabbing using the supplied parse
+			# subroutine reference
+			main::debug_print(3,"DEBUG:$shortpackage\.parse_testcases_inbuf() parsing case $case\n");
+			&$parsesub(\@tmpbuf,$data,$case);
+
+			# clear out the temp line buffer for the next binary/iteration
+			$#tmpbuf = -1;
+
+			$case = $1;
+			$linegrab = 1;
+			main::debug_print(3,"DEBUG:$shortpackage\.parse_testcases_inbuf() found case $case\n");
+		}
+		elsif ($linegrab) {
+			push @tmpbuf, $l;
+		}
+	}
+
+	if ($linegrab) {
+		# reached the end... so parse the lines
+		# we've been grabbing using the supplied parse
+		# subroutine reference
+		main::debug_print(3,"DEBUG:$shortpackage\.parse_testcases_inbuf() parsing last case $case\n");
+		&$parsesub(\@tmpbuf,$data,$case);
+
+		# clear out the temp line buffer for the next binary/iteration
+		$#tmpbuf = -1;
+	}
+
+}
+
+
+
+# internal parse subroutine 
+sub _parse {
+	my $bufref = shift;
+	my $data = shift;
+	my $name = shift;
+
+	foreach (@$bufref) {
+		if (/Average speedup is\s+(\S+)/) {
+			my $tmp = $1;
+			my $key = "$shortpackage\_$name\_speedup";
+			main::debug_print(3,"DEBUG:$shortpackage\.parse() $name speedup $tmp, $key");
+			$$data{$key} = main::max($$data{$key},$tmp);
+
+		}
+		elsif (/Elapsed Time:\s+(\d+[\.\d+]*)\s+minutes/) {
+			my $tmp = $1;
+			my $key = "$shortpackage\_$name\_elapsed";
+			main::debug_print(3,"DEBUG:$shortpackage\.parse() $name elapsed $tmp, $key");
+			$$data{$key} = main::max($$data{$key},$tmp);
+		}
+	}
 }
 
 
