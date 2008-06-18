@@ -149,9 +149,15 @@ sub run {
 					# clear out the buffer for the next binary/iteration
 					$#buf = -1;
 
-					# compute number of minutes the stress run took
+					# compute number of minutes the matmult run took
 					my $delta = ($end - $start) / 60;
 					print $ofh "$mm Elapsed Time: $delta minutes\n";
+
+					# check for SIGINT
+					if ($main::INTsignalled) {
+						main::debug_print(1,"DEBUG:$shortpackage\.run() SIGINT seen...exiting\n");
+						return;
+					}
 				}
 			}
 		}

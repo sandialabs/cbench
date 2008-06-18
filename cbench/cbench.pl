@@ -1236,7 +1236,13 @@ sub run_process_per_cpu {
 	my $bufref = shift; #array reference where output will be put
 	my $cpu_affinity = shift; # whether or not CPU affinity calls are used
 	my $single = shift;
-	
+
+	# if we've already caught an INT signal, don't run anything else
+	if ($main::INTsignalled) {
+		debug_print(1,"DEBUG:run_process_per_cpu() SIGINT seen...exiting\n");
+		$$bufref[0] = "Exiting due to SIGINT...\n";
+	}
+
 	use IPC::Open3;
 	use IO::Select;
 	use Symbol;
@@ -1372,9 +1378,8 @@ sub run_single_process {
 	run_process_per_cpu($cmd,$bufref,0,1);
 }
 	
-# Get the number of PHYSICAL CPUs Linux sees. This could be misleading
-# depending on Hyperthreading and multi-core chips. It will
-# probably need to be tweaked.
+# Get the number of physical cores Linux sees. This could be misleading
+# depending on Hyperthreading and multi-core chips.
 #
 # takes an optional boolean parameter that tells us to return
 # the number of logical cpus
@@ -1386,8 +1391,7 @@ sub linux_num_cpus {
 	my $num_cores = 0;
 
 	if (defined $NUMCPUS) {
-		(defined $DEBUG and $DEBUG > 1 ) and print 
-			"DEBUG:linux_num_cpus() overriding by NUMCPUS var, num=$NUMCPUS\n";
+		debug_print(2,"DEBUG:linux_num_cpus() overriding by NUMCPUS var, num=$NUMCPUS\n");
 		return $NUMCPUS;
 	}
 
@@ -1409,12 +1413,11 @@ sub linux_num_cpus {
 		$num_physical_cpus = $num_cores = $num_logical_cpus = $cpumap{'COUNT'};
 	}
 
-	(defined $DEBUG and $DEBUG > 1 ) and print 
-			"DEBUG:linux_num_cpus() physical=$num_physical_cpus ".
-			"logical=$num_logical_cpus num_cores=$num_cores\n";
+	debug_print(2,"DEBUG:linux_num_cpus() physical=$num_physical_cpus ".
+			"logical=$num_logical_cpus num_cores=$num_cores\n");
 
 	if ($num_cores < 1) {
-		print "linux_num_cpus() Weird...num_cores < 0\n";
+		warning_print("linux_num_cpus() Weird...num_cores < 0\n");
 		$num_cores = 1;
 	}
 
@@ -1426,7 +1429,45 @@ sub linux_num_cpus {
 	}
 }
 
+# Get the number of physical sockets Linux sees. This could be misleading
+# depending on Hyperthreading and multi-core chips.
+sub linux_num_sockets {
 
+	my $num_logical_cpus = 0;
+	my $num_physical_cpus = 0;
+	my $num_cores = 0;
+
+	my @buf = `/bin/cat /proc/cpuinfo`;
+
+	my %cpumap = linux_parse_cpuinfo(\@buf);
+
+	# decode what the cpumap hash tells us
+	foreach (keys %cpumap) {
+		($_ =~ /model/) and next;
+		$num_physical_cpus++;
+		$num_cores += $cpumap{$_}{'cores'};
+		$num_logical_cpus += scalar @{$cpumap{$_}{'logical'}};
+	}
+
+	# if we didn't see anything about physical ids, we assume that the number of
+	# logical cpus is the number of actual sockets. not necessarily the right
+	# assumption potentially...
+	if (exists $cpumap{'COUNT'}) {
+		$num_physical_cpus = $num_cores = $num_logical_cpus = $cpumap{'COUNT'};
+	}
+
+	debug_print(2,"DEBUG:linux_num_sockets() sockets=$num_physical_cpus ".
+			"logical=$num_logical_cpus num_cores=$num_cores\n");
+
+#	if ($num_cores < 1) {
+#		warning_print("linux_num_sockets() Weird...num_cores < 0\n");
+#		$num_cores = 1;
+#	}
+
+	return $num_physical_cpus;
+}
+
+# grok /proc/cpuinfo on Linux into a hierarchical hash
 sub linux_parse_cpuinfo {
 	my $buf = shift;
 
@@ -1468,18 +1509,17 @@ sub linux_parse_cpuinfo {
 
 	}
 
-	(defined $DEBUG and $DEBUG > 1 ) and do {
-		print "DEBUG:linux_parse_cpuinfo()\n===================\n";
+	(defined $DEBUG and $DEBUG > 2 ) and do {
+		debug_print(3,"DEBUG:linux_parse_cpuinfo()\n===================\n");
 		print Dumper (%cpumap);
-		print "===================\n";
+		debug_print(3,"===================\n");
 	};
 
 	# if we didn't see anything about physical ids, we assume that the number of logical
 	# cpus is the number of actual cpu cores
 	if (!$found_physical) {
 		$cpumap{'COUNT'} = $num_logical_cpus;
-		(defined $DEBUG and $DEBUG > 1 ) and print 
-			"DEBUG:linux_parse_cpuinfo() No physical, core info found\n";
+		debug_print(1,"DEBUG:linux_parse_cpuinfo() No physical, core info found\n");
 	}
 
 	return %cpumap;
@@ -2804,17 +2844,23 @@ sub clean_up {
 sub REAPER {
 	my $waitedpid = wait;
 	$SIG{CHLD} = \&REAPER;  # loathe sysV
-	print "reaped $waitedpid" . ($? ? " with exit $?" : '') . "\n"
-		if $main::LIBDEBUG{$package};
+	#debug_print(3,"DEBUG:REAPER() reaped $waitedpid" . ($? ? " with exit $?" : '') . "\n");
 }
 
 sub CATCH {
 	my $signame = shift;
-	for (keys %main::childpids) {
-		print "Caught SIG$signame, Killing $_\n";
-		kill( INT ,$_);
+	if ($signame =~ /INT|QUIT/) {
+		for (keys %main::childpids) {
+			print "CATCH(pid $$) Caught SIG$signame, Killing child $_\n";
+			kill(KILL, $_);
+		}
+		$main::INTsignalled = 1;
+		# make sure our whole process group gets the signal
+		kill(-INT,$$);
 	}
-	$main::INTsignalled = 1;
+	else {
+		print "CATCH(pid $$) Caught SIG$signame...\n";
+	}
 }
 
 

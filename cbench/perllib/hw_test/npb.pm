@@ -135,6 +135,12 @@ sub run {
 			print $ofh @buf;
 			# clear out the buffer for the next binary/iteration
 			$#buf = -1;
+
+			# check for SIGINT
+			if ($main::INTsignalled) {
+				main::debug_print(1,"DEBUG:$shortpackage\.run() SIGINT seen...exiting\n");
+				return;
+			}
 		}
 	}
 	print $ofh "====> endofnpb\n";
