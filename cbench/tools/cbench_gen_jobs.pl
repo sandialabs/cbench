@@ -160,7 +160,7 @@ foreach my $mod (keys %genjobs_modules) {
 	# first query what we might need to put into the testset specific overload
 	my %tmp = $genjobs_modules{$mod}->testset_hash();
 	my $keys = keys %tmp;
-	print Dumper (%tmp);
+	#print Dumper (%tmp);
 	if ($keys > 0) {
 		%{$custom_gen_hash{testset}{$mod}} = %tmp;
 	}
@@ -168,12 +168,12 @@ foreach my $mod (keys %genjobs_modules) {
 	# second query what we might need to put into the benchmark specific overload
 	my %tmp = $genjobs_modules{$mod}->benchmark_hash();
 	my $keys = keys %tmp;
-	print Dumper (%tmp);
+	#print Dumper (%tmp);
 	if ($keys > 0) {
 		%{$custom_gen_hash{benchmark}{$mod}} = %tmp;
 	}
 
-	print Dumper (%custom_gen_hash);
+	#print Dumper (%custom_gen_hash);
 }
 
 # find and read in the job templates for the testset

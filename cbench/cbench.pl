@@ -1750,15 +1750,13 @@ sub load_genjobs_modules {
 
 	# Get a list of all the Perl modules in the Cbench genjobs library,
 	# CBENCHOME/perllib/gen_jobs by default. We also look in a list
-	# of locations specified by the CBENCHADDONS environment variable.
+	# of locations specified by the CBENCHADDON environment variable.
 	my @dirs = ("$BENCH_HOME/perllib/gen_jobs");
-	my @addons = get_cbench_addons();
-	if (defined @addons) {
-		foreach (@addons) {
-			push @dirs, "$_/perllib/gen_jobs";
-			# add this to the Perl lib path
-			unshift @INC, "$_/perllib";
-		}
+	my $addon = get_cbench_addon();
+	if (defined $addon) {
+		push @dirs, "$addon/perllib/gen_jobs";
+		# add this to the Perl lib path
+		unshift @INC, "$addon/perllib";
 	}
 	debug_print(3, "DEBUG:load_genjobs_modules() dirs=@dirs");
 	foreach my $dir (@dirs) {
@@ -2371,6 +2369,7 @@ sub install_filelist {
 # rsync files in a list to a given directory
 sub rsync_filelist {
 	my $list = shift;
+	my $srcpath = shift;
 	my $destpath = shift;
 	my $verbosecp = shift;
 
@@ -2385,7 +2384,7 @@ sub rsync_filelist {
 	(! -d $destpath) and mkdir $destpath,0750;
 	
 	foreach $item (@$list) {
-		system("$cmd $BENCH_HOME\/$item $destpath\/\. 2>/dev/null");
+		system("$cmd $srcpath\/$item $destpath\/\. 2>/dev/null");
 		debug_print(1,"DEBUG:rsync_filelist() syncing $BENCH_HOME\/$item to $destpath...");
 	}
 }
@@ -2427,7 +2426,7 @@ sub install_util_script {
 # used to install things into testsets via symlinking to the top
 # of the cbench testing tree
 # params:
-# 1) source file
+# 1) source file (relative to the top of the CBENCHTEST tree)
 # 2) destination file name
 sub testset_symlink_file {
 	my $src = shift;
@@ -2451,7 +2450,7 @@ sub testset_symlink_file {
 }
 
 
-# make sure a directory exists in the BENCH_TEST area for the given
+# make sure a directory exists in the Cbench testing tree for the given
 # test set
 sub mk_test_dir {
 	my $testset = shift;
@@ -2461,14 +2460,14 @@ sub mk_test_dir {
 	(! -d "$bench_test\/$testset") and mkdir "$bench_test\/$testset",0750;
 }
 
-# process the CBENCHADDONS environment variable
-sub get_cbench_addons {
-	if ($ENV{CBENCHADDONS}) {
-		debug_print(2,"DEBUG: found CBENCHADDONS: $ENV{CBENCHADDONS}\n");
-		return split(':',$ENV{CBENCHADDONS});
+# process the CBENCHADDON environment variable
+sub get_cbench_addon {
+	if ($ENV{CBENCHADDON}) {
+		debug_print(2,"DEBUG: found CBENCHADDON: $ENV{CBENCHADDON}\n");
+		return $ENV{CBENCHADDON};
 	}
 	else {
-		debug_print(2,"DEBUG: no CBENCHADDONS found\n");
+		debug_print(2,"DEBUG: no CBENCHADDON found\n");
 		return;
 	}
 }
