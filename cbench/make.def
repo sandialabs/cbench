@@ -61,6 +61,7 @@ INCLUDES = -I$(MPIHOME)/include
 ifeq ($(COMPILER),intel)
   FORT = ifort
   PLAINF77 = ifort
+  PLAINF90 = ifort
   PLAINCC = icc
   PLAINCXX = icpc
   NOOPT_FLAGS = -O0
@@ -71,6 +72,7 @@ endif
 ifeq ($(COMPILER),intel32)
   FORT = ifort
   PLAINF77 = ifort
+  PLAINF90 = ifort
   PLAINCC = icc
   PLAINCXX = icpc
   NOOPT_FLAGS = -O0
@@ -81,6 +83,7 @@ endif
 ifeq ($(COMPILER),gcc)
   FORT = gfortran
   PLAINF77 = gfortran
+  PLAINF90 = gfortran
   PLAINCC = gcc
   PLAINCXX = gcc
   NOOPT_FLAGS = -O0
@@ -99,6 +102,7 @@ endif
 ifeq ($(COMPILER),gcc3)
   FORT = g77
   PLAINF77 = g77
+  PLAINF90 = NO_FORTRAN90_WITH_GCC3
   PLAINCC = gcc
   PLAINCXX = gcc
   NOOPT_FLAGS = -O0
@@ -113,6 +117,7 @@ endif
 ifeq ($(COMPILER),pgi)
   FORT = pgf90
   PLAINF77 = pgf77
+  PLAINF90 = pgf90
   PLAINCC = pgcc
   PLAINCXX = pgCC
   NOOPT_FLAGS = -O0
@@ -122,6 +127,7 @@ endif
 ifeq ($(COMPILER),pathscale)
   FORT = pathf90
   PLAINF77 = pathf90
+  PLAINF90 = pathf90
   PLAINCC = pathcc
   PLAINCXX = pathCC
   NOOPT_FLAGS = -O0
