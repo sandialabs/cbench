@@ -38,7 +38,7 @@ echo "*"
         FFLAGS="$FFLAGS" \
         --prefix="$PREFIX" \
         --enable-mpi \
-        --with-mpi-compilers \
+        --with-mpi-compilers=$BUILD_PATH \
         --disable-default-packages \
         --disable-tests \
         --disable-examples \

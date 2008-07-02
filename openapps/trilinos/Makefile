@@ -15,6 +15,11 @@ INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
 # so configure_wrapper can see these
+export MPIHOME
+export BUILD_PATH
+export CC
+export CXX
+export F77 
 export CFLAGS
 export FFLAGS
 export BLASLIB
