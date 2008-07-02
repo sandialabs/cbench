@@ -42,7 +42,7 @@ install:
 clean:
 	-$(MAKE) -C $(MPICH) distclean
 	rm -f .make-$(MPICH) .configure-$(MPICH)
-	rm -rf bin etc include sbin www doc examples lib man share
+	rm -rf bin etc include sbin www doc examples lib man share logfiles
 
 distclean: clean
 	rm -rf $(MPICH)

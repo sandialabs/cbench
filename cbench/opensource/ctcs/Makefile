@@ -10,6 +10,7 @@ all:
 
 distclean clean:
 	$(MAKE) -C src dist-clean
+	-/bin/rm -rf src/runin/bin
 
 install uninstall:
 	$(do-$@)
