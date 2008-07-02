@@ -37,6 +37,8 @@ $(MPQC):
 		exit 1;							\
 	fi
 
+download:
+
 install:
 	-make -C $(MPQC) install
 

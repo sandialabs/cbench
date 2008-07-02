@@ -44,6 +44,8 @@ $(BENCH_TAR):
 	$(call download-url,$(BENCH_URL))
 	-[ -e $(BENCH_TAR) ] && touch $(BENCH_TAR)
 
+download: $(TAR) $(BENCH_TAR)
+
 clean:
 	/bin/rm -rf $(SRC) src
 

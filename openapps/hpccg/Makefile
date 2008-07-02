@@ -18,7 +18,7 @@ $(SRC): $(TAR)
 	[ ! -d $(SRC) ] && tar zxf $(TAR)
 	ln -sf $(SRC) src
 
-$(TAR):
+$(TAR) download:
 	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 

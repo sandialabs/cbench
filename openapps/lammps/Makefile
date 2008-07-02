@@ -27,7 +27,7 @@ $(SRC): $(TAR)
 	cd $(SRC)/lib/meam; ln -sf ../../../Makefile.cbench-meam Makefile.cbench
 	touch $(SRC)
 
-$(TAR):
+$(TAR) download:
 	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
