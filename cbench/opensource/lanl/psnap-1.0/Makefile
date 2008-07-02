@@ -13,4 +13,4 @@ psnap: psnap.c
 	$(CC) $(CFLAGS) $(LDFLAGS) psnap.c $(LDLIBS) -o $@
 
 clean:
-	rm -f psnap *.o
+	rm -f psnap psnap.ch_shmem *.o
