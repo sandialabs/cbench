@@ -37,19 +37,18 @@ CBENCH_MATCH=$CBENCH_JOB-$CBENCH_PPN
 echo "CBENCH_PPN=$CBENCH_PPN"
 echo "CBENCH_MATCH=$CBENCH_MATCH"
 
+# NOTE: some  CBENCH_  environment vars will be set for us by the Gazebo script that
+#       called us based on the gazebo test config file
+
 env | egrep 'CBENCH|NPES|JOBID|GAZ'
 echo " "
 echo " "
 echo " "
-
 # head over to the Cbench testing tree and setup the environment for using
 # that tree
 cd $CBENCHTEST
 . cbench-init.sh
-
-echo "---------- Generate Cbench Job ----------------------------------------------------"
 cd $CBENCH_TESTSET
-./$CBENCH_TESTSET\_gen_jobs.pl --procs $NPES  --ident $CBENCH_TESTIDENT	
 
 echo "---------- Start Cbench Job -------------------------------------------------------"
 ./$CBENCH_TESTSET\_start_jobs.pl --interactive --procs $NPES --match $CBENCH_MATCH --ident $CBENCH_TESTIDENT --echooutput --gazebo 2>&1 | tee $RUNHOME/temp.start

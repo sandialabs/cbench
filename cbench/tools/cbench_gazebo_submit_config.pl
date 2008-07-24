@@ -36,7 +36,9 @@ use lib "$ENV{CBENCHOME}\/perllib";
 
 use Getopt::Long;
 
-my $testsets = $core_testsets;
+# get the default list of Cbench testsets to hook
+# don't hook shakedown unless asked
+(my $testsets = $core_testsets) =~ s/shakedown //;
 
 my $gazebo_config = 'cbench_config';
 my $ident = 'gazebo';
@@ -56,6 +58,12 @@ if (defined $help) {
 	usage();
 	exit;
 }
+if (!defined $gazebo_home) {
+	warning_print("--gazebohome paramter is required");
+	usage();
+	exit;
+}
+
 
 # clean out existing submit_config if there is one
 system("/bin/rm -f $gazebo_home/submit_configs/$gazebo_config 1>/dev/null 2>&1");
@@ -65,10 +73,14 @@ my $cbenchtest = get_bench_test();
 chdir $cbenchtest;
 
 
-my @testset_list = split(',',$testsets);
+my @testset_list = split(' ',$testsets);
 debug_print(1,"DEBUG: testsets= $testsets");
 foreach my $set (@testset_list) {
-	chdir $set;
+	# always ignore nodehwtest test set
+	($set =~ /nodehwtest/i ) and next;
+	if (!chdir($set)) {
+		next;
+	}
 
 	print "Hooking Cbench ".uc($set)." testset into Gazebo\n";
 	# --gazebo --testset latency --maxprocs 16 --gazhome /home/jbogden/tlcc/gazebo+cbench/Gazebo --gazeboconfig config_cbench
@@ -76,6 +88,7 @@ foreach my $set (@testset_list) {
 	(defined $minprocs) and $cmd .= " --minprocs $minprocs";
 	(defined $maxprocs) and $cmd .= " --maxprocs $maxprocs";
 	(defined $procs) and $cmd .= " --procs $procs";
+	(defined $DEBUG and $DEBUG > 1) and $cmd .= " --debug $DEBUG";
 
 	debug_print(1,"DEBUG: cmd= $cmd");
 	system("$cmd");
@@ -89,9 +102,12 @@ print "Wrote Gazebo submit config here: $gazebo_home/submit_configs/$gazebo_conf
 sub usage {
     print "USAGE: $0 \n";
     print "Cbench script to hook a Cbench testing tree into the Gazebo test framework\n".
-          "   --ident           Identifying string for the test. Defaults to \'gazebo\'\n".
+          "   --ident           Identifying string for the testing. Defaults to \'gazebo\'\n".
 		  "   --testsets <list> Comma separated list of Cbench testset names to hook\n".
-		  "                     into Gazebo\n".
+		  "                     into Gazebo. For example:\n".
+		  "                       --testsets 'bandwidth latency'\n".
+		  "                     The default list is:\n".
+		  "                     \"$testsets\"\n\n".
 		  "   --gazebohome <path>    Where the Gazebo tree is located\n".
 		  "   --gazeboconfig <name>  Name of the Gazebo submit_config that will be APPENDED to\n".
           "   --maxprocs       The maximum number of processors to generate\n".
