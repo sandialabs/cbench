@@ -1,7 +1,8 @@
 include ../../make.def
 
-SRC=stride
-TAR=$(SRC).tar.gz
+SRC=STRIDE
+SRCTAR=STRIDE_GPL
+TAR=$(SRCTAR).tar.gz
 URL=ftp://ftp.llnl.gov/outgoing/$(TAR)
 
 EXECS = $(addprefix src/, cachec.Opt cachedot.Opt cache.Opt strid3c.Opt strid3.Opt striddot.Opt vecopc.Opt vecop.Opt)
@@ -17,7 +18,7 @@ $(SRC): $(TAR)
 	cd src && ln -sf ../../Makefile.cbench
 	$(MAKE) -C src -f Makefile.cbench clean
 
-$(TAR):
+$(TAR) download:
 	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
@@ -25,7 +26,7 @@ clean:
 	[ -d $(SRC) ] && $(MAKE) -C src -f Makefile.cbench clean || :
 
 distclean:
-	/bin/rm -rf $(SRC) $(TAR) src
+	/bin/rm -rf $(SRC) $(SRCDIR) $(TAR) src
 
 install uninstall:
 	$(do-$@)
