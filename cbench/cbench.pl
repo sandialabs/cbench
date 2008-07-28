@@ -1884,16 +1884,29 @@ sub load_parse_modules {
 
 	# Get a list of all the Perl modules in the Cbench parse library,
 	# CBENCHOME/perllib/output_parse.
-	$dir = "$BENCH_HOME/perllib/output_parse";
-	opendir(BIN, $dir) or die "Can't open $dir: $!";
-	while( defined ($file = readdir BIN) ) {
-		next if $file =~ /^\.\.?$/;  # skip . and ..
-		next unless $file =~ /^\S+\.pm$/;  # only process .pm files
-		(defined $DEBUG and $DEBUG > 1) and print "DEBUG: found $file\n";
-		($mod) = $file =~ /(\S+)\.pm/;
-		push @raw_modules, $mod;
+	my @dirs = ("$BENCH_HOME/perllib/output_parse");
+	my $addon = get_cbench_addon();
+	if (defined $addon) {
+		push @dirs, "$addon/perllib/output_parse";
+		# add this to the Perl lib path
+		unshift @INC, "$addon/perllib";
 	}
-	closedir(BIN);
+	debug_print(3, "DEBUG:load_parse_modules() dirs=@dirs");
+	foreach my $dir (@dirs) {
+		if (opendir(BIN, $dir)) { 
+			while( defined ($file = readdir BIN) ) {
+				next if $file =~ /^\.\.?$/;  # skip . and ..
+				next unless $file =~ /^\S+\.pm$/;  # only process .pm files
+				(defined $DEBUG and $DEBUG > 1) and print "DEBUG: found $file\n";
+				($mod) = $file =~ /(\S+)\.pm/;
+				push @raw_modules, $mod;
+			}
+			closedir(BIN);
+		}
+		else {
+			debug_print(1,"WARNING: Can't open $dir: $!");
+		}
+	}
 
 	# For each parse module we found, try to 'require' it and see if
 	# we can use it properly.
@@ -2385,7 +2398,7 @@ sub rsync_filelist {
 	
 	foreach $item (@$list) {
 		system("$cmd $srcpath\/$item $destpath\/\. 2>/dev/null");
-		debug_print(1,"DEBUG:rsync_filelist() syncing $BENCH_HOME\/$item to $destpath...");
+		debug_print(1,"DEBUG:rsync_filelist() syncing $srcpath\/$item to $destpath...");
 	}
 }
 
