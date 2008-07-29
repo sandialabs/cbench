@@ -182,12 +182,28 @@ build_job_templates($testset,\%templates);
 # delete the Cbench internal combobatch "job" since we won't use
 # it in this context
 delete $templates{combobatch};
+
+# we need to make sure that any job templates we are going to try
+# to generate don't requite a gen_jobs module we don't have
+foreach my $k (keys %templates) {
+	if ($templates{$k}{batch} =~ /#\s+Cbench_require: (\S+)::(\S+)/) {
+		debug_print(2,"DEBUG: job template $k requires $1::$2");
+		if (! exists $genjobs_modules{$2}) {
+			warning_print("Will not generate for job template \'$k\': required module $1::$2 not found\n");
+			delete $templates{$k};
+		}
+	}
+}
+#print Dumper (%templates);
+
 # by default the list of jobs is the list of templates found
 our @job_list = keys %templates;
 debug_print(2,"DEBUG: default job_list= @job_list");
-
-#print Dumper(%custom_gen_hash);
-#print Dumper(%templates);
+# if we have no jobs to generate, say so and exit
+if (scalar keys %templates <= 0) {
+	warning_print("No jobs to generate...exiting");
+	exit 1;
+}
 
 # run initialization subroutines for an custom generation code
 custom_gen_init($testset);
