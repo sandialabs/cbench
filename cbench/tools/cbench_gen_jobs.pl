@@ -46,8 +46,8 @@ $Term::ANSIColor::AUTORESET = 1;
 # pre init some vars before command line parsing
 my $xhplbin = 'xhpl';
 my $hpccbin = 'hpcc';
-
 my $testset;
+our $use_single_template_for_testset = 0;
 
 GetOptions(
 	'ident=s' => \$ident,
@@ -172,9 +172,8 @@ foreach my $mod (keys %genjobs_modules) {
 	if ($keys > 0) {
 		%{$custom_gen_hash{benchmark}{$mod}} = %tmp;
 	}
-
-	#print Dumper (%custom_gen_hash);
 }
+(defined $DEBUG and ($DEBUG > 3)) and print Dumper (%custom_gen_hash);
 
 # find and read in the job templates for the testset
 my %templates = ();
@@ -262,8 +261,8 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 			# most job templates correspond directly with the name of the job
 			my $job_template = $job;
 			# NPB is slightly different
-			if ($testset eq "npb") {
-				$job_template = 'npb';
+			if ($use_single_template_for_testset) {
+				$job_template = $testset;
 			}
 
 			# figure out how many nodes we need based on the number of
@@ -466,7 +465,7 @@ sub custom_gen_innerloop {
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
-	my $runtype = uc shift;
+	my $runtype = shift;
 	my $walltime = shift;
 	my $testset = shift;
 	my $jobname = shift;
@@ -481,7 +480,7 @@ sub custom_gen_innerloop {
 		my $funcname = "$custom_gen_hash{benchmark}{$job}{innerloop}";
 		*func = \&$funcname;
 		return func($outbuf,$numprocs,$ppn,$numnodes,
-			$runtype,$default_walltime,$testset,$jobname,$ident,$job);
+			$runtype,$walltime,$testset,$jobname,$ident,$job);
 	}
 
 	# specific generate stuff to run in the inner most generate loop based on testset
@@ -490,7 +489,7 @@ sub custom_gen_innerloop {
 		my $funcname = "$custom_gen_hash{testset}{$testset}{innerloop}";
 		*func = \&$funcname;
 		return func($outbuf,$numprocs,$ppn,$numnodes,
-			$runtype,$default_walltime,$testset,$jobname,$ident,$job);
+			$runtype,$walltime,$testset,$jobname,$ident,$job);
 	}
 }
 
@@ -498,6 +497,10 @@ sub npb_gen_init {
 	my $testset = shift;
 
 	debug_print(3,"DEBUG: entering npb_gen_init()\n");
+
+    # tell cbench_gen_jobs to use the 'npb' job template for
+	# all jobs
+	$use_single_template_for_testset = 1;
 
 	# The list of NAS codes to build. The IS (integer sort) and 
 	# EP (embarrasingly parallel) benchmarks are really not workloads
