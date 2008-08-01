@@ -33,20 +33,12 @@ use lib $ENV{CBENCHOME};
 require "cbench.pl";
 $CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
-# add any Cbench addon perllib areas into our Perl include path
-my $addon = get_cbench_addon();
-if (defined $addon) {
-	# add this to the Perl lib path
-	unshift @INC, "$addon/perllib";
-}
-eval "require 'install.pl'";
-#require "install.pl";
+our $bindir = 'bin';
 
 use Getopt::Long;
 use Data::Dumper;
 
 my $force = 0;
-my $bindir = 'bin';
 
 GetOptions(
 	'testset=s' => \$testset,	
@@ -57,13 +49,29 @@ GetOptions(
 	'addon' => \$doaddon,
 	'onlyaddon' => \$onlyaddon,
 	'debug=i' => \$DEBUG,
+	'help' => \$help,
 );
+
+if (defined $help) {
+	usage();
+	exit;
+};
 
 (!defined $testtop and !defined $testset and !defined $allsets) and do {
 	print "--testtop or --testset or --allsets paramter is required\n";
 	usage();
 	exit 1;
 };
+
+# add any Cbench addon perllib areas into our Perl include path
+my $addon = get_cbench_addon();
+if (defined $addon) {
+	# add this to the Perl lib path
+	unshift @INC, "$addon/perllib";
+}
+eval "require 'install.pl'";
+#require "install.pl";
+
 
 # this hash defines files that need to be installed into various
 # testsets that are atypical, i.e. non generic
