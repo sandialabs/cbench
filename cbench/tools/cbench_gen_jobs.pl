@@ -557,7 +557,7 @@ sub npb_gen_innerloop {
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
-	my $runtype = uc shift;
+	my $runtype = shift;
 	my $walltime = shift;
 	my $testset = shift;
 	my $jobname = shift;
@@ -600,7 +600,7 @@ sub hpcc_gen_innerloop {
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
-	my $runtype = uc shift;
+	my $runtype = shift;
 	my $walltime = shift;
 	my $testset = shift;
 	my $jobname = shift;
@@ -671,7 +671,7 @@ sub xhpl_gen_innerloop {
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
-	my $runtype = uc shift;
+	my $runtype = shift;
 	my $walltime = shift;
 	my $testset = shift;
 	my $jobname = shift;
@@ -721,7 +721,7 @@ sub trilinos_epetratest_gen_innerloop {
 	my $numprocs = shift;
 	my $ppn = shift;
 	my $numnodes = shift;
-	my $runtype = uc shift;
+	my $runtype = shift;
 	my $walltime = shift;
 	my $testset = shift;
 	my $jobname = shift;
@@ -794,7 +794,7 @@ sub lammps_gen_innerloop {
 	my $numprocs = shift;
     my $ppn = shift;
     my $numnodes = shift;
-    my $runtype = uc shift;
+    my $runtype = shift;
     my $walltime = shift;
     my $testset = shift;
     my $jobname = shift;
