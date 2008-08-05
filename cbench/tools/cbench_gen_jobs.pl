@@ -69,7 +69,6 @@ GetOptions(
 	'joblaunch_extraargs=s' => \$joblaunchargs,
 	'memory_util_factors|mem_factors=s' => \$new_memory_util_factors,
 	'threads|ompthreads|ompnumthreads=i' => \$OMPNUMTHREADS,
-    'scaled' => \$scaled,
     'scaled_only' => \$scaled_only,
     'scale_factor=i' => \$scale_factor,
 	'gazebo' => \$gazebo,
@@ -760,20 +759,18 @@ sub lammps_gen_joblist {
     my $numprocs = shift;
 
     my @scaled_joblist = qw(rhodo.scaled chain.scaled lj.scaled);
-    my @normal_joblist = qw(rhodo chain lj); #this is only a temporary list; LAMMPS has many more codes use 
+    my @normal_joblist = qw(rhodo chain lj rhodo.scaled chain.scaled lj.scaled); #this is only a temporary list; LAMMPS has many more codes use 
     debug_print(3, "DEBUG: entering lammps_gen_joblist($ppn,$numprocs)\n");
-
-    #we only want scaled jobs to be created when specified by the user
 
     my @tmplist =();
 
-    if ( not defined $scaled and not defined $scaled_only ) {
+    # generate normal jobs
+    if (not defined $scaled_only) {
         debug_print(3, "DEBUG: generating only lammps normal jobs");
         push(@tmplist, @normal_joblist);
     }
 
-    #create only scaled jobs when --scaled-only parameter is set
-    #create scaled jobs with normal jobs when --scaled parameter is set
+    # create only scaled jobs when --scaled-only parameter is set
     else {
         debug_print(3, "DEBUG: generating lammps scaled jobs");
         #add scaled jobs 
@@ -896,7 +893,6 @@ sub usage {
           "   --debug <level>  Turn on debugging at the specified level\n";
     # only print the LAMMPS options when it is a lammps testset
 	($0 =~ /lammps/) and print "   \nLAMMPS scaling options:\n".
-          "   --scaled                  Generate scaled jobs along with normal jobs\n".
           "   --scaled_only             Generate scaled jobs only\n".
           "   --scale_factor <factor>   The additional factor by which you would like to \n".
           "                             scale the x,y,z values in the scaling benchmarks\n".
