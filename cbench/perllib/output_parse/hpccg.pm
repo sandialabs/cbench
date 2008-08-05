@@ -181,7 +181,7 @@ This routine is optional.
 sub alias_spec {
 	my $self = shift;
 
-	return '\d+cubed';
+	return '\d+cubed$';
 }
 
 =item B<metric_units()> - Return a hash with a mapping of the
