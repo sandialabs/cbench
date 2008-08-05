@@ -59,7 +59,7 @@ GetOptions(
     'minprocs=i' => \$minprocs_cmdline,
     'procs=i' => \$procs_cmdline,
     'runsizes=s' => \$runsizes,
-	'testdir=s' => \$testdir,
+	'testdir|scratchdir=s' => \$testdir,
 	'jobcbenchtest=s' => \$JOBCBENCHTEST,
 	'testset=s' => \$testset,
 	'match=s' => \$match,
@@ -107,14 +107,14 @@ my $submitconfig_file = "$gazebo_home/submit_configs/$gazebo_config";
 # this variable is where we'll incrementally build the Gazebo submit config file
 my $submitconfig = "";
 
-$bench_test = get_bench_test();
+$cbenchtest = $bench_test = get_bench_test();
 $testset_path = "$bench_test/$testset";
 $DEBUG and print "DEBUG: $bench_test $testset_path\n";
 
 (!defined $ident) and $ident = $cluster_name . "1";
-if (!defined $testdir and $testset =~ /^io|shakedown/) {
-	$testdir = "$testset_path/$ident/TMP";
-	info_print("$0: --testdir not specified, defaulting to $testdir\n");
+if (!defined $testdir) {
+	$testdir = "$testset_path/$ident/SCRATCH";
+	#info_print("$0: --testdir not specified, defaulting to $testdir\n");
 	mkdir "$testdir",0750;
 }
 
@@ -356,6 +356,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 
 				# other substitutions
 				$outbuf =~ s/TESTDIR_HERE/$testdir/gs;
+				$outbuf =~ s/SCRATCHDIR_HERE/$testdir/gs;
 				$outbuf =~ s/XHPL_BIN_HERE/$xhplbin/gs;
 				$outbuf =~ s/HPCC_BIN_HERE/$hpccbin/gs;
 
@@ -869,8 +870,11 @@ sub usage {
           "                    regex string. For example,\n" .
           "                      --match 2ppn\n" .
           "                    would only generate 2 ppn tests\n" .
-          "   --testdir <path> Path to use for filesystem testing which also determines\n".
-          "                    the filesystem to use implicitly\n".
+          "   --scratchdir <path>\n".
+          "   --testdir <path> Path to use as a \"scratch\" or parallel filesystem\n".
+		  "                    for benchmarks/apps testing which require the use of \n".
+		  "                    a larger scale or higher performance filesystem. The\n".
+		  "                    path determines the filesystem to use implicitly\n".
 		  "   --jobcbenchtest <path>  Specify an alternate CBENCHTEST path used when\n".
 		  "                           generating job scripts. This is useful for\n".
 		  "                           generating jobs in one place and being able to use\n".
