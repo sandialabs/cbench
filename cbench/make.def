@@ -194,7 +194,7 @@ ifndef LAPACKLIB
   else
     ifdef ACML_LIB
       #LAPACKLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
-      LAPACKLIB = $(ACML_LIB)/libacml.a
+      #LAPACKLIB = $(ACML_LIB)/libacml.a
     else
       LAPACKLIB = PLEASE_DEFINE_LAPACKLIB_IN_make.def
     endif
@@ -207,7 +207,8 @@ ifndef FFTWLIB
   	FFTWINCLUDE=$(FFTW_INCLUDE)
   else
     ifdef MKL_LIB
-	  FFTWLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lmkl_lapack
+	  FFTWLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lmkl
+	  FFTWINCLUDE = $(MKLHOME)/include/fftw
     else
       ifdef ACML_LIB
         FFTWLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
@@ -226,15 +227,22 @@ ifeq ($(ARCH),x86_64)
 
   ifeq ($(COMPILER),intel)
   COMMON_FLAGS =
-  OPTFLAGS = -O3 -axP
+  OPTFLAGS = -O3 -axP -xW -mcmodel=medium
   MPILIB = 
   endif
 
   ifeq ($(COMPILER),pgi)
   COMMON_FLAGS = 
   CFLAGS = -B
-  OPTFLAGS = -O3 -fastsse
-  #OPTFLAGS = -O3 -fastsse -Mautoinline=levels:3
+  #OPTFLAGS = -O3 -fastsse
+  #OPTFLAGS = -O3 -fastsse
+  #OPTFLAGS = -O3 -fast -Mnovect -Mautoinline=levels:3 -mcmodel=medium -Msmartalloc
+  #OPTFLAGS = -O2
+  OPTFLAGS = -O3 -mcmodel=medium -tp barcelona-64
+  #OPTFLAGS = -O2 -tp barcelona-64
+  #OPTFLAGS = -O1 -mcmodel=medium
+  #OPTFLAGS = -g -mcmodel=medium
+  #OPTFLAGS = -g
   MPILIB =
   endif
 
@@ -381,23 +389,6 @@ define do-subdirs
 	done
 endef
 
-define do-testset-installs
-	@for test in $(CONFIGURED_TESTSETS); \
-	do \
-	echo "---------------------------------------------------------"; \
-	echo "----- Installing \"$$test\" test set"; \
-	echo "---------------------------------------------------------"; \
-	$(BENCH_HOME)/sbin/install_$$test; \
-	done
-endef
-
-define do-compiled-bin-installs
-    @echo "---------------------------------------------------------"; \
-    echo "----- Installing $(BENCH_HOME)/bin --> $(BENCH_TEST)/bin"; \
-    echo "---------------------------------------------------------"; \
-	rm -fr $(BENCH_TEST)/bin; cp -fr $(BENCH_HOME)/bin  $(BENCH_TEST)/bin;
-endef
-
 define do-compiled-bin-installs-binident
 	@if [ "$(DEST)" == "/bin" ]; then \
 		echo "ABORT: DEST resolved to /bin!"; \
@@ -406,7 +397,7 @@ define do-compiled-bin-installs-binident
 	echo "---------------------------------------------------------"; \
     echo "----- Installing $(BENCH_HOME)/bin --> $(DEST)"; \
     echo "---------------------------------------------------------"; \
-	rm -fr $(DEST); cp -fr $(BENCH_HOME)/bin  $(DEST);
+	/bin/cp --backup=t -a $(BENCH_HOME)/bin/* $(DEST)/.;
 endef
 
 define do-install
