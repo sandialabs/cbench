@@ -42,6 +42,13 @@ SUBDIRS = $(OPEN_SUBDIRS) $(HWTEST_SUBDIRS)
 # these are the test sets we try to install into the Cbench test tree
 CONFIGURED_TESTSETS = bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity
 
+ifndef BINIDENT
+  BINDIR = bin
+else
+  BINDIR = bin.$(BINIDENT)
+endif
+  DEST = $(BENCH_TEST)/$(BINDIR)
+
 # by default build all the standard opensource set of binaries as well as the basic
 # hardware testing binaries
 default: open hwtest
@@ -93,21 +100,15 @@ install uninstall: default
 	$(do-subdirs)
 
 # install the Cbench testing tree (CBENCHTEST variable must be set)
-installtests: install
-	@sbin/install_cbenchtest --testtop --allsets
-	$(do-compiled-bin-installs)
+installtests itests:
+	@sbin/install_cbenchtest --testtop
+	$(do-compiled-bin-installs-binident)
+	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
 
 # just install compiled binaries in to the Cbench testing tree
 installcbenchbins: install
 	@sbin/install_cbenchtest --testtop
-	$(do-compiled-bin-installs)
-
-# a convenience target to compile the larger set of commonly used binaries
-# and install the Cbench testing tree
-installcbench: domostall
-	@sbin/install_cbenchtest --testtop
-	$(do-compiled-bin-installs)
-	$(do-testset-installs)
+	$(do-compiled-bin-installs-binident)
 
 # just update the Cbench testing tree scripts
 updatecbench: 
@@ -162,15 +163,3 @@ doitall:
 	$(MAKE) hpcc
 	$(MAKE) standalone
 	$(MAKE) standaloneinstall
-
-ifndef BINIDENT
-  BINDIR = bin
-else
-  BINDIR = bin.$(BINIDENT)
-endif
-  DEST = $(BENCH_TEST)/$(BINDIR)
-
-itests itests-with-ident:
-	@sbin/install_cbenchtest --testtop
-	$(do-compiled-bin-installs-binident)
-	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
