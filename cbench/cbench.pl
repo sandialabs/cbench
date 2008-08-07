@@ -526,7 +526,7 @@ sub slurm_batchsubmit_cmdbuild {
 	(length $batch_extraargs > 1) and $cmd .= " $batch_extraargs";
 
 	# make slurm's output filename look like PBS's
-	$cmd .= " --output='slurm.o\%j'";
+	$cmd .= " --no-requeue --output='slurm.o\%j'";
 
 	return "$cmd ";
 }
