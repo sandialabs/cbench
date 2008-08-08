@@ -112,8 +112,16 @@ sub parse {
 
 	my %data;
 
+	# strip the buffer of stderr output that can show up non-deterministically
+	# in the output stream and confuses the assumptions during parsing
+	my @cleanbuf = ();
+	foreach (@{$bufrefs[0]}) {
+		/memfree\s+=\s+\d+\s+/ and next;
+		push @cleanbuf, $_;
+	}
+
 	# process all the lines in the STDOUT buffer
-	my $txtbuf = $bufrefs[0];
+	my $txtbuf = \@cleanbuf;
 	my $numlines = scalar @$txtbuf; 
 
 	# NOTE: The linpack output file can have multiple results within it.
