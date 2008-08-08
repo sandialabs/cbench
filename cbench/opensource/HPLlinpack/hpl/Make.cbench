@@ -190,7 +190,8 @@ HPL_LIBS     = $(HPLlib) $(LAlib) $(MPlib) $(TOPdir)/dclock.o
 #              captures all DGEMM calls (if you use Fortran BLAS) and records
 #              their data.  As it does this, this routine has a marginal
 #              intrusive overhead.
-HPL_OPTS     =  -DASYOUGO -DMEMINFO_RUN
+#   -DMEMINFO_RUN  Add some memory allocation stats
+HPL_OPTS     =  -DASYOUGO
 #
 # ----------------------------------------------------------------------
 #
