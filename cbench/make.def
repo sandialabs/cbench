@@ -55,6 +55,8 @@ F77 = $(BUILD_PATH)mpif77
 # for sure. This would be a nice thing for configure.... :)
 #F77 = $(BUILD_PATH)mpif90
 F90 = $(BUILD_PATH)mpif90
+# FC is the default gnu make fortran compiler
+FC = $(F90)
 INCLUDES = -I$(MPIHOME)/include
 
 ###### Compiler specific general configs
@@ -310,15 +312,6 @@ endif
 CFLAGS += $(OPTFLAGS) $(COMMON_FLAGS)
 FFLAGS += $(OPTFLAGS) $(COMMON_FLAGS)
 LIBS = $(MPILIB) 
-
-
-.SUFFIXES: .o .c .f .f90
-
-.c.o:
-	$(CC) -c $(CFLAGS) -o $@ $(INCLUDES) $(EXTRA) $<
-
-.f.o:
-	$(F77) -c $(FFLAGS) -o $@ $(INCLUDES) $(EXTRA) $<
 
 
 ###### Common functions
