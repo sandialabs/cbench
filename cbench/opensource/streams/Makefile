@@ -13,7 +13,7 @@ ifeq ($(COMPILER),intel)
   EXECS += stream-intel-c stream-intel-f stream-intel2-c stream-intel2-f stream-intel-openmp-f stream-intel-openmp-c stream-intel2-openmp-f stream-intel2-openmp-c stream-mpi-openmp
 endif
 ifeq ($(COMPILER),gcc)
-  EXECS += stream-gcc-c stream-gcc2-c stream-gcc3-c stream-gcc4-c stream-gcc5-c stream-gcc6-c
+  EXECS += stream-gcc-c stream-gcc2-c stream-gcc3-c stream-gcc4-c stream-gcc5-c stream-gcc6-c stream-gcc7-c
 endif
 ifeq ($(COMPILER),pgi)
   EXECS += stream-pgi-c stream-pgi2-c stream-pgi-f stream-pgi2-f stream-pgi3-f stream-pgi-openmp-f stream-pgi2-openmp-f stream-pgi3-openmp-f stream-pgi-openmp-c stream-pgi2-openmp-c stream-pgi3-openmp-c stream-pgi4-openmp-c stream-pgi4-openmp-f
@@ -40,7 +40,7 @@ stream2-f: stream2.f mysecond.o
 	$(FORT) $(FFLAGS) -o $@ $^ -lm
 
 stream-mpi: stream_mpi.f $(MYSECOND)
-	$(F77) $(FFLAGS) -o $@ $^
+	$(F90) $(FFLAGS) -o $@ $^
 
 stream-mpi.$(MPICH_CH): stream-mpi
 	/bin/mv -f  stream-mpi stream-mpi.$(MPICH_CH)
@@ -49,7 +49,7 @@ stream-big-c: stream_big.c
 	$(PLAINCC) $(FLAGS) -o $@ $^ -lm
 
 stream-big-f: stream_big.f mysecond.o
-	$(F77) $(FFLAGS) -o $@ $^ -lm
+	$(F90) $(FFLAGS) -o $@ $^ -lm
 
 # stream binary optimized for GCC compilers
 stream-gcc-c: stream_big.c
@@ -57,13 +57,15 @@ stream-gcc-c: stream_big.c
 stream-gcc2-c: stream_big.c
 	$(PLAINCC) $(COMMON_FLAGS) -O3 -mtune=opteron -o $@ $^ -lm
 stream-gcc3-c: stream_big.c
-	gcc4 $(COMMON_FLAGS) -O3 -mtune=nocona -o $@ $^ -lm
+	-gcc4 $(COMMON_FLAGS) -O3 -mtune=nocona -o $@ $^ -lm
 stream-gcc4-c: stream_big.c
-	gcc4 $(COMMON_FLAGS) -O3 -mtune=opteron -o $@ $^ -lm
+	-gcc4 $(COMMON_FLAGS) -O3 -mtune=opteron -o $@ $^ -lm
 stream-gcc5-c: stream_big.f mysecond.o
 	gfortran $(COMMON_FLAGS) -O3 -mtune=opteron -o $@ $^ -lm
 stream-gcc6-c: stream_big.f mysecond.o
 	gfortran $(COMMON_FLAGS) -O3 -mtune=nocona -o $@ $^ -lm
+stream-gcc7-c: stream_big.f mysecond.o
+	gfortran $(COMMON_FLAGS) -O3 -mtune=amdfam10 -funroll-all-loops -o $@ $^ -lm
 
 
 # stream binaries optimized for Intel compilers
