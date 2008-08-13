@@ -17,9 +17,13 @@ COMMON_FLAGS += $(OPENMP_ENABLE)
 # blas lib we are using, we might also need lapack
 WHICHBLAS = $(findstring goto,$(BLASLIB))
 ifeq ($(WHICHBLAS),goto)
-  LDFLAGS="../../second.o $(LAPACKLIB) $(BLASLIB) -lm"
+  LDFLAGS=../../second.o $(LAPACKLIB) $(BLASLIB) -lm
 else
-  LDFLAGS="$(BLASLIB) -lm"
+  LDFLAGS=$(BLASLIB) -lm
+endif
+
+ifeq ($(COMPILER),gcc)
+ #LDFLAGS += -lg2c
 endif
 
 # this is for the second.c implicit rule to get the CC we want
@@ -27,7 +31,7 @@ CC=$(PLAINCC)
 
 all: $(SRC) second.o 
 	$(MAKE) FC=$(PLAINF90) CC=$(PLAINCC) CFLAGS="$(CFLAGS) -DDGEMM -DMXMD16 -DLINUX" \
-		FFLAGS="$(FFLAGS) -DLINUX" LDFLAGS=$(LDFLAGS) -C src $@
+		FFLAGS="$(FFLAGS) -DLINUX" LDFLAGS="$(LDFLAGS)" -C src $@
 
 $(SRC): $(TAR)
 	[ ! -d $(SRC) ] && tar zxf $(TAR)
