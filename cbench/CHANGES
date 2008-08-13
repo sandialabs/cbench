@@ -5,6 +5,7 @@
 A __brief__ summary of changes in each release of Cbench.
 
 * future Cbench release (1.2.0)
+	* added LLNL Matmult and Stride memory stress tests
 	* updated to IMB v 3.1
 	* memtester 4.0.8
 	* added Slurm batch system (sbatch) and job launching (srun) support
@@ -25,6 +26,7 @@ A __brief__ summary of changes in each release of Cbench.
 	* consistent sorting of gnuplot data series labels, i.e. the legend
 	* added HPCCG, LAMMPS, and Trilinos Epetra benchmark support and integration
 	  in the Cbench Openapps tree
+	* added LLNL AMG application to the Openapps tree
 	* rewrote the sbin/install* scripting framework into a single extensible
 	  sbin/install_cbench install script
 	* testsets are now installed using mainly symlinks to the core files at the top
@@ -72,6 +74,9 @@ A __brief__ summary of changes in each release of Cbench.
 	  (Los Alamos National Lab) Gazebo test harness framework
 	* cbench_output_parse.pl will not print CBENCH NOTICEs by default in the --diag
 	  mode anymore, the --shownotice option is also required
+	* Cbench Addon functionality to allow seamless integration of other Cbench
+	  source trees into the makefile and scripting system (CBENCHADDON environement
+	  variable turns on integration with a tree)
 	* add the --showpassed cbench_output_parse.pl option
 	* ticket #7  HPCC source code tweaks
 	* ticket #9  remove script duplication in the cbench testing tree
