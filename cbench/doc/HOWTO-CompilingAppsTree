@@ -1,0 +1,35 @@
+= Compiling the Openapps Tree of Cbench =
+
+[wiki:doc/HOWTO-CheckoutOpenAppsTree Check it out first].
+
+Build linkage requirements:
+ * LAMMPS - needs correct FFTW and BLAS for linkage
+ * HPCCG - nothing additional needed
+ * Trilinos - needs BLAS and LAPACK for linkage
+
+FFTW linkage can be edited in make.def directly (search for FFTWLIB to see the logic).  Alternatively you can specify FFTW_LIB and FFTW_INCLUDE in the environment and make.def should pick it up correctly in most cases.
+
+LAPACK linkage can be edit in make.def directly (search for LAPACKLIB to see the logic).  If your BLASLIB environment variable points to a library setup that has LAPACK (like linking with ACML for BLAS), you can set LAPACKLIB like:
+{{{
+export LAPACKLIB=" "
+}}}
+
+Compile it all:
+{{{
+% cd /path/to/openapps
+% make
+% make install
+}}}
+
+Compile something specific:
+{{{
+% cd /path/to/openapps
+% make -C lammps
+% make -C lammps install
+}}}
+
+Binaries and such will now be installed in $CBENCHOME/bin.  Now we need to install/update to the Cbench Testing Tree:
+{{{
+% cd $CBENCHOME
+% make itests
+}}}

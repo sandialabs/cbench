@@ -2,12 +2,13 @@ This is a list of the opensource tools we use in Cbench and locations where you 
 
 = Core Cbench Opensource Software =
 
- * Intel MPI Benchmarks (IMB) - http://www.intel.com/software/products/cluster/mpi/mpi_benchmarks_lic.htm
+ * Intel MPI Benchmarks (IMB) - http://www.intel.com/software/products/cluster/mpi/mpi_benchmarks_lic.htm, http://www3.intel.com/cd/software/products/asmo-na/eng/219848.htm
  * IOR - ftp://ftp.llnl.gov/pub/siop/ior/
  * Iozone - http://www.iozone.org/
  * b_eff - http://www.hlrs.de/organization/par/services/models/mpi/b_eff/
  * mpi_examples and perftest - Taken from standard MPICH distros (http://www-unix.mcs.anl.gov/mpi/mpich/)
  * MPICH - http://www-unix.mcs.anl.gov/mpi/mpich/
+ * mpiGraph - http://www.sourceforge.net/projects/mpigraph
  * netperf - http://www.netperf.org/netperf/NetperfPage.html
  * NAS Parallel Benchmarks - http://www.nas.nasa.gov/Software/NPB/
  * Pallas MPI Benchmarks - http://www.pallas.de/
@@ -20,23 +21,25 @@ This is a list of the opensource tools we use in Cbench and locations where you 
  * HPCC - HPC Challenge Benchmark - http://icl.cs.utk.edu/hpcc/
  * HP Linpack - http://www.netlib.org/benchmark/hpl/
  * Memtester - userspace memory tester - http://pyropus.ca/software/memtester/
- * PIOB - Sandia parallel file i/o testing utility
- * Software that is intrinsically part of Cbench
  * Stress - a simple tool that imposes certain types of compute stress on UNIX-like operating systems - http://weather.ou.edu/~apw/projects/stress/stress.html
+ * MATMULT - LLNL Matrix Multiplication benchmark
+ * STRIDE - LLNL memory stress test
+ * Software that is intrinsically part of Cbench
    * 300MB - 300 megabyte MPI executable for stressing MPI launches
    * fpck - floating point correctness diagnostic
    * mpi_routecheck - serialized N**2 MPI communication sanity checker
    * rotate, rotate_latency - Rotate is a cross-sectional bandwidth/latency benchmark developed at Sandia National Labs. It is useful for measuring how well an interconnect makes advantage of the available hardware bandwidth at the MPI level. Specifically, this benchmark is useful to see the effects of static routing in fully connected CLOS network. 
-   * HA4, MP3, RS5, RS12
-   * mpi_hello
+   * mpi_malloc
+   * mpi_hello, mpi_hello_ordered
    * mpi_latency
    * mpi_overhead - simple MPI memory overhead measurer
    * mpi_slowcpu
-   * mpi_tokensmash
-   * word9
 
 = Cbench Opensource Software in the '''openapps''' tree =
 
- * LAMMPS - http://www.cs.sandia.gov/~sjplimp/lammps.html
+ * LAMMPS - http://lammps.sandia.gov
+ * HPCCG - http://www.sandia.gov/benchmarks/
+ * Trilinos Epetratest - http://www.sandia.gov/benchmarks/
  * MPQC - http://www.mpqc.org
+ * AMG - https://asc.llnl.gov/sequoia/benchmarks/#amg ([https://asc.llnl.gov/sequoia/benchmarks/AMG_summary_v1.0.pdf summary])
 

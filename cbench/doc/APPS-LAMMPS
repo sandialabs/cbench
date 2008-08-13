@@ -1,0 +1,87 @@
+[[PageOutline(1-10,Table of Contents)]]
+
+= HOWTO use the LAMMPS Molecular Dynamics Simulator with the Cbench framework =
+[CbenchDocumentation Back to top-level of Documentation]
+
+''Last updated 2 June 2008''
+
+Cbench will support LAMMPS in its 1.2 release.  For now, use the development build (available for SVN checkout, see the [wiki:DeveloperHome Developer Page]).
+
+Detailed information about LAMMPS can be found on the [http://lammps.sandia.gov LAMMPS website].
+
+The `openapps/` tree must be present in the `cbench/` directory in order to install LAMMPS with Cbench.  See the [wiki:doc/HOWTO-CheckoutOpenAppsTree HOWTO for Checking Out the Openapps Tree of Cbench] to get it if you need it.
+
+== Introduction ==
+
+Cbench has the ability to download and build LAMMPS source and to generate, run, and analyze LAMMPS jobs as part of the optional `openapps/` tree.  Cbench will take the LAMMPS source, build the proper executable for your system, and copy the input files to for use in generating jobs for test runs.  
+
+== Installing LAMMPS using Cbench ==
+
+The Cbench/LAMMPS make process does the following:
+ * compiles LAMMPS for the system using Cbench-defined build variables (defined in the Cbench top-level `makefile` and in `make.def`)
+ * creates `lammps/` and `lammps/bench/` directories in the `$CBENCHTEST` testing tree
+ * copies `openapps/lammps/lammps/bench/data.*` files to `$CBENCHTEST/lammps/bench/`
+ * copies `openapps/lammps/lammps/bench/in.*` files to `$CBENCHTEST/lammps/bench/`
+ * modifies `$LAMMPSDIR/bench/in.*` files to include the proper path to the data files
+ * creates symplinks to the standard Cbench scripts in `$CBENCHTEST/lammps/`
+
+LAMMPS is not installed by default along with the other tests, but it can be installed using the Cbench make system:
+
+=== To install LAMMPS along with the other Cbench tests, you must modify some of the Cbench make configuration. ===
+
+ * Edit the top-level `Makefile` located in $CBENCHOME/
+   * add `openapps/lammps` to the OPEN_SUBDIRS list
+   * add `lammps` to the CONFIGURED_TESTSETS list
+
+ * Add the `lammps` target to the `make` command:
+
+{{{
+[alogin1 cbench]$ make lammps installtests
+}}}
+
+
+After some output and no errors, you should now have a working Cbench/LAMMPS configuration.  Check $CBENCHOME/bin for the `lmp_cbench` binary to verify success (or just read the screen output).
+
+--note - will add troubleshooting help here --
+
+== Generating LAMMPS Jobs ==
+
+[wiki:doc/LAMMPS-codes LAMMPS code tests]
+
+The LAMMPS jobs currently supported by Cbench are:
+
+ ''Included Benchmark Codes'' 
+ * Rhodo - 
+ * Chain - 
+ * LJ - 
+
+{{{
+[alogin1 cbench_test/lammps]$ ./lammps_gen_jobs.pl --ident test1 --scaled --scale_factor 15
+}}}
+
+You can generate LAMMPS jobs in the same way as other Cbench tests, along with the following LAMMPS-specific options:
+
+{{{
+LAMMPS scaling options:
+          --scaled                  Generate scaled jobs along with normal jobs
+          --scaled_only             Generate scaled jobs only
+          --scale_factor <factor>   The additional factor by which you would like to scale the x,y,z values in the scaling benchmarks
+                                    For example:
+                                      --scaled_factor 20
+}}}
+
+== Running LAMMPS Jobs ==
+
+LAMMPS jobs are run in a similar manner as other Cbench jobs.  They can be run interactively or using the provided batch scripting.  
+
+{{{
+[alogin1 cbench_test/lammps]$ ./lammps_start_jobs.pl --ident test1 --batch
+}}}
+
+== Handling Output from LAMMPS Jobs ==
+
+Output parsing is handled in the same way as other Cbench jobs. A main output parse module is provided for use with the regular output parse script.
+
+{{{
+[alogin1 cbench_test/lammps]$ ./lammps_output_parse.pl --ident test1
+}}}

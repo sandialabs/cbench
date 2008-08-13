@@ -1,11 +1,12 @@
 = Compiling and Installing Cbench =
-
+[[TOC]]
 == Compiling and Installing the core of Cbench ==
 
 Cbench requires the following environment variables be set:
 
- * CBENCHOME - Location of the Cbench distribution tree
- * MPIHOME   - Location of the MPI tree where we look to find MPI compile scripts (i.e. mpicc, mpif77) and MPI includes
+ * CBENCHOME  - Location of the Cbench distribution tree
+ * CBENCHTEST - Location of the Cbench testing tree
+ * MPIHOME    - Location of the MPI tree where we look to find MPI compile scripts (i.e. mpicc, mpif77) and MPI includes
  * COMPILERCOLLECTION - Pick the compiler collection/chain you want to compile with. Examples include: intel, gcc, pgi.
 
 NOTE: make.def must support the specified compiler collection on the machine architecture you are using.
@@ -15,7 +16,8 @@ really control what happens during compilation you'll need to take a look at
 make.def and possibly edit it.  You are often able to use support that is
 already included in make.def.  A key variable to look at is BLASLIB since this
 must be set correclty for HPLinpack (xhpl) and other utilities that link with
-external BLAS libraries to compile correctly.
+external BLAS libraries to compile correctly.  There is currently a BLASLIB variable
+for each machine architecture and compiler collection combination.
 
 There is a  sample Cbench module file you can place in your modulefiles directory.
 There is also a simple bash and tcsh style script here as well.
@@ -34,7 +36,7 @@ This compiles and installs the standard collection of test binaries in $CBENCHOM
 Compile Cbench as described above.  Install the Cbench test set tree:
  * make installtests
 
-This will install all test sets that are currently packaged in Cbench into a tree named $CBENCHOME-test by default. An alternate tree location can be specified by setting the CBENCHTEST environment variable:
+This will install all test sets that are currently packaged in Cbench into the tree specified by the CBENCHTEST environment variable:
  * e.g. export CBENCHTEST=/scratch3/user/cbench-test
 
 == Compiling non-default parts of Cbench ==
@@ -63,8 +65,12 @@ To make sure your NPB binaries get updated in the CBENCHTEST tree, from the top-
 === Building the self-contained MPICH for Cbench ===
  * make -C opensource/mpich
 
+=== Building only what is required for node-level hardware testing ===
+ * make nodehwtest
+
 === Building HPCC with the Cbench MPICH ===
  * make -C opensource/hpcc distclean
  * make -C opensource/hpcc local
  * make -C opensource/hpcc install
  * make itests   (to update the CBENCTEST tree)
+

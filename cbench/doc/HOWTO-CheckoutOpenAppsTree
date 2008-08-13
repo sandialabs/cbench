@@ -4,6 +4,6 @@
 Check out the Openapps tree into your open cbench repository
 
 == Steps ==
- * svn checkout https://cbench.sandia.gov/SVN/trunk/cbench (if you haven't done so already)
+ * svn checkout https://cbench.sandia.gov/SVNnew/trunk/cbench (if you haven't done so already)
  * cd cbench
- * svn checkout https://cbench.sandia.gov/SVN/trunk/openapps
+ * svn checkout https://cbench.sandia.gov/SVNnew/trunk/openapps

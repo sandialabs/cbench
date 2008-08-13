@@ -1,7 +1,4 @@
-[[TOC]]
-= Cbench User Guide =
-
-== Cbench Test Sets ==
+= Cbench Testsets =
 
 "Test sets" are a concept in Cbench used to package up useful collections of testing work with utility scripts to highly assist the entire testing process. Each test set is a subdirectory within the Cbench testing tree.
 
@@ -18,7 +15,7 @@ There are three key utility scripts that facilitate the use of a given test set 
 
 See the help output of any utility for more information on specific parameters.
 
-A key parameter that is used in the test set utility scripts is the `--ident` parameter. This parameter is used to identify different test runs.  This parameter allows you to generate and keep track of many different test runs within a given test set.  Depending on the particular properties of a given test set, `--ident` can be useful to run with different optimized binaries, different hardware configurations, different test iterations, etc. For example:
+A key parameter that is used in the test set utility scripts is the `--ident` parameter. This parameter is used to identify different test runs with different ''test identifiers''.  This parameter allows you to generate and keep track of many different test runs within a given test set.  Depending on the particular properties of a given test set, `--ident` can be useful to run with different optimized binaries, different hardware configurations, different test iterations, etc. For example:
 {{{
 linpack_gen_jobs.pl --ident linpack_gcc343
 linpack_gen_jobs.pl --ident linpack_intel90
@@ -35,7 +32,7 @@ The approach Cbench uses in the generation of files (batch scripts, interactive 
 
 Each script is then processed for keyword replacements by the `*_gen_jobs.pl` scripts.  The `*_gen_jobs.pl` scripts are pretty well commented and use as much common code as possible so that one can see the process and logic involved. Input files such as the `HPL.dat` file for HPlinpack are generated as well using templates (see `xhpl_dat.in` and `linpack_gen_jobs.pl` for an example).
 
-The currently available test sets are:
+The currently available test sets are (not up-to-date as of 1-22-08):
  * '''Bandwidth''' -  Tests the unidirectional and bidirectional bandwidth at the MPI level in a cluster. In other words, a bandwidth scaling study. Currently the benchmarks used are the common Bandwidth Effective (b_eff) and the bandwidth benchmark from Presta 1.2, com. Presta 1.2 is part of the ASCI Purple benchmarks.
  * '''Linpack'''       -  Uses the High Performance Linpack (xhpl) codebase with the ASYOUGO patches to perform a Linpack scaling study.
  * '''NPB'''           -  NAS Parallel Benchmark scaling study.
@@ -45,6 +42,4 @@ The currently available test sets are:
  * '''Latency'''       -  Scaling study measuring MPI latency
  * '''Collective'''    -  Scaling study measuring MPI collectives
 
-Note that work in a 'test set' is most often generated using a "scaling study" type approach.
-
-
+Note that work in a 'test set' is most often generated using a "scaling study" type approach. The ''nodehwtest'' test set is the current most notable exception to this rule.
