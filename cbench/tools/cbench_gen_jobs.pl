@@ -146,6 +146,10 @@ if (!defined $testdir) {
             'innerloop' => 'lammps_gen_innerloop',
             'joblist' => 'lammps_gen_joblist',
         },
+        'amg' => {
+            'innerloop' => 'amg_gen_innerloop',
+            'joblist' => 'amg_gen_joblist',
+        },
 	},
 );
 
@@ -842,6 +846,47 @@ sub lammps_gen_innerloop {
 
     return 0;
 }
+
+sub amg_gen_joblist {
+	my $ppn = shift;
+	my $numprocs = shift;
+	
+	my @list = ();
+
+	main::debug_print(3,"DEBUG: entering amg_gen_joblist($ppn,$numprocs)\n");
+
+	foreach my $j (@main::job_list) {
+		(main::three_int_factors($numprocs) ne '') and push @list, $j;
+	}
+
+	return @list;
+}
+
+
+sub amg_gen_innerloop {
+	my $outbuf = shift;      # a *reference* to the actual $outbuf
+	my $numprocs = shift;
+	my $ppn = shift;
+	my $numnodes = shift;
+	my $runtype = uc shift;
+	my $walltime = shift;
+	my $testset = shift;
+	my $jobname = shift;
+	my $ident = shift;
+	my $job = shift;
+
+	main::debug_print(3,"DEBUG: entering amg_gen_innerloop()\n");
+
+	my ($px,$py,$pz) = split(',',main::three_int_factors($numprocs));
+	main::debug_print(3,"DEBUG:amg_gen_innerloop() px=$px py=$py pz=$pz\n");
+
+	$$outbuf =~ s/PX_HERE/$px/gs;
+	$$outbuf =~ s/PY_HERE/$py/gs;
+	$$outbuf =~ s/PZ_HERE/$pz/gs;
+
+	return 0;
+}
+
 
 sub usage {
     print "USAGE: $0 \n";

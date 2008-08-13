@@ -116,6 +116,11 @@ eval "require 'install.pl'";
 				"openapps/lammps/lammps/bench/" => "lammps/bench/",
 		},
 	},
+	'amg' => {
+		'rsync' => {
+				"openapps/amg/src/test/sstruct.in.AMG.FD" => "amg/",
+		},
+	},
 );
 
 # get the testing tree location
@@ -299,8 +304,8 @@ sub rsync_to_cbenchtest
 	my $src = shift;
 	my $dest = shift;
 
-	# check for existence of source 
-	if ( ! -d "$src") {
+	# check for existence of source, could be a directory or file
+	if ( ! -d "$src" and ! -f "$src" ) {
 		warning_print("rsync_to_cbenchtest() rsync source \'$src\', does not exist.");
 		return;
 	}

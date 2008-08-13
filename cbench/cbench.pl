@@ -42,7 +42,7 @@ $TASKSET = "/usr/bin/taskset";
 #
 # this is a list of all the supported Cbench testsets that will
 # be installed in the absence of the user picking specific ones
-$core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown hpccg trilinos lammps";
+$core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown hpccg trilinos lammps amg";
 
 
 # An array of run sizes (number of processes) that can be used in
@@ -2649,7 +2649,10 @@ sub three_int_factors {
 	my $num = shift;
 
 	my %fact = (
+		2 => '2,1,1',
+		4 => '2,2,1',
 		8 => '2,2,2',
+		16 => '4,2,2',
 		32 => '4,4,2',
 		64 => '4,4,4',
 		128 => '8,4,4',
