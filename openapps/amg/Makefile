@@ -1,7 +1,5 @@
 include $(CBENCHOME)/make.def
 
-export CFLAGS
-
 SRC=AMG2006
 TAR=AMG2006_v1.0.tar.gz
 URL=https://asc.llnl.gov/sequoia/benchmarks/$(TAR)
@@ -15,7 +13,7 @@ all: $(SRC)
 	make CC=$(CC) -C $(SRC) veryclean
 	$(MAKE) CC=$(CC) -C $(SRC)
 
-$(SRC): $(TAR)
+$(SRC) src: $(TAR)
 	[ ! -d $(SRC) ] && tar zxf $(TAR)
 	ln -sf $(SRC) src
 	cd $(SRC); /bin/rm -f Makefile.include
