@@ -150,6 +150,9 @@ if (!defined $testdir) {
             'innerloop' => 'amg_gen_innerloop',
             'joblist' => 'amg_gen_joblist',
         },
+        'irs' => {
+            'runsizes' => 'irs_gen_runsizes',
+        },
 	},
 );
 
@@ -885,6 +888,24 @@ sub amg_gen_innerloop {
 	$$outbuf =~ s/PZ_HERE/$pz/gs;
 
 	return 0;
+}
+
+sub irs_gen_runsizes {
+	my $sizes = shift;
+
+	my @newsizes = ();
+
+	main::debug_print(3,"DEBUG: entering irs_gen_runsizes(@$sizes)\n");
+
+	foreach my $n (@{$sizes}) {
+		# if the number is a cube root, we can use it
+		if (main::int_cube_root($n) != 0) {
+			push @newsizes, $n;
+		}
+	}
+
+	main::debug_print(3,"DEBUG:irs_gen_runsizes() runsizes=".join(',',@newsizes));
+	return @newsizes;
 }
 
 

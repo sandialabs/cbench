@@ -121,6 +121,11 @@ eval "require 'install.pl'";
 				"openapps/amg/src/test/sstruct.in.AMG.FD" => "amg/",
 		},
 	},
+	'irs' => {
+		'rsync' => {
+				"openapps/irs/src/decks/" => "irs/decks/",
+		},
+	},
 );
 
 # get the testing tree location
