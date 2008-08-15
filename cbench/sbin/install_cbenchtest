@@ -316,7 +316,7 @@ sub rsync_to_cbenchtest
 	}
 
 	my $cmd = "rsync -a $src $dest";
-	(! -d "$dest") and
+	(! -d "$dest" and -d "$src" ) and
 		system("mkdir -p $dest");
 	debug_print(1,"DEBUG:rsync_to_cbenchtest() $cmd");
 	system($cmd);
