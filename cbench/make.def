@@ -251,7 +251,7 @@ ifeq ($(ARCH),x86_64)
   ifeq ($(COMPILER),gcc)
   COMMON_FLAGS = 
   FFLAGS += -fno-second-underscore
-  OPTFLAGS = -O3
+  OPTFLAGS = -O3 -mtune=amdfam10
   MPILIB =
   endif
 
@@ -390,6 +390,9 @@ define do-compiled-bin-installs-binident
 	echo "---------------------------------------------------------"; \
     echo "----- Installing $(BENCH_HOME)/bin --> $(DEST)"; \
     echo "---------------------------------------------------------"; \
+	if [ ! -d "$(DEST)" ]; then \
+	    mkdir -p $(DEST); \
+	fi; \
 	/bin/cp --backup=t -a $(BENCH_HOME)/bin/* $(DEST)/.;
 endef
 
