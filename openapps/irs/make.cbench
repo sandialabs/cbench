@@ -42,6 +42,7 @@ MPI_LIBPATH     =
 MPI_INCPATH     = 
 
 # JBO - Intel doesn't seem to like the -DOMP2COMPILER code...
+#       PGI doesn't either
 #OPENMP_DEFINE   = -DOPENMP -DOMP2COMPILER
 OPENMP_DEFINE   = -DOPENMP
 OPENMP_LIBS     = 

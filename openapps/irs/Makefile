@@ -9,10 +9,13 @@ EXECS = build.space/codes_opt/irs
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
+IRS := $(shell pwd)
+
 all: $(SRC)
-	export PATH=$(PWD)/src/scripts:$(PATH); \
+	pwd
+	export PATH=$(IRS)/src/scripts:$(PATH); \
 	  make CC=$(CC) CFLAGS="$(CFLAGS) $(OPENMP_ENABLE)" COMMON_FLAGS="$(COMMON_FLAGS) $(OPENMP_ENABLE)" -C build.space/build depend
-	export PATH=$(PWD)/src/scripts:$(PATH); \
+	export PATH=$(IRS)/src/scripts:$(PATH); \
 	  make CC=$(CC) CFLAGS="$(CFLAGS) $(OPENMP_ENABLE)" COMMON_FLAGS="$(COMMON_FLAGS) $(OPENMP_ENABLE)" -C build.space/build
 
 $(SRC) src: $(TAR)
@@ -30,7 +33,7 @@ $(TAR) download:
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
-	export PATH=$(PWD)/src/scripts:$(PATH); \
+	export PATH=$(IRS)/src/scripts:$(PATH); \
 	  make CC=$(CC) CFLAGS="$(CFLAGS) $(OPENMP_ENABLE)" COMMON_FLAGS="$(COMMON_FLAGS) $(OPENMP_ENABLE)" -C build.space/build clean
 
 distclean:
