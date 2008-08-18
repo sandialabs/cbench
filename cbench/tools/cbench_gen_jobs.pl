@@ -887,6 +887,9 @@ sub amg_gen_innerloop {
 	$$outbuf =~ s/PY_HERE/$py/gs;
 	$$outbuf =~ s/PZ_HERE/$pz/gs;
 
+	# symlink the input deck
+	system("/bin/ln -sf $testset_path/sstruct.in.AMG.FD $testset_path\/$ident\/$jobname\/.");
+
 	return 0;
 }
 
