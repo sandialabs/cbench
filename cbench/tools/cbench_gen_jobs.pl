@@ -74,6 +74,8 @@ GetOptions(
 	'gazebo' => \$gazebo,
 	'gazebohome|gazhome=s' => \$gazebo_home,
 	'gazeboconfig|gazconfig=s' => \$gazebo_config, 
+	'walltimemethod|walltime_method=i' => \$walltime_method,
+	'defaultwalltime|defwalltime=s' => \$default_walltime,
 );
 
 if (defined $help) {
@@ -235,6 +237,27 @@ custom_gen_init($testset);
 # runsizes here
 @run_sizes = custom_gen_runsizes(\@run_sizes);
 
+# for every mpi process count, runsize, we want to determine the walltime
+# that will be associated with that job. the simple way to do this is
+# to assign every job the same $default_walltime from cluster.def. A
+# downside of this approach is that schedulers have a harder time making
+# scheduling decisions when there is no walltime delta between a bunch
+# of jobs.
+my %walltimes = ();
+(!defined $walltime_method) and $walltime_method = 0;
+my $temptime = walltime_to_seconds("$default_walltime");
+foreach $numprocs (sort {$a <=> $b} @run_sizes) {
+	if ($walltime_method == 0) {
+		$walltimes{$numprocs} = $default_walltime;
+	}
+	elsif ($walltime_method == 1) {
+		$walltimes{$numprocs} = seconds_to_walltime($temptime);
+		$temptime += $walltime_steptime * 60;
+	}
+	print "np $numprocs  $temptime  $walltimes{$numprocs}\n";
+}
+
+
 # outer loop iterates over the various ppn cases as defined in
 # the max_ppn_procs hash in cluster.def
 foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
@@ -305,7 +328,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				# gazebo name for the cbench job
 				my $gazname =  uc($testset)."-$job";
 				# add a line to the Gazebo submit config file
-				$submitconfig .= "$gazname $numprocs 50 - $default_walltime *\n";
+				$submitconfig .= "$gazname $numprocs 50 - $walltimes{$numprocs} *\n";
 
 				# build up the test_exec directory for the job
 				(! -d "$gazebo_home\/test_exec\/$gazname") and mkdir "$gazebo_home\/test_exec\/$gazname",0750;
@@ -321,7 +344,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 \$test_config{'MPILIB'} = \"\";
 \$test_config{'JOBSIZE'} = \"\";
 \$test_config{'NPES'} = \"2\";
-\$test_config{'TIMELIMIT'} = \"$default_walltime\";
+\$test_config{'TIMELIMIT'} = \"$walltimes{$numprocs}\";
 \$test_config{'TARGET_WD'} = \"\";
 \$test_config{'TEST_PARAMS'} = \"\";
 \$test_config{'CMD'} = \"run\";
@@ -358,7 +381,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 
 				# here we do all the standard substitutions
 				$outbuf = std_substitute($outbuf,$numprocs,$ppn,$numnodes,
-							$runtype,$default_walltime,$testset,$jobname,$ident,$job);
+							$runtype,$walltimes{$numprocs},$testset,$jobname,$ident,$job);
 
 				# other substitutions
 				$outbuf =~ s/TESTDIR_HERE/$testdir/gs;
@@ -369,7 +392,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				# run any custom generation inner loop work, passing a reference to $outbuf so custom
 				# innerloops can modify it
 				my $ret = custom_gen_innerloop(\$outbuf,$numprocs,$ppn,$numnodes,
-							$runtype,$default_walltime,$testset,$jobname,$ident,$job);
+							$runtype,$walltimes{$numprocs},$testset,$jobname,$ident,$job);
 				if ($ret) {
 					# custom_gen_innerloop returned some sort of error
 					# skip the remainder of this loop
@@ -405,6 +428,22 @@ if (defined $gazebo) {
 }
 
 
+######################################################################
+######################################################################
+# The following subroutines implement the "dynamic" subroutine call,
+# structure that is loosely termed "custom gen" or custom generation.
+# The dynamic calls allow for testsets and/or specific benchmarks to
+# customize the job generation process, directed by the %custom_gen_hash
+# data structure, by calling their own custom subroutines at certain
+# defined points in the generation process.  Currently there are 
+# four defined points of customization:
+#   * building the array of runsizes (i.e. list of number of mpi
+#     processes to build jobs for, e.g. 2,4,16...)
+#   * building the array of "jobs" to generate job files for where
+#     a job is the unique combination of a testname-ppncountstring-numberofprocs
+#   * initialization outside of the actual job file generation loop
+#   * inside the innermost loop of job generation
+#
 
 sub custom_gen_runsizes {
 	my $sizes = shift;
@@ -499,6 +538,13 @@ sub custom_gen_innerloop {
 			$runtype,$walltime,$testset,$jobname,$ident,$job);
 	}
 }
+
+
+######################################################################
+######################################################################
+# The following subroutines implement the actualy testset and benchmark
+# specific customizations as directed by the %custom_gen_hash
+#
 
 sub npb_gen_init {
 	my $testset = shift;
@@ -912,6 +958,37 @@ sub irs_gen_runsizes {
 }
 
 
+
+######################################################################
+######################################################################
+# The following are utility subroutines for cbench_gen_jobs
+
+sub seconds_to_walltime {
+	my $secs = shift;
+
+	my $hour = int ($secs / 3600);
+	$secs -= $hour * 3600;
+	my $min = int ($secs / 60);
+	$secs -= $min * 60;
+
+	return sprintf("%02d:%02d:%02d",$hour,$min,$sec);
+}
+
+sub walltime_to_seconds {
+	my $str = shift;
+	if ($str =~ /(\d+):(\d+):(\d+)/ ) {
+		my ($hour, $min, $sec) = ($1,$2,$3);
+		$sec += $min * 60;
+		$sec += $hour * 3600;
+
+		return $sec;
+	}
+	else {
+		warning_print("default_walltime is in an unknown format, using 24:00:00");
+		return (3600 * 24);
+	}
+}
+
 sub usage {
     print "USAGE: $0 \n";
     print "Cbench script to generate jobs in the $testset test set\n".
@@ -956,6 +1033,20 @@ sub usage {
 		  "   --threads <num>  Tell Cbench to use the specified number of threads per\n".
 		  "                    process where applicable. This is usually equivalent to\n".
 		  "                    setting OMP_NUM_THREADS environment variable\n".
+		  "   --defaultwalltime <time> String of the form HH:MM:SS specificying the default\n".
+		  "                            walltime used for generating jobs. This overrides\n".
+		  "                            the cluster.def \$default_walltime option.\n".
+		  "   --walltimemethod <0|1>   Choose the algorithm used to generate walltimes for jobs.\n".
+		  "                            This overrides the cluster.def \$walltime_method option.\n".
+          "                            Method 0 is simply a constant value equal to \n".
+		  "                            \$default_walltime.\n".
+          "                            Method 1 is an algorithm that discretely steps up the\n".
+		  "                            walltime for each job of increasing runsize by the constant\n".
+          "                            time in minutes controlled by the \$walltime_steptime \n".
+		  "                            cluster.def option. In this method, the \$default_walltime\n".
+		  "                            option is used as the minimum starting walltime from which\n".
+		  "                            all others are increased.  The stepped walltimes help \n".
+		  "                            schedulers backfill better in general.\n".
 		  "   --gazebo               Gazebo mode of operation\n".
 		  "   --gazebohome <path>    Where the Gazebo tree is located\n".
 		  "   --gazeboconfig <name>  Name of the Gazebo submit_config that will be APPENDED to\n".

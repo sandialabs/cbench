@@ -30,7 +30,7 @@ $cluster_name = $ENV{CBENCHCLUSTER} ? $ENV{CBENCHCLUSTER} : "test";
 $max_nodes = 1;
 
 # Number of processors in a node
-$procs_per_node = 4;
+$procs_per_node = 8;
 
 # Total number of processors in the cluster to build/run benchmarks on
 # (assuming a homogeneous cluster, which is more often the case)
@@ -43,11 +43,10 @@ $max_procs = $max_nodes * $procs_per_node;
 	'1' => (1 * $max_nodes),
 	'2' => (2 * $max_nodes),
 	'4' => (4 * $max_nodes),
+	'8' => (8 * $max_nodes),
 );
 
-# The raw (i.e. how much do the DIMMs add up to) amount of RAM available
-# PER PROCESSOR. For example, a dual processor node with 2GB of RAM has
-# 1GB of RAM per processor.
+# The raw (i.e. how much do the DIMMs add up to) amount of RAM available.
 #
 # This is specified in MBytes.  So 1GB is specified as 1024 for example.
 $memory_per_node = 2048;
@@ -58,6 +57,22 @@ $memory_per_processor = $memory_per_node / $procs_per_node;
 # batch jobs. The parameter can be overidden on the *_start_jobs.pl 
 # command line with the --batchargs parameter.
 $default_walltime = "04:00:00";
+
+# These parameters control how walltimes are generated for batch jobs.
+#
+# $walltime_method tells cbench_gen_jobs which algorithm to use in
+# calculating the walltime for a job:
+#    0 - Method 0 is simply a constant value equal to $default_walltime.
+#        This has always been the Cbench default behavior.
+#    1 - Method 1 is an algorithm that discretely steps up the walltime for
+#        each job of increasing runsize (number of processes) by the constant
+#        time in minutes controlled by the $walltime_steptime option. In
+#        this method, the $default_walltime option is used as the minimum
+#        starting walltime from which all others are increased.  The
+#        stepped walltimes help schedulers backfill better in general.
+$walltime_method = 0;
+# The amount of time in minutes to step increase walltimes in method 1
+$walltime_steptime = 10;
 
 # This parameter controls the number of extra nodes added to Cbench jobs.
 # For example, a 256 proc 1ppn job would normally allocate 128 nodes, but
