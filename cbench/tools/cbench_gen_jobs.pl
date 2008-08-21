@@ -190,9 +190,12 @@ build_job_templates($testset,\%templates);
 # it in this context
 delete $templates{combobatch};
 
-# we need to make sure that any job templates we are going to try
-# to generate don't requite a gen_jobs module we don't have
+# this hash will hold any job template specific walltime requirements
+my %specialwalltimes = ();
+
+# process any Cbench directives inside the job templates
 foreach my $k (keys %templates) {
+	# job templates that require a certain gen_jobs module 
 	if ($templates{$k}{batch} =~ /#\s+Cbench_require: (\S+)::(\S+)/) {
 		debug_print(2,"DEBUG: job template $k requires $1::$2");
 		if (! exists $genjobs_modules{$2}) {
@@ -200,8 +203,15 @@ foreach my $k (keys %templates) {
 			delete $templates{$k};
 		}
 	}
+
+	# job templates that have special walltime requirements
+	if ($templates{$k}{batch} =~ /#\s+Cbench_walltime:\s+(\S+)/) {
+		debug_print(2,"DEBUG: job template $k requires walltime $1");
+		$specialwalltimes{$k} = $1;
+	}
 }
 #print Dumper (%templates);
+#print Dumper (%specialwalltimes);
 
 # by default the list of jobs is the list of templates found
 our @job_list = keys %templates;
@@ -257,6 +267,9 @@ foreach $numprocs (sort {$a <=> $b} @run_sizes) {
 	#print "np $numprocs  $temptime  $walltimes{$numprocs}\n";
 }
 
+#
+# HERE BEGINS the main job generation loop
+#
 
 # outer loop iterates over the various ppn cases as defined in
 # the max_ppn_procs hash in cluster.def
@@ -298,6 +311,13 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 			# procs and ppn
 			$numnodes = calc_num_nodes($numprocs,$ppn);
 
+			# determine the walltime to be used for this specific job
+			my $thiswalltime = $walltimes{$numprocs};
+			if (exists $specialwalltimes{$job}) {
+				$thiswalltime = $specialwalltimes{$job};
+				debug_print(3,"DEBUG: Found job specific walltime $specialwalltimes{$job} for $job");
+			}
+
 			# this check should be superflous but do it anyway
 			($numnodes > $max_nodes) and next;
 
@@ -328,7 +348,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				# gazebo name for the cbench job
 				my $gazname =  uc($testset)."-$job";
 				# add a line to the Gazebo submit config file
-				$submitconfig .= "$gazname $numprocs 50 - $walltimes{$numprocs} *\n";
+				$submitconfig .= "$gazname $numprocs 50 - $thiswalltime *\n";
 
 				# build up the test_exec directory for the job
 				(! -d "$gazebo_home\/test_exec\/$gazname") and mkdir "$gazebo_home\/test_exec\/$gazname",0750;
@@ -344,7 +364,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 \$test_config{'MPILIB'} = \"\";
 \$test_config{'JOBSIZE'} = \"\";
 \$test_config{'NPES'} = \"2\";
-\$test_config{'TIMELIMIT'} = \"$walltimes{$numprocs}\";
+\$test_config{'TIMELIMIT'} = \"$thiswalltime\";
 \$test_config{'TARGET_WD'} = \"\";
 \$test_config{'TEST_PARAMS'} = \"\";
 \$test_config{'CMD'} = \"run\";
@@ -381,7 +401,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 
 				# here we do all the standard substitutions
 				$outbuf = std_substitute($outbuf,$numprocs,$ppn,$numnodes,
-							$runtype,$walltimes{$numprocs},$testset,$jobname,$ident,$job);
+							$runtype,$thiswalltime,$testset,$jobname,$ident,$job);
 
 				# other substitutions
 				$outbuf =~ s/TESTDIR_HERE/$testdir/gs;
@@ -392,7 +412,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				# run any custom generation inner loop work, passing a reference to $outbuf so custom
 				# innerloops can modify it
 				my $ret = custom_gen_innerloop(\$outbuf,$numprocs,$ppn,$numnodes,
-							$runtype,$walltimes{$numprocs},$testset,$jobname,$ident,$job);
+							$runtype,$thiswalltime,$testset,$jobname,$ident,$job);
 				if ($ret) {
 					# custom_gen_innerloop returned some sort of error
 					# skip the remainder of this loop
