@@ -254,7 +254,7 @@ foreach $numprocs (sort {$a <=> $b} @run_sizes) {
 		$walltimes{$numprocs} = seconds_to_walltime($temptime);
 		$temptime += $walltime_steptime * 60;
 	}
-	print "np $numprocs  $temptime  $walltimes{$numprocs}\n";
+	#print "np $numprocs  $temptime  $walltimes{$numprocs}\n";
 }
 
 
