@@ -434,16 +434,7 @@ sub pbspro_batchsubmit_cmdbuild {
 sub pbspro_nodespec_build {
 	# a reference to an array of nodes
 	my $nodearray = shift;
-
-	my $list;
-
-	foreach my $n (@$nodearray) {
-		$list .= "$n\:ppn=$procs_per_node+";
-	}
-	# remove trailing '+'
-	$list =~ s/\+$//;
-
-	return $list;
+	return torque_nodespec_build($nodearray);
 }
 
 sub pbspro_query {
@@ -545,6 +536,38 @@ sub slurm_query {
 
 sub slurm_batch_extension {
 	return "slurm";
+}
+
+###########################################################
+# Support for the "moab/msub" batch system
+#
+sub moab_batchsubmit_cmdbuild {
+	my $cmd;
+	if (length $batch_cmd > 1) {
+		$cmd = $batch_cmd;
+	}
+	else {
+		$cmd = "msub";
+	}
+	
+	(length $batch_extraargs > 1) and $cmd .= " $batch_extraargs";
+	
+	return "$cmd ";
+}
+
+sub moab_nodespec_build {
+	# a reference to an array of nodes
+	my $nodearray = shift;
+	return torque_nodespec_build($nodearray);
+}
+
+sub moab_query {
+	my $regex = shift;
+	die "Error: UNIMPLEMENTED moab_query() ...";
+}
+
+sub moab_batch_extension {
+	return "moab";
 }
 
 ###########################################################
