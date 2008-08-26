@@ -78,6 +78,10 @@ A __brief__ summary of changes in each release of Cbench.
 	  source trees into the makefile and scripting system (CBENCHADDON environement
 	  variable turns on integration with a tree)
 	* add the --showpassed cbench_output_parse.pl option
+	* Added the $walltime_method setting in cluster.def and a new way to deal with
+	  the walltimes associated with batch jobs. Walltimes can now be generated in a
+	  stepped fashion.
+    * Support for Msub batch submissions
 	* ticket #7  HPCC source code tweaks
 	* ticket #9  remove script duplication in the cbench testing tree
 	* ticket #34  installing from source tree to test tree w/ bin identifiers
