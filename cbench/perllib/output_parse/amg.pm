@@ -119,7 +119,7 @@ sub file_list {
 sub alias_spec {
     my $self = shift;
 
-    return '';
+    return undef;
 }
 
 sub metric_units {
