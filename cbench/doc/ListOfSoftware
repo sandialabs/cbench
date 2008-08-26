@@ -1,6 +1,11 @@
+= Software in Cbench =
+[[TOC(CbenchDocumentation)]]
+
 This is a list of the opensource tools we use in Cbench and locations where you can get source code.
 
-= Core Cbench Opensource Software =
+== Core Cbench Opensource Software ==
+
+
 
  * Intel MPI Benchmarks (IMB) - http://www.intel.com/software/products/cluster/mpi/mpi_benchmarks_lic.htm, http://www3.intel.com/cd/software/products/asmo-na/eng/219848.htm
  * IOR - ftp://ftp.llnl.gov/pub/siop/ior/
@@ -35,11 +40,11 @@ This is a list of the opensource tools we use in Cbench and locations where you 
    * mpi_overhead - simple MPI memory overhead measurer
    * mpi_slowcpu
 
-= Cbench Opensource Software in the '''openapps''' tree =
+== Cbench Opensource Software in the '''openapps''' tree ==
 
  * LAMMPS - http://lammps.sandia.gov
  * HPCCG - http://www.sandia.gov/benchmarks/
  * Trilinos Epetratest - http://www.sandia.gov/benchmarks/
  * MPQC - http://www.mpqc.org
  * AMG - https://asc.llnl.gov/sequoia/benchmarks/#amg ([https://asc.llnl.gov/sequoia/benchmarks/AMG_summary_v1.0.pdf summary])
-
+ * IRS - https://asc.llnl.gov/sequoia/benchmarks/#irs 

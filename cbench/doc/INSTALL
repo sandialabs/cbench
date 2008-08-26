@@ -5,6 +5,7 @@
 Cbench requires the following environment variables be set:
 
  * CBENCHOME  - Location of the Cbench distribution tree
+   * Cbench always looks for ''cluster.def'' and all loadable modules relative to CBENCHOME
  * CBENCHTEST - Location of the Cbench testing tree
  * MPIHOME    - Location of the MPI tree where we look to find MPI compile scripts (i.e. mpicc, mpif77) and MPI includes
  * COMPILERCOLLECTION - Pick the compiler collection/chain you want to compile with. Examples include: intel, gcc, pgi.
@@ -60,7 +61,7 @@ OR to limit the size of the build even further than what is in cluster.def (i.e.
  * make MAXPROCS=512 -C opensource/NPB
 
 To make sure your NPB binaries get updated in the CBENCHTEST tree, from the top-level of the Cbench tree run :
- * sbin/install_npb
+ * sbin/install_cbenchtest --testset npb
 
 === Building the self-contained MPICH for Cbench ===
  * make -C opensource/mpich

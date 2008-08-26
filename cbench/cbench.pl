@@ -33,7 +33,7 @@ $Term::ANSIColor::AUTORESET = 1;
 # Cbench code because it could be a Subversion checkout, but this is the
 # closest release in the lineage. This better match what is in the VERSION
 # file or someone borked the release. 
-$cbench_version = "1.2.0-rc1";
+$cbench_version = "1.2.0rc2";
 
 # where to find schedutils' taskset
 $TASKSET = "/usr/bin/taskset";

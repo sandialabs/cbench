@@ -1,11 +1,13 @@
 = List of Batch Systems, Job Launchers, and Remote Execution Methods Cbench Currently Supports =
+[[TOC(CbenchDocumentation)]]
 
 == Batch Systems ==
  * Torque (OpenPBS successor) - http://www.clusterresources.com/pages/products/torque-resource-manager.php
    * supports --throttledbatch mode of starting jobs
  * PBS Pro
    * supports --throttledbatch mode of starting jobs
- * Slurm (only in the head of the SVN repository, i.e. the pre version 1.2 code)
+ * Slurm (only in the head of the SVN repository, i.e. the version 1.2.X code)
+ * Moab Msub (only in the head of the SVN repository, i.e. the version 1.2.X code)
 
 == Job Launchers ==
  * mpiexec - http://www.osc.edu/~pw/mpiexec/index.php
