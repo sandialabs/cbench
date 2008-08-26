@@ -23,19 +23,19 @@
 
 include make.def
 
-HWTEST_SUBDIRS = opensource/fpck opensource/ctcs opensource/memtester \
-                 opensource/streams opensource/nodeperf opensource/llcbench \
-				 opensource/stress
+HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress
 
-OPEN_SUBDIRS = opensource/b_eff opensource/mpi_latency \
-               opensource/mpi_hello opensource/mpi_hello_ordered opensource/mpi_overhead \
-               opensource/mpi_routecheck opensource/presta1.2 \
-               opensource/ior_bench opensource/iozone opensource/rotate \
-               opensource/HPLlinpack opensource/IMB opensource/osutests \
-               opensource/lanl  opensource/stab \
-               opensource/perftest opensource/mpi_examples opensource/mpi_slowcpu opensource/mpi_malloc \
+OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
+             mpi_routecheck presta1.2 ior_bench iozone rotate HPLlinpack \
+             IMB osutests lanl stab perftest mpi_examples mpi_slowcpu \
+             mpi_malloc
 
-OPENEXTRAS_SUBDIRS = opensource/NPB opensource/hpcc
+OPENEXTRAS_TESTS = NPB hpcc
+
+# all of these live in the opensource/ area
+HWTEST_SUBDIRS     = $(addprefix opensource/, $(HW_TESTS))
+OPEN_SUBDIRS       = $(addprefix opensource/, $(OPEN_TESTS))
+OPENEXTRAS_SUBDIRS = $(addprefix opensource/, $(OPENEXTRAS_TESTS))
 
 SUBDIRS = $(OPEN_SUBDIRS) $(HWTEST_SUBDIRS)
 
