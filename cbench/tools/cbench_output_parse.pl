@@ -266,18 +266,24 @@ if (defined $DEBUG and $DEBUG > 2) {
 # benchmark names, i.e. spA, spB, cgC, etc. The %bench_aliases hash
 # stores any alias specs found in any output parsing modules
 my %bench_aliases;
+my $spec = undef;
 foreach $k (keys %parse_modules) {
 	eval {
 		$parse_modules{$k}->alias_spec();
 	};
 	if ($@ =~ /Can't locate object method/) {
-		(defined $DEBUG and $DEBUG > 1) and print "DEBUG: ".
-			"No alias_spec method in $k module\n";
+		debug_print(2,"DEBUG: No alias_spec method in $k module\n");
+		next;
+	}
+	
+	(defined $spec) and $spec = undef;
+	$spec = $parse_modules{$k}->alias_spec();
+	if (defined $spec) {
+		debug_print(2,"DEBUG: Found alias_spec method in $k module\n");
+		$bench_aliases{$k} = $spec;
 	}
 	else {
-		(defined $DEBUG and $DEBUG > 1) and print "DEBUG: ".
-			"Found alias_spec method in $k module\n";
-		$bench_aliases{$k} = $parse_modules{$k}->alias_spec();
+		debug_print(2,"DEBUG: alias_spec method in $k module was UNDEF\n");
 	}
 }
 
@@ -933,8 +939,7 @@ sub parse_output_file {
             	"(np=$np ppn=$ppn benchmark=$bench)\n";
 		}
 
-		(defined $DEBUG and $DEBUG > 2) and print
-			"DEBUG:parse_output_file() Starting core buffer parsing...\n";
+		debug_print(3,"DEBUG:parse_output_file() Starting core buffer parsing with $parsemod module for benchmark $bench\n");
 
 		# we have all the buffers we need, so call the parse() method of the appropriate
 		# parse module and pass the array of output buffer references
