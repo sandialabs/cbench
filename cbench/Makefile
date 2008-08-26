@@ -23,7 +23,7 @@
 
 include make.def
 
-HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress
+HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride
 
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck presta1.2 ior_bench iozone rotate HPLlinpack \
@@ -110,9 +110,9 @@ installcbenchbins: install
 	@sbin/install_cbenchtest --testtop
 	$(do-compiled-bin-installs-binident)
 
-# just update the Cbench testing tree scripts
-updatecbench: 
-	@sbin/install_cbenchtest --testtop --allsets
+# update the core parts of the Cbench testing tree
+update: 
+	@sbin/install_cbenchtest --testtop
 
 # compile and install LAMMPS
 lammps: install 
