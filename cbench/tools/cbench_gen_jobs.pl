@@ -195,6 +195,12 @@ my %specialwalltimes = ();
 
 # process any Cbench directives inside the job templates
 foreach my $k (keys %templates) {
+	# job templates that have special walltime requirements
+	if ($templates{$k}{batch} =~ /#\s+Cbench_walltime:\s+(\S+)/) {
+		debug_print(2,"DEBUG: job template $k requires walltime $1");
+		$specialwalltimes{$k} = $1;
+	}
+
 	# job templates that require a certain gen_jobs module 
 	if ($templates{$k}{batch} =~ /#\s+Cbench_require: (\S+)::(\S+)/) {
 		debug_print(2,"DEBUG: job template $k requires $1::$2");
@@ -202,12 +208,6 @@ foreach my $k (keys %templates) {
 			warning_print("Will not generate for job template \'$k\': required module $1::$2 not found\n");
 			delete $templates{$k};
 		}
-	}
-
-	# job templates that have special walltime requirements
-	if ($templates{$k}{batch} =~ /#\s+Cbench_walltime:\s+(\S+)/) {
-		debug_print(2,"DEBUG: job template $k requires walltime $1");
-		$specialwalltimes{$k} = $1;
 	}
 }
 #print Dumper (%templates);
