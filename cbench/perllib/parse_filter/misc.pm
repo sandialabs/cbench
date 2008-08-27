@@ -54,20 +54,21 @@ our %parse_filters = (
 	'\>\>\> Illegal input in file HPL.dat' =>
 		'Illegal input in file HPL.dat',
 
-	'prun: Error: .*: hostname (\S+) not in partition' =>
-		'PRUN says $1 not in partition',
-
 	#Memory allocation failed. code position: set_buf 1. tried to alloc. 805306368 bytes
 	'Memory allocation failed\..*tried to alloc.\s+(\d+)\s+bytes' =>
 		'Memory allocation failed, tried to alloc $1 bytes',
 
-	#prun: /usr/lib/rms/bin/pfloader (host n5 process 5 pid 1648) killed by signal 11 (SEGV)
-	'prun:.*\(host\s+(\S+)\s+process\s+\d+\s+pid\s+\S+\) killed by signal\s+(\d+)\s+\((\w+)\)' =>
-		'PRUN killed process on host $1 by signal $3',
-
-	#prun: Error: request 40522 has been deallocate
-	'prun: Error: request\s+(\d+)\s+has been deallocated' =>
-		'PRUN says the job was deallocated by RMS (request $1)',
+# old quadrics RMS stuff
+#	'prun: Error: .*: hostname (\S+) not in partition' =>
+#		'PRUN says $1 not in partition',
+#
+#	prun: /usr/lib/rms/bin/pfloader (host n5 process 5 pid 1648) killed by signal 11 (SEGV)
+#	'prun:.*\(host\s+(\S+)\s+process\s+\d+\s+pid\s+\S+\) killed by signal\s+(\d+)\s+\((\w+)\)' =>
+#		'PRUN killed process on host $1 by signal $3',
+#
+#	prun: Error: request 40522 has been deallocate
+#	'prun: Error: request\s+(\d+)\s+has been deallocated' =>
+#		'PRUN says the job was deallocated by RMS (request $1)',
 
     # forrtl: error (78): process killed (SIGTERM)
 	'forrtl\:\s+error\s+\((\S+)\)\:\s+process\s+killed\s+\((\S+)\)' =>
