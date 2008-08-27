@@ -1112,7 +1112,7 @@ sub parse_output_file {
 
 		# if the custom parse filters are enabled, then we need to look at both
 		# the STDOUT, and STDERR files for matches to the custom parse filters
-		if (defined $customparse) {
+		if (defined $customparse and !$jobpassed) {
         	(defined $DEBUG and $DEBUG > 2) and print
             	"DEBUG:parse_output_file() Starting customparse work...\n";
 
