@@ -82,6 +82,8 @@ A __brief__ summary of changes in each release of Cbench.
 	  the walltimes associated with batch jobs. Walltimes can now be generated in a
 	  stepped fashion.
     * Support for Msub batch submissions
+	* Significant performance improvements in the cbench_output_parse.pl
+	  --customparse option courtesy of mr_ep
 	* ticket #7  HPCC source code tweaks
 	* ticket #9  remove script duplication in the cbench testing tree
 	* ticket #34  installing from source tree to test tree w/ bin identifiers
