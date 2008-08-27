@@ -1180,7 +1180,7 @@ sub parse_output_file {
 					# useless output
 					($l =~ /\.\.\.\.\.\.\.\.\+$/) and next;
 					foreach my $filter (keys %parse_filters) {
-						if ((@capture) = $l =~ /$filter/o) {
+						if ((@capture) = $l =~ /$filter/) {
 							# currently, we only print out any information
 							# about a custom parse filter hit on the 
 							# first hit
