@@ -170,7 +170,7 @@ if (defined $testtop) {
 	if (! -f "$bench_test/cluster.def") {
 		push (@files, "cluster.def");
 	} else {
-		system ("diff -aurN $CBENCHHOME/cluster.def $bench_test/cluster.def > $bench_test/cluster.def.patch");
+		system ("diff -aurN $CBENCHOME/cluster.def $bench_test/cluster.def > $bench_test/cluster.def.patch");
 		print "  The diff of cluster.def is in $bench_test/cluster.def.patch\n";
 		sleep 2;
 	}
