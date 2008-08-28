@@ -66,7 +66,7 @@ sub run {
 	my $path = "$main::bench_test/$main::TESTBINPATH/hwtests";
 		
 	my @buf = ();
-	my @binlist = `cd $path;ls stream2-*`;
+	my @binlist = `cd $path;ls stream2-* | grep -v \\~`;
 
 	if (defined $main::SMALL) {
 		(defined $main::DEBUG) and print

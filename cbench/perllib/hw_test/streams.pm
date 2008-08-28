@@ -118,12 +118,12 @@ sub run {
 	my $path = "$main::bench_test/$main::TESTBINPATH/hwtests";
 		
 	my @buf = ();
-	my @binlist = `cd $path;ls stream-*`;
+	my @binlist = `cd $path;ls stream-* | grep -v \\~`;
 
 	if (defined $main::SMALL) {
 		(defined $main::DEBUG) and print
 				"DEBUG:$shortpackage\.run() doing SMALL mode runs\n";			
-		@binlist = `cd $path;ls stream-big-*`;
+		@binlist = `cd $path;ls stream-big-* | grep -v \\~`;
 	}
 
 	# since streams can be compiled with OpenMP support we want to
