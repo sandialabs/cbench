@@ -576,20 +576,23 @@ sub parse_output_file {
 				($tmod) = $txtbuf[$i] =~
 					/$cbench_mark_prefix\s+MODULE\s+(\S+)/;	
 			}
-			#elsif ($txtbuf[$i] =~ /$cbench_mark_prefix\s+TIMESTAMP elapsed=(\d+\.\d+)\s+min,/ and $lastmod ne '') {
 			elsif ($txtbuf[$i] =~ /$cbench_mark_prefix\s+TIMESTAMP elapsed=(\d+\.\d+)\s+min,/) {
 				$elapsed2 = $1;
 				my $delta = $elapsed2 - $elapsed1;
 				$elapsed1 = $elapsed2;
 				$timestamp++;
-				debug_print(2,"DEBUG: parse_output_file() elapsed=$elapsed1 delta=$delta tmod=$tmod lastmod=$lastmod timestamp=$timestamp\n");
-				
+
 				# ignore the first timestamp in the file
-				($timestamp < 2) and ($i++ and next);
+				if ($timestamp == 1) {
+					debug_print(2,"DEBUG: parse_output_file() first timestamp elapsed=$elapsed1 delta=$delta tmod=$tmod lastmod=$lastmod timestamp=$timestamp\n");
+					$i++;
+					next;
+				}
+
+				debug_print(2,"DEBUG: parse_output_file() elapsed=$elapsed1 delta=$delta tmod=$tmod lastmod=$lastmod timestamp=$timestamp\n");
 
 				# record elapsed time data for this module
 				my $k = "$lastmod"."_elapsed";
-				($timestamp == 2) and $k = "$tmod"."_elapsed";
 				debug_print(3,"DEBUG: parse_output_file() $k => $delta\n");
 				if (! exists $nodehashref->{$node}->{$k}) {
 					my @newarray = ();
