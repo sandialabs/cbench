@@ -45,6 +45,9 @@ my ($shortpackage) = $package =~ /parse_filter::(\S+)/;
 #
 # These parse filters are for miscellaneous things
 our %parse_filters = (
+	'CBENCH WARNING:\s+(.*)$' =>
+		'CBENCH WARNING: $1',
+
 	'HPL ERROR from process #\s*(\d+), on line' =>
 		'HPL ERROR from process #$1',
 
