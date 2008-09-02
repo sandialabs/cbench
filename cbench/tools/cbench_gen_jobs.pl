@@ -831,6 +831,8 @@ sub lammps_gen_joblist {
     my $ppn = shift;
     my $numprocs = shift;
 
+	# scaled in the lammps testset means weakly scaled, otherwise jobs are
+	# strongly scaled
     my @scaled_joblist = qw(rhodo.scaled chain.scaled lj.scaled eam.scaled);
     my @normal_joblist = qw(rhodo chain lj eam rhodo.scaled chain.scaled lj.scaled eam.scaled); #this is only a temporary list; LAMMPS has many more codes use 
     debug_print(3, "DEBUG: entering lammps_gen_joblist($ppn,$numprocs)\n");
@@ -839,19 +841,19 @@ sub lammps_gen_joblist {
 
     # generate normal jobs
     if (not defined $scaled_only) {
-        debug_print(3, "DEBUG: generating only lammps normal jobs");
+        debug_print(3, "DEBUG: generating only lammps normal jobs (strongly scaled)");
         push(@tmplist, @normal_joblist);
     }
 
     # create only scaled jobs when --scaled-only parameter is set
     else {
-        debug_print(3, "DEBUG: generating lammps scaled jobs");
+        debug_print(3, "DEBUG: generating lammps scaled jobs (weakly scaled)");
         #add scaled jobs 
             push(@tmplist, @scaled_joblist);
 
         if ( not defined $scaled_only ) {
             #also generate normal jobs for --scaled parameter
-            debug_print(3, "DEBUG: generating lammps normal jobs");
+            debug_print(3, "DEBUG: generating lammps normal jobs (strongly scaled)");
             push(@tmplist, @normal_joblist );
         }
     }
@@ -1077,7 +1079,7 @@ sub usage {
           "   --debug <level>  Turn on debugging at the specified level\n";
     # only print the LAMMPS options when it is a lammps testset
 	($0 =~ /lammps/) and print "   \nLAMMPS scaling options:\n".
-          "   --scaled_only             Generate scaled jobs only\n".
+          "   --scaled_only             Generate scaled jobs only (weakly scaled that is)\n".
           "   --scale_factor <factor>   The additional factor by which you would like to \n".
           "                             scale the x,y,z values in the scaling benchmarks\n".
 		  "                             For example:\n".
