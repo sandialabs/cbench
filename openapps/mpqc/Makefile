@@ -40,7 +40,7 @@ $(MPQC):
 download:
 
 install:
-	-make -C $(MPQC) install
+	#make -C $(MPQC) install
 
 clean:
 	rm -f .make-$(MPQC) .configure-$(MPQC)
