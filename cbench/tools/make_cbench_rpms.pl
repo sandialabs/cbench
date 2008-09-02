@@ -153,7 +153,7 @@ if (defined $testingtree) {
 	print OUT $cbench_test_spec;
 	close(OUT);
 
-	my $cmd = "rpmbuild --nodeps -D \'_topdir $tmpdir\' --buildroot=$tmpdir/BUILD -bb ";
+	my $cmd = "rpmbuild --nodeps --define=\'_topdir $tmpdir\' --buildroot=$tmpdir/BUILD -bb ";
 	(defined $DEBUG) and $cmd .= "-v ";
 	$cmd .= "$specfile";
 	(defined $DEBUG) and print "DEBUG: rpmbuild cmd= $cmd\n";
