@@ -831,8 +831,8 @@ sub lammps_gen_joblist {
     my $ppn = shift;
     my $numprocs = shift;
 
-    my @scaled_joblist = qw(rhodo.scaled chain.scaled lj.scaled);
-    my @normal_joblist = qw(rhodo chain lj rhodo.scaled chain.scaled lj.scaled); #this is only a temporary list; LAMMPS has many more codes use 
+    my @scaled_joblist = qw(rhodo.scaled chain.scaled lj.scaled eam.scaled);
+    my @normal_joblist = qw(rhodo chain lj eam rhodo.scaled chain.scaled lj.scaled eam.scaled); #this is only a temporary list; LAMMPS has many more codes use 
     debug_print(3, "DEBUG: entering lammps_gen_joblist($ppn,$numprocs)\n");
 
     my @tmplist =();
@@ -892,6 +892,10 @@ sub lammps_gen_innerloop {
 	if (-f "$testset_path\/bench\/data.$jobbase") { 
 		debug_print(2,"DEBUG:lammps_gen_innerloop() symlinking $testset_path\/bench\/data.$jobbase\n");
 		system("/bin/ln -sf $testset_path/bench/data.$jobbase $testset_path\/$ident\/$jobname\/data.$jobbase");
+	}
+	if ($jobname =~ /eam/ ) {
+		debug_print(2,"DEBUG:lammps_gen_innerloop() symlinking $testset_path\/bench\/Cu_u3.eam\n");
+		system("/bin/ln -sf $testset_path/bench/Cu_u3.eam $testset_path\/$ident\/$jobname\/Cu_u3.eam");
 	}
 
 	#set up the scaling parameters based on this jobsize
