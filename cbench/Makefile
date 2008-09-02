@@ -49,9 +49,8 @@ else
 endif
   DEST = $(BENCH_TEST)/$(BINDIR)
 
-# by default build all the standard opensource set of binaries as well as the basic
-# hardware testing binaries
-default: open hwtest
+# by default build all the standard opensource set of binaries
+default: open
 
 open: $(OPEN_SUBDIRS)
 	$(do-open-subdirs)
@@ -159,7 +158,6 @@ domostall:
 # compile everything!
 doitall: 
 	$(MAKE) distclean
+	$(MAKE) nodehwtest
 	$(MAKE) install
 	$(MAKE) hpcc
-	$(MAKE) standalone
-	$(MAKE) standaloneinstall
