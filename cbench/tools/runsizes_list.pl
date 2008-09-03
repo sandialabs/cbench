@@ -39,6 +39,7 @@ use Getopt::Long;
 GetOptions(
 	'powof2|pof2' => \$pof2,
 	'square' => \$square,
+	'cube' => \$cube,
 	'maxprocs=i' => \$max,
 	'minprocs=i' => \$min,
 	'mult=i' => \$mult,
@@ -55,11 +56,12 @@ if (defined $help) {
     exit;
 }
 
+(defined $max) and $max_procs = $max;
+
 @list = ();
 
 if (defined $tryall) {
 	$m = $max_procs;
-	(defined $max) and $m = $max;
 	for (1..$m) {
 		push @sizes, $_;
 	}
@@ -70,10 +72,10 @@ else {
 
 foreach $n (@sizes) {
 	($n > $max_procs) and next;
-	(defined $max and $n > $max) and next;
 	(defined $min and $n < $min) and next;
 	(defined $pof2 and power_of_two($n)) and (push @list, $n and next);
 	(defined $square and perfect_square($n)) and (push @list, $n and next);
+	(defined $cube and int_cube_root($n)) and (push @list, $n and next);
 	(defined $mult and multiple_of_N($n,$mult)) and (push @list, $n and next);
 }
 
@@ -116,6 +118,7 @@ sub usage {
     print "USAGE: $0\n" .
           "    --pof2      Include powers of two\n".
 		  "    --square    Include perfect squares\n".
+		  "    --cube      Include perfect cubes\n".
 		  "    --maxprocs  Max procssor count\n".
 		  "    --minprocs  Min procssor count\n".
 		  "    --mult256   Include multiples of 256\n".
