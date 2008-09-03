@@ -968,16 +968,17 @@ sub amg_gen_innerloop {
 sub irs_gen_runsizes {
 	my $sizes = shift;
 
-	my @newsizes = ();
+	#my @newsizes = ();
+	my @newsizes = (8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744,3375,4096);
 
 	main::debug_print(3,"DEBUG: entering irs_gen_runsizes(@$sizes)\n");
 
-	foreach my $n (@{$sizes}) {
+	#foreach my $n (@{$sizes}) {
 		# if the number is a cube root, we can use it
-		if (main::int_cube_root($n) != 0) {
-			push @newsizes, $n;
-		}
-	}
+	#	if (main::int_cube_root($n) != 0) {
+	#		push @newsizes, $n;
+	#	}
+	#}
 
 	main::debug_print(3,"DEBUG:irs_gen_runsizes() runsizes=".join(',',@newsizes));
 	return @newsizes;
