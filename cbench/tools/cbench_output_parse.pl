@@ -809,7 +809,8 @@ sub parse_output_file {
 		# that can be useful later on in parsing.
 		# Read in the embedded Cbench info tags.
 		undef $/;
-		my $embedded_info_buf = `egrep '\^Cbench \.\*\\:' $stdout_file`;
+		# protect the grep from working on a huge file with head
+		my $embedded_info_buf = `head -200 $stdout_file | egrep '\^Cbench \.\*\\:'`;
 		$/ = "\n";
 		if ($embedded_info_buf =~ /Cbench \S+\:/) {
 			# found embedded Cbench info
@@ -1862,11 +1863,19 @@ sub open_and_slurp {
 
     $fstats = stat($file);
 
-	# If the file is "big enough", this can cause Perl + Glibc memory mgmt
-	# issues (some Glibc versions seem to hang in malloc...). So we'll apply
-	# some heuristics to trim file sizes down in memory based on known output
-	# file bloat.
-	if (defined $fstats and $fstats->size > 1024*1024*50) {
+	if (defined $fstats and $fstats->size > 1024*1024*1024) {
+		# Do we really want to open gigabyte sized output files?
+		# I ran across an error case where jobs created 20-300 GB sized
+		# files and we really don't want to mess with those.
+		my $gb = int $fstats->size / (1024*1024);
+		warning_print("$file is too big to sanely parse at $gb MB\n");
+		return 0;
+	}
+	elsif (defined $fstats and $fstats->size > 1024*1024*50) {
+		# If the file is "big enough", this can cause Perl + Glibc memory mgmt
+		# issues (some Glibc versions seem to hang in malloc...). So we'll apply
+		# some heuristics to trim file sizes down in memory based on known output
+		# file bloat.
 		(defined $DEBUG and $DEBUG > 1) and print
 			"DEBUG:open_and_slurp() BIG FILE of ".$fstats->size." bytes\n";
 		open(FILE, "$file") or return 0;
