@@ -809,8 +809,9 @@ sub parse_output_file {
 		# that can be useful later on in parsing.
 		# Read in the embedded Cbench info tags.
 		undef $/;
-		# protect the grep from working on a huge file with head
+		# protect the grep from chewing endlessly on a huge file with head and tail
 		my $embedded_info_buf = `head -200 $stdout_file | egrep '\^Cbench \.\*\\:'`;
+		$embedded_info_buf .= `tail -200 $stdout_file | egrep '\^Cbench \.\*\\:'`;
 		$/ = "\n";
 		if ($embedded_info_buf =~ /Cbench \S+\:/) {
 			# found embedded Cbench info
