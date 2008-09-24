@@ -8,6 +8,7 @@ URL=http://www.ccs3.lanl.gov/pal/software/sweep3d/$(TAR)
 EXECS = $(SRC)/sweep
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
+FFLAGS = -fno-second-underscore -O3
 
 all: $(SRC) src/Makefile
 	make -C $(SRC)
