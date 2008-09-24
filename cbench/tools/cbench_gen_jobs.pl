@@ -63,6 +63,7 @@ GetOptions(
 	'jobcbenchtest=s' => \$JOBCBENCHTEST,
 	'testset=s' => \$testset,
 	'match=s' => \$match,
+	'exclude=s' => \$exclude,
 	'debug:i' => \$DEBUG,
 	'help' => \$help,
 	'redundant' => \$redundant,
@@ -335,6 +336,11 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 			if (defined $match) {
 				my $matchstr = "$match";
 				next unless ($jobname =~ /$matchstr/);
+			}
+			# if --exclude param was used, only process files NOT matching
+			if (defined $exclude) {
+				$matchstr = "$exclude";
+				next unless ($jobname !~ /$matchstr/);
 			}
 
 			debug_print(1,"DEBUG: Generating for $jobname\n");
@@ -1040,6 +1046,8 @@ sub usage {
           "                    regex string. For example,\n" .
           "                      --match 2ppn\n" .
           "                    would only generate 2 ppn tests\n" .
+          "   --exclude        This is just like the --match parameter except\n" .
+          "                    that jobs matching are NOT processed\n" .
           "   --scratchdir <path>\n".
           "   --testdir <path> Path to use as a \"scratch\" or parallel filesystem\n".
 		  "                    for benchmarks/apps testing which require the use of \n".
