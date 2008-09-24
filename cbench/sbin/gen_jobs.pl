@@ -41,6 +41,8 @@ Getopt::Long::Configure("pass_through");
 
 GetOptions( 'debug:i' => \$DEBUG,
             'dryrun' => \$dryrun,
+			'tsetexclude=s' => \$tsetexclude,
+			'tsetinclude=s' => \$tsetinclude,
             'help' => \$help,
 );
 
@@ -61,7 +63,9 @@ for $f (`/bin/ls -1`) {
 	# ignore certain directories because they are not test sets or are
 	# uniquely behaving test sets like nodehwtest
 	($f =~ /nodehwtest|perllib|bin|sbin|mpich|tools|templates/) and next;
-	
+	(defined $tsetexclude and $f =~ /$tsetexclude/) and next;
+	(defined $tsetinclude) and next unless $f =~ /$tsetinclude/;
+
 	print "Generating jobs in ". uc($f) . " test set\n";
 	
 	chdir $f;
@@ -81,8 +85,21 @@ for $f (`/bin/ls -1`) {
 sub usage {
     print "USAGE: $0 \n";
     print "Cbench script to generate jobs in the all test sets\n".
-          "   --dryrun         Show what would be done without doing it\n".
-          "   --debug <level>  turn on debugging at the specified level\n\n".
+          "   --tsetinclude <regex>  This limits the starting up of jobs to jobs\n" .
+		  "                          in testsets with names that match the regex.\n" .
+		  "                          e.g.\n".
+		  "                            --tsetinclude \'mpisanity|bandwidth\'\n".
+		  "                          only starts jobs in the MPISANITY and BANDWIDTH\n".
+		  "                          testsets.\n".
+          "   --tsetexclude <regex>  This limits the starting up of jobs to jobs\n" .
+		  "                          in testsets with names that DO NOT match the regex.\n" .
+		  "                          e.g.\n".
+		  "                            --tsetexclude \'mpisanity|bandwidth\'\n".
+		  "                          only starts jobs in testsets other than the MPISANITY\n".
+		  "                          and BANDWIDTH testsets.\n".
+		  "                          testsets.\n".
+          "   --dryrun               Show what would be done without doing it\n".
+          "   --debug <level>        Turn on debugging at the specified level\n\n".
           "   All other command-line options are passed on to the\n".
           "   specific *_gen_jobs.pl scripts\n";
 }
