@@ -757,12 +757,12 @@ push @invocation_data, sprintf "# Overall Job Success = %0.2f%%\n",$temp*100;
 sub parse_output_file {
 	my $filename = $_;
 
-	(defined $DEBUG and $DEBUG > 3) and print "DEBUG:parse_output_file: $File::Find::name\n";
+	debug_print(4,"DEBUG:parse_output_file: File::Find found $File::Find::name\n");
 
 	if ($filename =~ /\.o(\d+)$/) {
 		# Found an output file for stdout for a job.
 
-	    debug_print(3,"DEBUG:parse_output_file: MATCHED $filename\n");
+	    debug_print(4,"DEBUG:parse_output_file: Entering output file block for $filename\n");
 
 		my $jobid = $1;
 		my ($bench, $extra, $jobname);
@@ -780,13 +780,17 @@ sub parse_output_file {
         my @patharray = split '/',$File::Find::name;
         my $stdout_file = $patharray[$#patharray];
 
+		# check to make sure the output file is really a file... sometimes a randomly
+		# generated directory can have the form *.o12345 and it causes a non-fatal odd
+		# error
+		(! -f $stdout_file) and next;
+
 		# fileid vars just help us with debug and status output
 		my $fileid = '';
 		my $fileid_path = '';
 
 		# Cbench jobs are all contained inside directories now
 		my $testident;
-		#print "DEBUG: ". scalar @patharray ." path components\n";
 		$testident = $patharray[$#patharray-2];
 		(defined $meta) and $fileid = "$metaset\/";
 		$fileid_path = "$testident\/$patharray[$#patharray-1]";
@@ -795,12 +799,7 @@ sub parse_output_file {
 		$total_files_examined++;
 		(! defined $DEBUG and ($total_files_examined % 50) == 0) and print ".";
 
-		# check to make sure the output file is really a file... sometimes a randomly
-		# generated directory can have the form *.o12345 and it causes a non-fatal odd
-		# error
-		(! -f $stdout_file) and next;
-
-		(defined $DEBUG and $DEBUG == 1) and print "DEBUG:parse_output_file() examining $stdout_file ident=$testident\n";
+		debug_print(1,"DEBUG:parse_output_file() Examining $stdout_file ident=$testident\n");
 
 		(defined $collapse) and $testident = $collapse;
 
@@ -810,8 +809,8 @@ sub parse_output_file {
 		# Read in the embedded Cbench info tags.
 		undef $/;
 		# protect the grep from chewing endlessly on a huge file with head and tail
-		my $embedded_info_buf = `head -200 $stdout_file | egrep '\^Cbench \.\*\\:'`;
-		$embedded_info_buf .= `tail -200 $stdout_file | egrep '\^Cbench \.\*\\:'`;
+		my $embedded_info_buf = `head -100 $stdout_file | egrep '\^Cbench \.\*\\:'`;
+		$embedded_info_buf .= `tail -100 $stdout_file | egrep '\^Cbench \.\*\\:'`;
 		$/ = "\n";
 		if ($embedded_info_buf =~ /Cbench \S+\:/) {
 			# found embedded Cbench info
@@ -825,26 +824,33 @@ sub parse_output_file {
 				$jobname = $tmpjob;
 			}
 		}
-        
-        # if --match param was used, only process files matching the regex
-        if (defined $match) {
-            $matchstr = "$match";
-            next unless ($File::Find::name =~ /$matchstr/);
-        }
-        # if --exclude param was used, only process files NOT matching
-        if (defined $exclude) {
-            $matchstr = "$exclude";
-            next unless ($File::Find::name !~ /$matchstr/);
-        }
-
-		(defined $DEBUG) and print "DEBUG:parse_output_file() PARSEing $stdout_file ident=$testident\n";
 
         # parse the jobname to get important characteristics of the job
         ($bench, $ppn, $np) = ($jobname =~ /^(\S+)\-(\d+)ppn[\-|\.](\d+)$/);
         $ppnstr = $ppn . "ppn";
 
-		(defined $DEBUG and $DEBUG > 1) and print
-			"DEBUG:parse_output_file() bench=$bench extra=$extra jobid=$jobid ident=$testident stdoutfile=$stdout_file\n";
+		# build a string composed of the test identifier + jobname which
+		# we'll use to match/exclude against. this ident+jobname string is the
+		# prefix of and data series names we'll construct later on which are
+		# ident+jobname+metric
+		# actually the jobname isn't quite accurate, jobname minus the numprocs
+		# count at the end
+		my $ident_jobname = "$testident-$bench-$ppnstr";
+
+        # if --match param was used, only process files matching the regex
+        if (defined $match) {
+            $matchstr = "$match";
+            next unless ($ident_jobname =~ /$matchstr/);
+        }
+        # if --exclude param was used, only process files NOT matching
+        if (defined $exclude) {
+            $matchstr = "$exclude";
+            next unless ($ident_jobname !~ /$matchstr/);
+        }
+
+		debug_print(1,"DEBUG:parse_output_file() PARSEing $stdout_file ident=$testident\n");
+
+		debug_print(2,"DEBUG:parse_output_file() bench=$bench extra=$extra jobid=$jobid ident=$testident stdoutfile=$stdout_file\n");
 
 		# filter out based on the --minprocs/--maxprocs flags
 		(defined $minprocs and $np < $minprocs) and next;
