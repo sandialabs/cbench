@@ -150,9 +150,10 @@ $remotecmd_extraargs = "-f 700";
 # the parse_filter module is in the include array below, the output
 # parse engine will use the edited filters at the next invocation.
 @parse_filter_include = (
+	'openmpi',
+	'slurm',
 	'mpiexec',
 	'torque',
-	'openmpi',
 	'mvapich',
 	'misc',
 );
