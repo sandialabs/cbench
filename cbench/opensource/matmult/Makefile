@@ -29,7 +29,7 @@ endif
 # this is for the second.c implicit rule to get the CC we want
 CC=$(PLAINCC) 
 
-all: $(SRC) second.o 
+all: $(SRC) second.o .patched
 	$(MAKE) FC=$(PLAINF90) CC=$(PLAINCC) CFLAGS="$(CFLAGS) -DDGEMM -DMXMD16 -DLINUX" \
 		FFLAGS="$(FFLAGS) -DLINUX" LDFLAGS="$(LDFLAGS)" -C src $@
 
@@ -43,12 +43,21 @@ $(TAR) download:
 	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
+.patched:
+	for patch in *.patch ; do \
+           cd $(SRC); \
+           echo "Applying patch [ $$patch ]"; \
+           patch -p1 <../$$patch; \
+           cd - ; \
+        done
+	-touch .patched
+
 clean:
 	[ -d $(SRC) ] && $(MAKE) -C src clean
-	/bin/rm -f second.o
+	/bin/rm -f second.o .patched
 
 distclean:
-	/bin/rm -rf $(SRC) $(TAR) src second.o
+	/bin/rm -rf $(SRC) $(TAR) src second.o .patched
 
 install uninstall:
 	$(do-$@)
