@@ -1,32 +1,23 @@
 --- MATMULT.orig/matmult/mmf.f	2008-06-30 12:34:04.000000000 -0600
 +++ MATMULT/matmul/mmf.f	2006-01-02 11:27:58.000000000 -0700
-@@ -321,8 +97,6 @@
-       real*8 second, ttot, t0, t1, t2, t3, t4, t5
-       real dummy, ranf, xproc
-       external second, ranf
--      character * 16, arg
--      external getarg
- c
- c         For   these results to    be  valid all   vectorization  and
- c         parallelization must   be  turned off in the   main program.
-@@ -338,17 +112,9 @@
+@@ -338,15 +338,15 @@
        istdo = 6
        istdi = 5
        write(istdo,1000) NMAX, MMAX, LMAX
 -      call getarg (1, arg)
--      read (arg, *) nproc
++      call get_command_argument (1, arg)
+       read (arg, *) nproc
 -      call getarg (2, arg)
--      read (arg, *) nreps
++      call get_command_argument (2, arg)
+       read (arg, *) nreps
 -      call getarg (3, arg)
--      read (arg, *) n
++      call get_command_argument (3, arg)
+       read (arg, *) n
 -      call getarg (4, arg)
--      read (arg, *) m
++      call get_command_argument (4, arg)
+       read (arg, *) m
 -      call getarg (5, arg)
--      read (arg, *) l
--
-+      open(istdi,FILE="input")
-+      read(istdi,*) nproc, nreps, n, m, l
-+      close(istdi)
++      call get_command_argument (5, arg)
+       read (arg, *) l
+
        if( nproc.lt.1 .or. nproc.gt.64 ) then
-          write(istdo,1004) nproc
- CCCC         call exit(1)
