@@ -54,7 +54,7 @@ $(TAR) download:
 
 clean:
 	[ -d $(SRC) ] && $(MAKE) -C src clean
-	/bin/rm -f second.o .patched
+	/bin/rm -f second.o 
 
 distclean:
 	/bin/rm -rf $(SRC) $(TAR) src second.o .patched
