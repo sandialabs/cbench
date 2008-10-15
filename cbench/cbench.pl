@@ -549,6 +549,10 @@ sub moab_batchsubmit_cmdbuild {
 	else {
 		$cmd = "msub";
 	}
+
+	# make moab's output filename look like PBS's
+	# and make sure we don't requeue
+	$cmd .= " -r n -o 'moab.o\%j'";
 	
 	(length $batch_extraargs > 1) and $cmd .= " $batch_extraargs";
 	
