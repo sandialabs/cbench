@@ -26,7 +26,7 @@ include make.def
 HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride
 
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
-             mpi_routecheck presta1.2 ior_bench iozone rotate HPLlinpack \
+             mpi_routecheck presta1.2 ior_bench iozone bonnie++ rotate HPLlinpack \
              IMB osutests lanl stab perftest mpi_examples mpi_slowcpu \
              mpi_malloc
 
