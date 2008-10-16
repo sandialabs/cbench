@@ -113,6 +113,9 @@ installcbenchbins: install
 update: 
 	@sbin/install_cbenchtest --testtop
 
+download:
+	$(do-subdirs)
+
 # compile and install LAMMPS
 lammps: install 
 	$(do-lammps-install)
