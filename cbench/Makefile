@@ -85,6 +85,7 @@ standalone: mpich
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/hpcc
 # install the standalone MPI binaries used in the NODEHWTEST testset
 standaloneinstall:
+	$(MAKE) -C opensource/mpich install
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/lanl install
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/HPLlinpack install
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/hpcc install
@@ -131,8 +132,8 @@ clean:
 
 distclean: clean
 	$(MAKE) -C opensource/hpcc distclean
-	$(MAKE) -C opensource/NPB clean
-	$(MAKE) -C opensource/mpich clean
+	$(MAKE) -C opensource/NPB distclean
+	$(MAKE) -C opensource/mpich distclean
 	$(do-subdirs)
 
 # targets used for making tarballs
@@ -152,13 +153,13 @@ restricted_release: distclean
 # backdoor shorcuts for developers...
 #
 
-# compile most everything
+# compile most everything in the main tree except nodehwtest stuff
 domostall: 
 	$(MAKE) distclean
 	$(MAKE) install
 	$(MAKE) hpcc
 
-# compile everything!
+# compile everything in the main tree (not openapps for example)!
 doitall: 
 	$(MAKE) distclean
 	$(MAKE) nodehwtest
