@@ -4,7 +4,9 @@
         
 A __brief__ summary of changes in each release of Cbench.
 
-* future Cbench release (1.2.0)
+* next Cbench release (1.2.1)
+
+* Cbench release (1.2.0)
 	* added LLNL Matmult and Stride memory stress tests
 	* updated to IMB v 3.1
 	* memtester 4.0.8
