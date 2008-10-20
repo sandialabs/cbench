@@ -825,6 +825,11 @@ sub parse_output_file {
 			}
 		}
 
+		# check for combobatch output files which are not parsed directly
+		if ($embedded_info_buf =~ /Cbench benchmark:\s+combobatch/) {
+			next;
+		}
+		
         # parse the jobname to get important characteristics of the job
         ($bench, $ppn, $np) = ($jobname =~ /^(\S+)\-(\d+)ppn[\-|\.](\d+)$/);
         $ppnstr = $ppn . "ppn";

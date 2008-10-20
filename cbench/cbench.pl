@@ -1167,7 +1167,7 @@ sub start_jobs {
 		$outbuf =~ s/COMBOBATCH_DETAILS_HERE/$combodetails/gs;
 		$outbuf =~ s/CBENCHOME_HERE/$$optdata{CBENCHOME}/gs;
 		$outbuf =~ s/CBENCHTEST_HERE/$$optdata{CBENCHTEST}/gs;
-		$outbuf =~ s/MAXPROCS_HERE/$maxprocs/gs;
+		$outbuf =~ s/MAXPROCS_HERE/$maxprocs_scanned/gs;
 		$outbuf =~ s/MINPROCS_HERE/$minprocs/gs;
 		$outbuf =~ s/REPEAT_HERE/$repeat/gs;
 		$outbuf =~ s/MATCH_HERE/\'$match\'/gs;

@@ -16,5 +16,5 @@ export TESTSET=TESTSET_NAME_HERE
 
 cd $CBENCHTEST/$TESTSET
 
-./$TESTSET_start_jobs.pl --interactive --match MATCH_HERE --ident $IDENT --minprocs MINPROCS_HERE --maxprocs MAXPROCS_HERE --repeat REPEAT_HERE --match MATCH_HERE --delay 30
+./"$TESTSET"_start_jobs.pl --interactive --match MATCH_HERE --ident $IDENT --minprocs MINPROCS_HERE --maxprocs MAXPROCS_HERE --repeat REPEAT_HERE --match MATCH_HERE --delay 30
 
