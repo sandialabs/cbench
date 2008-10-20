@@ -43,6 +43,7 @@ use Data::Dumper;
 use Time::localtime;
 use File::stat;
 use Date::Manip;
+use Storable;
 use Term::ANSIColor qw(:constants color);
 $Term::ANSIColor::AUTORESET = 1;
 
@@ -51,6 +52,7 @@ my $testset = find_testset_identity($0);
 my $xaxis_ppn = 0;
 my $xaxis_ppn_nodeview = 0;
 my $follow_symlinks = 0;
+my $cache_file = '.cbench_parse_cache';
 
 # this is a global that print_job_err() looks at
 our $SHOWNOTICES = 0;
@@ -120,6 +122,7 @@ GetOptions( 'ident=s' => \$ident,
 			'jobid=i' => \$jobid_match,
 			'gazebo' => \$gazebo,
 			'report:s' => \$report,
+			'usecache' => \$usecache,
 );
 
 if (defined $help) {
@@ -321,7 +324,7 @@ my %nodediag_data;
 # below. If the --ident parameter is given, only process the
 # directory tree indicated.
 my $metaset;
-if (defined $meta) {
+if (defined $meta and !defined $usecache) {
 	my $pwd = `pwd`;
 	chomp $pwd;
 
@@ -354,7 +357,7 @@ if (defined $meta) {
 	}
 	closedir(DH);
 }
-else {
+elsif (!defined $usecache)  {
 	$basepath = ".";
 	if (defined $ident) {
 		# looks like a list of idents was specified
@@ -368,6 +371,18 @@ else {
 	else {
 		find({wanted => \&parse_output_file, follow => $follow_symlinks}, $basepath);
 	}
+}
+elsif (defined $usecache) {
+	my $href = undef;
+
+	%data = %{retrieve("$cache_file-data")};
+	%statusdata = %{retrieve("$cache_file-statusdata")};
+	%success_data = %{retrieve("$cache_file-success_data")};
+	%jobdiag_data = %{retrieve("$cache_file-jobdiag_data")};
+	%nodediag_data = %{retrieve("$cache_file-nodediag_data")};
+	%metrics_to_units = %{retrieve("$cache_file-metrics_to_units")};
+	%unit_groupings = %{retrieve("$cache_file-unit_groupings")};
+	%reportdata = %{retrieve("$cache_file-reportdata")};
 }
 
 #
@@ -482,6 +497,15 @@ my $numtestids = keys %data;
 for $testid (keys %data) {
     for $ppn (keys %{$data{$testid}}) {
 		for $bench (keys %{$data{$testid}{$ppn}}) {
+			# if we are in --usecache mode the --match/--exclude parameters will not
+			# work they normally do because we aren't actually parsing files. so we
+			# apply them in this loop when we are operating out of cache
+			if (defined $usecache) {
+		    	my $tmpname = "$testid-$bench-$ppn\n";
+				(defined $match and $tmpname !~ /$match/) and next;
+				(defined $exclude and $tmpname =~ /$exclude/) and next;
+			}
+
 			my %columns = ();
 			for $rawmetric (keys %metrics) {
 				$metric = $rawmetric;
@@ -740,6 +764,18 @@ my $temp2 = $total_jobs_parsed - $statusdata{'NOTICE'};
 $temp = $statusdata{'PASSED'}/$temp2 unless ($temp2 == 0);
 printf "Overall Job Success = %0.2f%%\n",$temp*100;
 push @invocation_data, sprintf "# Overall Job Success = %0.2f%%\n",$temp*100;
+
+# write out a cache of the data structures we painstakingly built
+if (!defined $usecache) {
+	store \%data, "$cache_file-data";
+	store \%statusdata, "$cache_file-statusdata";
+	store \%success_data, "$cache_file-success_data";
+	store \%jobdiag_data, "$cache_file-jobdiag_data";
+	store \%nodediag_data, "$cache_file-nodediag_data";
+	store \%metrics_to_units, "$cache_file-metrics_to_units";
+	store \%unit_groupings, "$cache_file-unit_groupings";
+	store \%reportdata, "$cache_file-reportdata";
+}
 
 # build a gnuplot if asked, but we can only do one gnuplot per invocation right now...
 (defined $gnuplot) and results_to_gnuplot(\%outhash) unless (defined $successstats);
