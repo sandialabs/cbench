@@ -3,6 +3,7 @@ set -x
 
 # build a tarball of Cbench TRAC site
 SRC=/data/cbench/cbench
+SRC=/home/cbench
 TMP=/tmp/tracsite
 SFSTUFF=$HOME/tracstuff/sf
 SFPROJ=cbench
@@ -25,6 +26,12 @@ sqlite $SRC/TRAC/db/trac.db .dump | sqlite3 $TMP/TRAC/db/trac.db
 cp $SFSTUFF/trac.ini $TMP/TRAC/conf/.
 
 cd $TMP
+#chown -R 209332.55344 *
+chmod ug+rwx TRAC SVN
+chmod g+rws TRAC SVN
+chmod o-w TRAC SVN
+exit
+
 tar cvfz $TMP/tracsite.tar.gz TRAC SVN
 cd -
 
