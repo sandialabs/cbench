@@ -16,6 +16,10 @@ cd $stagedir
 tar xfx ../tracinstall.tar.gz
 cd -
 
+cp -f sf/trac.ini $stagedir/persistent/TRAC/conf
+rm -rf $stagedir/persistent/TRAC/wiki-macros/*
+cp sf/tocmacro/0.11/tractoc/macro.py $stagedir/persistent/TRAC/plugins/TOC.py
+
 chmod -R o+rwx $stagedir/persistent
 
 TBIN=$stagedir/tracinstall/bin
@@ -49,8 +53,8 @@ $TBIN/trac-admin $TRACENV permission remove anonymous ROADMAP_ADMIN CONFIG_VIEW
 
 find SF-cbench-staging -name '*pyc' -exec /bin/rm -f {} \;
 
-patch -p0 < sf/trac-readonly.patch
+#patch -p0 < sf/trac-readonly.patch
 
 
-echo NOTE: rsync -vrptl --delete --exclude persistent $stagedir/ sonicsoft70,cbench@web.sourceforge.net:.
-echo NOTE: rsync -vrptl --delete $stagedir/persistent/* sonicsoft70,cbench@web.sourceforge.net:persistent/.
+echo NOTE: rsync -rptl --delete --exclude persistent $stagedir/ sonicsoft70,cbench@web.sourceforge.net:.
+echo NOTE: rsync -rptl --delete $stagedir/persistent/ sonicsoft70,cbench@web.sourceforge.net:persistent/.
