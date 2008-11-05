@@ -1,0 +1,23 @@
+--- SF-cbench-staging/tracinstall/lib/python2.4/site-packages/trac/db/sqlite_backend.py.orig	2008-11-05 11:05:24.000000000 -0700
++++ SF-cbench-staging/tracinstall/lib/python2.4/site-packages/trac/db/sqlite_backend.py	2008-11-05 11:05:55.000000000 -0700
+@@ -159,13 +159,13 @@
+                 raise TracError('Database "%s" not found.' % path)
+ 
+             dbdir = os.path.dirname(path)
+-            if not os.access(path, os.R_OK + os.W_OK) or \
+-                   not os.access(dbdir, os.R_OK + os.W_OK):
+-                from getpass import getuser
+-                raise TracError('The user %s requires read _and_ write ' \
+-                                'permission to the database file %s and the ' \
+-                                'directory it is located in.' \
+-                                % (getuser(), path))
++            #if not os.access(path, os.R_OK + os.W_OK) or \
++            #       not os.access(dbdir, os.R_OK + os.W_OK):
++                #from getpass import getuser
++                #raise TracError('The user %s requires read _and_ write ' \
++                #                'permission to the database file %s and the ' \
++                #                'directory it is located in.' \
++                #                % (getuser(), path))
+ 
+         if have_pysqlite == 2:
+             self._active_cursors = weakref.WeakKeyDictionary()
