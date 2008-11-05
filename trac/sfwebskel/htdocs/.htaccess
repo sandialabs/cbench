@@ -11,5 +11,5 @@ RewriteRule ^(sitemap.*)$ $1 [L]
 RewriteRule ^(google.*)$ $1 [L]
 
 # all other uri are translated to the trac.cgi script
-#RewriteRule ^(.*)$ /cgi-bin/trac.cgi/$1  [last]
+RewriteRule ^(.*)$ /cgi-bin/trac.cgi/$1  [last]
 

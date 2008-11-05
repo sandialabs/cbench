@@ -18,7 +18,6 @@ cd -
 
 chmod -R o+rwx $stagedir/persistent
 
-set -x
 TBIN=$stagedir/tracinstall/bin
 TRACENV=$stagedir/persistent/TRAC
 
@@ -53,4 +52,5 @@ find SF-cbench-staging -name '*pyc' -exec /bin/rm -f {} \;
 patch -p0 < sf/trac-readonly.patch
 
 
-echo NOTE: rsync -vrptl --delete $stagedir/ sonicsoft70,cbench@web.sourceforge.net:.
+echo NOTE: rsync -vrptl --delete --exclude persistent $stagedir/ sonicsoft70,cbench@web.sourceforge.net:.
+echo NOTE: rsync -vrptl --delete $stagedir/persistent/* sonicsoft70,cbench@web.sourceforge.net:persistent/.
