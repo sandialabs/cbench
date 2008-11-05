@@ -29,15 +29,16 @@ cd $TMP
 #chown -R 209332.55344 *
 chmod ug+rwx TRAC SVN
 chmod g+rws TRAC SVN
-chmod o-w TRAC SVN
-exit
+chmod -R o+rw TRAC
 
 tar cvfz $TMP/tracsite.tar.gz TRAC SVN
 cd -
 
 cd $HOME/htdocs
-tar cvfz  $TMP/common.tar.gz common
+tar cvfz  $TMP/htdocs-common.tar.gz common
 cd -
+
+exit
 
 # copy TRAC site image to sf
 $HOME/sf/scp_to_shell $TMP/tracsite.tar.gz
