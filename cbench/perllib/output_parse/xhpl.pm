@@ -257,9 +257,6 @@ xhplendrecord:
 	elsif ($status =~ /FINISHED/ and $local_passed_tests < $local_total_tests) {
 		$status = 'FAILED RESIDUALS';
 	}
-	else {
-		$status = 'FAILED'
-	}
 
 	(defined $main::DEBUG and $main::DEBUG > 2) and print
 		"ENDSTATUSCHECK, $status\n";
