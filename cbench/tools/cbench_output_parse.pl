@@ -973,7 +973,11 @@ sub parse_output_file {
 			open_and_slurp($file,\@txtbuf) or do {
 				# FIXME: this probably should be printed for non-STDERR files?
 				debug_print(1,"parse_output_file() Could not open $file for read ($!)\n");
-				next;
+
+				# there was a problem opening the file for some reason, in this case
+				# open_and_slurp() will return a valid array buffer that is empty
+				# and we'll let this fall through to the code below which saves the
+				# valid buffer reference to a trivially empty buffer
 			};
 
 			# save references to this buffer
@@ -1917,6 +1921,7 @@ sub open_and_slurp {
 		# files and we really don't want to mess with those.
 		my $gb = int $fstats->size / (1024*1024);
 		warning_print("$file is too big to sanely parse at $gb MB\n");
+		$$txtbuf[0] = "CBENCH PARSE ERROR: FILE TOO BIG TO PARSE: $gb MB\n";
 		return 0;
 	}
 	elsif (defined $fstats and $fstats->size > 1024*1024*50) {
