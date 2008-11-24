@@ -1,0 +1,18 @@
+= HOWTO: Make a New Cbench Testset =
+
+* Use the main Cbench installation workhorse
+{{{
+% sbin/install_cbenchtest --testset foo
+Installing files for the FOO testset...skeleton mode
+
+% ll $CBENCHTEST/foo
+total 4
+lrwxrwxrwx 1 jbogden jbogden   27 Jul  1 12:21 foo_gen_jobs.pl -> ../tools/cbench_gen_jobs.pl
+-rw-rw-r-- 1 jbogden jbogden 1927 Jul  1 12:21 foo_hello.in
+lrwxrwxrwx 1 jbogden jbogden   31 Jul  1 12:21 foo_output_parse.pl -> ../tools/cbench_output_parse.pl
+lrwxrwxrwx 1 jbogden jbogden   29 Jul  1 12:21 foo_start_jobs.pl -> ../tools/cbench_start_jobs.pl
+}}}
+
+* The hardest part, write output_parse module(s) for any new benchmarks/tests/apps that are used in the testset
+  * see [wiki:doc/HOWTO-MakeNewOutputParseModule]
+

@@ -1,0 +1,25 @@
+# NOTE: bash syntax is used here
+
+# beginning timestamp of the job
+begin_time=`date --iso-8601=seconds`
+begin_epoch=`date +%s`
+cbench_echo "Cbench start timestamp: $begin_time"
+
+# spit out some other useful Cbench specific details of this job
+cbench_echo "Cbench test identifier: IDENT_HERE"
+cbench_echo "Cbench CBENCHTEST: CBENCHTEST_HERE"
+cbench_echo "Cbench job path: TESTSET_PATH_HERE/IDENT_HERE/JOBNAME_HERE"
+cbench_echo "Cbench job script: TESTSET_PATH_HERE/IDENT_HERE/JOBNAME_HERE/JOBSCRIPT_HERE"
+cbench_echo "Cbench jobid: $JOBID"
+
+# We don't want to assume that the batch system or whatever will
+# put us in the directory we want to be in for the job. So, we
+# make sure we are where we expect to be.
+cd "TESTSET_PATH_HERE/IDENT_HERE/JOBNAME_HERE"
+
+# set OMP_NUM_THREADS appropriate to the job
+export OMP_NUM_THREADS=NUM_THREADS_PER_PROCESS_HERE
+cbench_echo "Cbench OMP_NUM_THREADS: $OMP_NUM_THREADS"
+
+# whitepace
+cbench_echo ""

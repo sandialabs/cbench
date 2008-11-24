@@ -1,0 +1,185 @@
+<html>
+<body bgcolor=white text=#333366 font face=Times>
+<pre>
+
+MPI Bandwidth and Latency Benchmarks 
+Benchmark-specific Instructions and Constraints
+***********************************************
+
+Table of contents
+=================
+
+ o Benchmark Requirements
+ o Benchmark Checklist
+ o Optimization Constraints 
+ o Timing Issues 
+
+
+Benchmark Requirements
+======================
+
+The following tests are required to be performed.  The output of each
+test must be returned.  A description of each test can be found 
+in the file README.  
+
+If the reference machine is based on a NUMA architecture, the
+bandwidth and latency tests must be run both for "out of box" results, as 
+well as inter-SMP results.  For example, if a shared-memory system is 
+comprised of 8-processor boxes accessing local memory, these tests 
+must be additionally run for 16 processes, with 8 processes running on
+each box.
+
+
+Inter-process communication Bandwidth:
+  Four tests must be performed to measure inter-process communication 
+  bandwidth.
+
+  To provide data on process communication performance on a single SMP, 
+  the "com" test must be run with an MPI process count equal to the total 
+  number of processors on one SMP, with all MPI processes allocated on 
+  one SMP.  
+
+  Additionally, the "com" application must be run with the MPI process count
+  equal to the total number of processors on two SMPs.  The MPI processes 
+  must be block allocated so that the processes with the lower half of rank 
+  ids of MPI_COMM_WORLD are allocated to one SMP and the processes consisting 
+  of the upper half of rank ids are allocated to a second SMP.  
+  
+  Finally, the "com" application must be run with the MPI process count
+  equal to the total number of processors in the system in order to generate 
+  a bisectional bandwidth measurement for the system.  Consider the system
+  divided into two equal numbers of SMPs separated by the fewest number of
+  interconnect links.  The MPI processes must be block allocated so that the 
+  processes with the lower half of rank ids of MPI_COMM_WORLD are allocated 
+  to SMPs on one side of the system and the processes consisting of the 
+  upper half of rank ids are allocated to SMPs on the other side of the
+  system.  Two runs of com must be run over the entire system to measure
+  bandwidth first when increasing the number active SMPs and second when
+  increasing the number of active processes per SMP.
+  
+  The figure of merit for each test will be the maximum bandwidth achieved.
+
+Inter-process latency:
+  As with the com test, the laten test must be run both with an MPI process 
+  count equal to the total number of processors on one SMP, with all MPI 
+  processes allocated to one SMP, as well as with the MPI process count 
+  equal to the total number of processors on two SMPs, with the processes 
+  allocated over two SMPs.  The figure of merit for each test will be the 
+  latency reported when all processors are active.  As with the com test, 
+  two laten tests will be performed over the entire system.
+
+MPI-2 RMA Performance:
+  As with the com test, the rma test must be run both with an MPI process 
+  count equal to the total number of processors on one SMP, with all MPI 
+  processes allocated to one SMP, as well as with the MPI process count 
+  equal to the total number of processors on two SMPs, with the processes 
+  allocated over two SMPs.  The figure of merit for each test will be the 
+  maximum bandwidth achieved.  Four rma tests will be performed over the 
+  entire system.
+
+Allreduce Performance:
+  The test "allred" must be run with the number of MPI processes equal to 
+  the total number of processors on the reference system.  The figure of 
+  merit for this test will be average operation time.
+
+Global-Op Performance:
+  The test "globalop" must be run with the number of MPI processes equal to 
+  the total number of processors on the reference system.  The figure of 
+  merit for this test will be MPI_Allreduce time relative to 
+  MPI_Reduce/MPI_Bcast, however, all operation results will be considered.
+  The "crunch" function may be modified, if errors are encountered.  However,
+  the errors and modifications must be described.
+
+
+Benchmark Checklist
+===================
+
+As indicated in the README file, each test provides a means of specifying
+the number of operations between time samples.  To ensure that accurate
+timings are being made, the test output field "Ticks for minimum sample" must
+be greater than 1000.  Note that this also requires an accurate implementation
+of the MPI_Wtick function.
+
+The following is a list of specific tests which must be run.  If a
+"[y]" appears in the command, this indicates that the argument must 
+produce application results consistent with the MPI_Wtime granularity
+requirements.  The "[x]" in the allred specification indicates that this
+value should be tuned such that the allred "Time between Allreduce" field
+is twice as large as the "Op mean" value.  The allred test results must
+include stddev/mean values for both Sample sections that are less than .05.
+The message size stop value may be reduced for the rma test if excessive
+paging is encountered, however, the maximum message size returning reasonable
+results must be identified.  
+
+The default behavior for the com, laten, and rma tests, which includes a
+barrier within the measurement, must be used.
+
+The rma test may be modified to allow for specific window allocation needs
+or optimizations.  All modifications must be indicated and described.
+
+In the event that the default test message sizes cause the com, laten, or 
+rma tests to fail, the message size range can be modified by using the 
+'-e' command line flag.  The cause of the failure must be provided.
+
+
+Command                                Processes/Allocation
+----------------------------------------------------------------------------
+com -o [y]                             1 process/processor on 1 SMP
+com -o [y]                             1 process/processor on 2 SMPs, block
+com -o [y] -t [procs/SMP]              All processors, bisectional BW, block
+com -o [y] -t [procs/SMP] -p c         All processors, bisectional BW, block
+
+laten -o [y]                           1 process/processor on 1 SMP
+laten -o [y]                           1 process/processor on 2 SMPs, block
+laten -o [y] -t [procs/SMP]            All processors, bisectional BW, block
+laten -o [y] -t [procs/SMP] -p c       All processors, bisectional BW, block
+
+rma -o 1 -c [y]                        1 process/processor on 1 SMP
+rma -o 1 -c [y]                        1 process/processor on 2 SMPs, block
+rma -o 128 -c [y]                      1 process/processor on 1 SMP
+rma -o 128 -c [y]                      1 process/processor on 2 SMPs, block
+
+rma -o 1 -c [y] -t [procs/SMP]         All processors, bisectional BW, block
+rma -o 1 -c [y] -t [procs/SMP] -p c    All processors, bisectional BW, block
+rma -o 128 -c [y] -t [procs/SMP]       All processors, bisectional BW, block
+rma -o 128 -c [y] -t [procs/SMP] -p c  All processors, bisectional BW, block
+
+allred [x] [y] 10                      All processors
+
+globalop                               All processors
+
+
+Optimization Constraints 
+========================
+
+It is possible that compiler optimizations may obscure the intended
+result of the benchmarks by optimizing certain parts of the code. In
+particular, it is necessary to repeat the communication in each loop
+several times in order to obtain a measurable time. The vendor is
+required to do whatever is needed in order to ensure that the compiler
+does not optimize the code so as to remove, entirely, the actual
+communications to be timed. Other optimizations that increase
+performance are allowed so long as they do not circumvent in any way
+the intention of the benchmark. The University will be the sole judge
+of whether or not this condition has been satisfied. Actual assembly
+language code generated by the compiler may be required in order to
+make such a determination. Note that values of "INF" (infinity), zero,
+or other similarly meaningless numbers for rates for any of the
+results will be unacceptable. A positive, non-zero value for time and
+rate must be obtained during execution for each test.
+
+
+Timing Issues 
+==============
+
+The timer used in this MPI code is the standard portable MPI elapsed
+timer MPI_Wtime(). The vendor should implement this standard MPI
+timer with an acceptable accuracy and resolution. 
+
+
+Last modified on January 31, 2002 by Chris Chambreau
+For information contact:
+Chris Chambreau -- chcham@llnl.gov 
+
+UCRL-CODE-2001-028
+</pre> </body> </html>

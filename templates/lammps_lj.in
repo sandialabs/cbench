@@ -1,0 +1,9 @@
+# lammps_lj job template
+# Uses LAMMPS benchmark code LJ
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/lmp_cbench"
+STDIN_FILE="$CBENCHTEST/lammps/bench/in.lj"
+
+cbench_run_cmd $CMD
+

@@ -1,0 +1,22 @@
+= List of Batch Systems, Job Launchers, and Remote Execution Methods Cbench Currently Supports =
+[[TOC(CbenchDocumentation)]]
+
+== Batch Systems ==
+ * Torque (OpenPBS successor) - http://www.clusterresources.com/pages/products/torque-resource-manager.php
+   * supports --throttledbatch mode of starting jobs
+ * PBS Pro
+   * supports --throttledbatch mode of starting jobs
+ * Slurm (only in the head of the SVN repository, i.e. the version 1.2.X code)
+ * Moab Msub (only in the head of the SVN repository, i.e. the version 1.2.X code)
+
+== Job Launchers ==
+ * mpiexec - http://www.osc.edu/~pw/mpiexec/index.php
+   * supports rank-to-node mapping resolution (have to use mpiexec with -v to have the proper output)
+ * mpirun (from MPICH)
+ * mpirun_prun - SNL custom mpiexec/mpirun compatible wrapper around Quadrics prun that works in a Torque environment
+ * openmpi - OpenMPI RunTime Environment (ORTE), ''orterun'' command - http://www.open-mpi.org
+ * yod - job launching environment from Cray XT3/XT4 systems
+ * Slurm (only in the head of the SVN repository, i.e. the pre version 1.2 code)
+
+== Remote Command Execution ==
+ * pdsh - http://sourceforge.net/projects/pdsh/

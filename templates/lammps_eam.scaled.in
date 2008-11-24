@@ -1,0 +1,12 @@
+# lammps_eam.scaled job template
+# Uses LAMMPS benchmark code eam
+# README says that LJ in scaled mode needs a
+# scale factor of 20
+#
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/lmp_cbench SCALING_PARAMS_HERE"
+STDIN_FILE="$CBENCHTEST/lammps/bench/in.eam"
+
+cbench_run_cmd $CMD
+

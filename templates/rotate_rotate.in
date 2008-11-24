@@ -1,0 +1,6 @@
+# rotate job template
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/rotate"
+
+cbench_run_cmd $CMD

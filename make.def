@@ -1,0 +1,442 @@
+###############################################################################
+#    Copyright (2005) Sandia Corporation.  Under the terms of Contract
+#    DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
+#    certain rights in this software
+#
+#    This file is part of Cbench.
+#
+#    Cbench is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    any later version.
+#
+#    Cbench is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with Cbench; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+###############################################################################
+
+# abort if user forgot to set required variables
+ifndef CBENCHOME
+  $(error "Error: Must set CBENCHOME first (see doc/INSTALL)")
+endif
+ifndef CBENCHTEST
+  $(error "Error: Must set CBENCHTEST first (see doc/INSTALL)")
+endif
+ifndef MPIHOME
+  $(error "Error: Must set MPIHOME first (see doc/INSTALL)")
+endif
+ifndef COMPILERCOLLECTION
+  $(error "Error: Must set COMPILERCOLLECTION first (see doc/INSTALL)")
+endif
+
+OS_TYPE = $(shell uname -s)
+ARCH = $(shell uname -m)
+BENCH_HOME = $(CBENCHOME)
+BENCH_TEST = $(CBENCHTEST)
+COMPILER=$(COMPILERCOLLECTION)
+
+ifndef MPIBINNAME
+  BUILD_PATH = $(MPIHOME)/bin/
+else
+  BUILD_PATH = $(MPIHOME)/$(MPIBINNAME)/
+endif
+
+CC = $(BUILD_PATH)mpicc
+CCC = $(BUILD_PATH)mpicxx
+CXX = $(BUILD_PATH)mpicxx
+F77 = $(BUILD_PATH)mpif77
+# If we are using GNU chain with GCC4 around, F77 works better using mpif90
+# as it well generally pickup gfortran instead of g77. This is true for OpenMPI
+# for sure. This would be a nice thing for configure.... :)
+#F77 = $(BUILD_PATH)mpif90
+F90 = $(BUILD_PATH)mpif90
+# FC is the default gnu make fortran compiler
+FC = $(F90)
+INCLUDES = -I$(MPIHOME)/include
+
+###### Compiler specific general configs
+ifeq ($(COMPILER),intel)
+  FORT = ifort
+  PLAINF77 = ifort
+  PLAINF90 = ifort
+  PLAINCC = icc
+  PLAINCXX = icpc
+  NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
+  NOMAIN_FLAG = -nofor-main
+  OPENMP_ENABLE = -openmp
+endif
+ifeq ($(COMPILER),intel32)
+  FORT = ifort
+  PLAINF77 = ifort
+  PLAINF90 = ifort
+  PLAINCC = icc
+  PLAINCXX = icpc
+  NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
+  OPENMP_ENABLE = -openmp
+endif
+# default gcc assumes gcc4 + gfortran
+ifeq ($(COMPILER),gcc)
+  FORT = gfortran
+  PLAINF77 = gfortran
+  PLAINF90 = gfortran
+  PLAINCC = gcc
+  PLAINCXX = gcc
+  NOOPT_FLAGS = -O0
+  # some newer gccs have openmp support
+  OPENMP_ENABLE = -fopenmp
+  # NPB uses the next two variables
+  # FIXME: need to check this out on 32-bit systems..
+  ifeq ($(ARCH),x86_64)
+  FMPI_LIB = /usr/lib64/libg2c.so.0
+  else
+  FMPI_LIB = /usr/lib/libg2c.so.0
+  endif
+  F_LIB = $(FMPI_LIB)
+endif
+# for the gcc3 type systems w/o gcc4 capabilities
+ifeq ($(COMPILER),gcc3)
+  FORT = g77
+  PLAINF77 = g77
+  PLAINF90 = NO_FORTRAN90_WITH_GCC3
+  PLAINCC = gcc
+  PLAINCXX = gcc
+  NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
+  # no openmp support in gcc 3.X land
+  OPENMP_ENABLE =
+  # NPB uses the next two variables
+  # FIXME: need to check this out on 32-bit systems..
+#  FMPI_LIB = -L/usr/lib64 -L/usr/lib -lg2c
+#  F_LIB = $(FMPI_LIB)
+endif
+ifeq ($(COMPILER),pgi)
+  FORT = pgf90
+  PLAINF77 = pgf77
+  PLAINF90 = pgf90
+  PLAINCC = pgcc
+  PLAINCXX = pgCC
+  NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -Mnounroll
+  OPENMP_ENABLE = -mp
+endif
+ifeq ($(COMPILER),pathscale)
+  FORT = pathf90
+  PLAINF77 = pathf90
+  PLAINF90 = pathf90
+  PLAINCC = pathcc
+  PLAINCXX = pathCC
+  NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -LNO:full_unroll=0 -LNO:full_unroll_outer=0
+  OPENMP_ENABLE = -openmp
+endif
+
+# we should know our compilers now
+ifndef FORT
+  $(error "Error: Must set COMPILERCOLLECTION to something valid (see make.def)")
+endif
+ifndef PLAINF77
+  $(error "Error: Must set COMPILERCOLLECTION to something valid (see make.def)")
+endif
+ifndef PLAINCC
+  $(error "Error: Must set COMPILERCOLLECTION to something valid (see make.def)")
+endif
+ifndef PLAINCXX
+  $(error "Error: Must set COMPILERCOLLECTION to something valid (see make.def)")
+endif
+
+###### BLAS library settings
+
+ifndef XERBLA
+  XERBLA = $(CBENCHOME)/opensource/HPLlinpack/xerbla.o
+endif
+
+ifndef RPATH
+  RPATH = PLEASE_DEFINE_RPATH_IN_make.def
+  # some examples...
+  #RPATH = $(CBENCHOME)/restricted/HPLlinpack-gotopatch
+  #RPATH = /projects/global/x86_64/libraries/goto_blas
+  #RPATH = /projects/global/x86_64/libraries/acml3.6.0/ifort64_mp/lib
+  #RPATH = /projects/global/x86_64/libraries/acml3.6.0/gnu64/lib
+  #RPATH = /projects/global/x86_64/libraries/acml3.6.0/gfortran64_mp/lib
+  #RPATH = /projects/global/x86_64/libraries/cmkl-9.1_beta/lib/em64t
+endif
+
+ifndef BLASLIB
+  ifdef MKL_LIB
+    BLASLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lmkl $(XERBLA) -lpthread  -lm
+  else
+    ifdef ACML_LIB
+      # dynamic
+      #BLASLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
+      # static
+      BLASLIB = $(ACML_LIB)/libacml.a
+    else
+      BLASLIB = PLEASE_DEFINE_BLASLIB_IN_make.def
+      # some examples...
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_prescott64p-r1.00 $(XERBLA) -lpthread
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_opteronp $(XERBLA) -lpthread -lm
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lacml $(XERBLA)   -lm
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lmkl $(XERBLA) -lpthread  -lm
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lgoto_core2p $(XERBLA) -lpthread -lm 
+      #BLASLIB = -Wl,-rpath,$(RPATH) -L$(RPATH) -lacml -Wl,-rpath,/opt/pathscale/lib/2.1 -L/opt/pathscale/lib/2.1 -lmpath -lpathfortran -lpscrt -lg2c
+    endif
+  endif
+endif
+
+ifndef LAPACKLIB
+  ifdef MKL_LIB
+    LAPACKLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lmkl_lapack
+  else
+    ifdef ACML_LIB
+      #LAPACKLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
+      #LAPACKLIB = $(ACML_LIB)/libacml.a
+    else
+      LAPACKLIB = PLEASE_DEFINE_LAPACKLIB_IN_make.def
+    endif
+  endif
+endif
+
+ifndef FFTWLIB
+  ifdef FFTW_LIB
+  	FFTWLIB=-Wl,-rpath,$(FFTW_LIB) -L$(FFTW_LIB)
+  	FFTWINCLUDE=$(FFTW_INCLUDE)
+  else
+    ifdef MKL_LIB
+	  FFTWLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lmkl
+	  FFTWINCLUDE = $(MKLHOME)/include/fftw
+    else
+      ifdef ACML_LIB
+        FFTWLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
+        FFTWINCLUDE=$(ACML_LIB)/../include
+      else
+        FFTWlIB = PLEASE_DEFINE_FFTWLIB_IN_make.def
+      endif
+    endif
+  endif
+endif
+
+
+###### Architecture and Compiler specific Make configs
+
+ifeq ($(ARCH),x86_64)
+
+  ifeq ($(COMPILER),intel)
+  COMMON_FLAGS =
+  OPTFLAGS = -O3 -axP -xW -mcmodel=medium
+  MPILIB = 
+  endif
+
+  ifeq ($(COMPILER),pgi)
+  COMMON_FLAGS = 
+  CFLAGS = -B
+  #OPTFLAGS = -O3 -fastsse
+  #OPTFLAGS = -O3 -fastsse
+  #OPTFLAGS = -O3 -fast -Mnovect -Mautoinline=levels:3 -mcmodel=medium -Msmartalloc
+  #OPTFLAGS = -O2
+  OPTFLAGS = -O3 -mcmodel=medium -tp barcelona-64
+  #OPTFLAGS = -O2 -tp barcelona-64
+  #OPTFLAGS = -O1 -mcmodel=medium
+  #OPTFLAGS = -g -mcmodel=medium
+  #OPTFLAGS = -g
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),gcc)
+  COMMON_FLAGS = 
+  FFLAGS += -fno-second-underscore
+  OPTFLAGS = -O3 -mtune=amdfam10
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),pathscale)
+  COMMON_FLAGS = 
+  FFLAGS += -fno-second-underscore
+  OPTFLAGS = -O3 -march=barcelona
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),intel32)
+  INCLUDES = -I$(MPIHOME)/include
+  COMMON_FLAGS = -Wl,-melf_i386
+  OPTFLAGS = -O3
+  MPILIB =
+  endif
+endif
+
+
+ifeq ($(ARCH),i686)
+  ifeq ($(COMPILER),intel)
+  OPTFLAGS = -O3 -axN
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),gcc)
+  COMMON_FLAGS = 
+  FFLAGS += -fno-second-underscore
+  OPTFLAGS = -O2
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),pgi)
+  COMMON_FLAGS =
+  CFLAGS = -B
+  OPTFLAGS = -O3 -fastsse
+  MPILIB =
+  endif
+endif
+
+ifeq ($(ARCH),alpha)
+  CC = $(BUILD_PATH)cplant-cc
+  F77 = $(BUILD_PATH)cplant-f77
+  F90 = $(F77)
+  COMMON_FLAGS = 
+  OPTFLAGS = -O3 -mcpu=ev6 -arch=ev6
+  MPILIB = -lmpichgm
+endif
+
+# add cbench opt flags if defined
+ifdef CBENCH_OPTFLAGS
+	OPTFLAGS=$(CBENCH_OPTFLAGS)
+endif
+
+
+###### Common rules, targets, etc.
+
+CFLAGS += $(OPTFLAGS) $(COMMON_FLAGS)
+FFLAGS += $(OPTFLAGS) $(COMMON_FLAGS)
+LIBS = $(MPILIB) 
+
+
+###### Common functions
+
+define do-hwtest-subdirs
+	@for dir in $(HWTEST_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $1 in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir $1; \
+	if [ $$? -ne 0 -a "$1" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-open-subdirs
+	@for dir in $(OPEN_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $@ in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir ; \
+	if [ $$? -ne 0 -a "$@" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-openextras-subdirs
+	@for dir in $(OPENEXTRAS_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $@ in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir ; \
+	if [ $$? -ne 0 -a "$@" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-restricted-subdirs
+	@for dir in $(RESTRICTED_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $@ in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir ; \
+	if [ $$? -ne 0 -a "$@" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-nwcc-subdirs
+	@for dir in $(NWCC_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $@ in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir ; \
+	if [ $$? -ne 0 ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-subdirs
+	@for dir in $(SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $@ in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir  $@; \
+	if [ $$? -ne 0 -a "$@" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-compiled-bin-installs-binident
+	@if [ "$(DEST)" == "/bin" ]; then \
+		echo "ABORT: DEST resolved to /bin!"; \
+		exit 1; \
+	fi; \
+	echo "---------------------------------------------------------"; \
+    echo "----- Installing $(BENCH_HOME)/bin --> $(DEST)"; \
+    echo "---------------------------------------------------------"; \
+	if [ ! -d "$(DEST)" ]; then \
+	    mkdir -p $(DEST); \
+	fi; \
+	/bin/cp --backup=t -a $(BENCH_HOME)/bin/* $(DEST)/.;
+endef
+
+define do-install
+   @$(BENCH_HOME)/sbin/mkinstalldirs $(allinstalldirs)
+   @for target in $(INSTALLTARGETS); \
+   do \
+      install $$target $(INSTALLDIR); \
+      if [ $$? = 0 ]; then \
+          echo $$target installed as $(INSTALLDIR)/`echo $$target | sed -n "s|\([^/]*/\)*\(.*\)|\2|p"`; \
+      else \
+          echo install of $$target in $(INSTALLDIR) failed; \
+      fi \
+   done
+endef
+
+
+define do-uninstall
+   @for target in $(INSTALLTARGETS); do \
+      echo removing $(INSTALLDIR)/$$target; \
+      rm -f $(INSTALLDIR)/$$target; \
+   done
+endef
+
+define do-lammps-install
+	@echo "---------------------------------------------------------"; \
+	echo "----- Installing \"lammps\" test set"; \
+	echo "---------------------------------------------------------"; \
+        $(MAKE) -C $(BENCH_HOME)/openapps/lammps;
+endef
+
+define download-url
+	@file=`basename $1`; url=`dirname $1`; \
+	for path in $$url http://cbench.org/common/tarballs https://cbench.sandia.gov/common/tarballs http://synapse.sandia.gov/static/tarballs; do \
+	   [ -f $$file ] && break; \
+	   wget --no-check-certificate $$path/$$file; \
+	done
+endef
+
+
+
+# Installation variables
+bin_dir = $(BENCH_HOME)/bin
+hwtest_bin_dir = $(bin_dir)/hwtests
+allinstalldirs = $(bin_dir) $(hwtest_bin_dir)
+
+# vim: syntax=make
