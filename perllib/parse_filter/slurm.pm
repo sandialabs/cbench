@@ -47,6 +47,9 @@ my ($shortpackage) = $package =~ /parse_filter::(\S+)/;
 our %parse_filters = (
 	'\* JOB CANCELLED DUE TO TIME LIMIT \*' =>
 		'SLURM JOB WALLTIME EXCEEDED',
+
+	'\* JOB\s+(\S+)\s+CANCELLED .* DUE TO NODE FAILURE' =>
+		'SLURM JOB $1 NODE FAILURE',
 );
 
 1;
