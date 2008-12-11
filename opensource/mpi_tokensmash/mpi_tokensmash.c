@@ -1272,15 +1272,7 @@ int main(int argc, char *argv[])
                                 printf("%d: (Token %d) cycle=%d average cycle time (ms)=%.6f velocity=%.2f nodes/sec\n",
                                        my_rank,j,token_obj[j].cycles,token_obj[j].ave_cycle_time*1000.0,token_obj[j].velocity);
                             }
-#if 0
-                            else if (verbose && (my_rank == 0) &&
-                                     ((token_obj[j].cycles % (count / REPORT_PERIOD)) == 0) &&
-                                     (token_obj[j].cycles != 0) ) {
-                                printf("%d: (Token %d) cycle=%d average cycle time (ms)=%.6f velocity=%.2f nodes/sec\n",
-                                       my_rank,j,token_obj[j].cycles,token_obj[j].ave_cycle_time*1000.0,token_obj[j].velocity);
-                            }
-#endif
-                            
+                           
                             /* did the token finish? */
                             if (token_obj[j].cycles == count  &&  walltime == -1) {
                                 if (verbose > 1)
@@ -1304,12 +1296,11 @@ int main(int argc, char *argv[])
                                 for (k=0; k<token_len[j]; k++) {
                                     if (ptr_uchar[k] != (k % 256)) {
                                         temp_bad_bytes++;
-                                        
-#if 0
+										/*
                                         printf("%d: token %d recv buffer corrupted!\n",
                                                my_rank,j);
                                         continue;
-#endif
+										*/
                                     }
                                 }
                                 
@@ -1331,11 +1322,11 @@ int main(int argc, char *argv[])
                             for (k=0; k<token_len[j]; k++) {
                                 if (ptr_uchar[k] != (k % 256)) {
                                     temp_bad_bytes++;
-#if 0
+									/* 
                                     printf("%d: token %d recv buffer corrupted!\n",
                                            my_rank,j);
                                     continue;
-#endif
+									*/
                                 }
                             }
                             
