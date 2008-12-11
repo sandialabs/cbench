@@ -125,6 +125,7 @@ typedef struct {
     MPI_Status mpi_status;
     MPI_Request *mpi_request;
     MPI_Request *send_mpi_request;
+	unsigned int send_request_active;
     void *buf;
 } tag_recv_t;
 
@@ -138,6 +139,7 @@ typedef struct {
 
 typedef struct {
     double num_isends;
+    double num_irecvs;
     double num_mpi_test;
     double total_bytes_sent;
     double total_bytes_recv;
@@ -207,6 +209,7 @@ dealer_ctrl_t *dealer_ctrl = NULL;
 MPI_Request ctrl_request;
 MPI_Status ctrl_mpi_status;
 MPI_Request stats_mpi_request;
+unsigned int stats_mpi_request_active = 0;
 MPI_Status stats_mpi_status;
 stats_t stats;
 stats_t overall_stats;
@@ -379,6 +382,7 @@ void send_recv_buf_init(void) {
                     MPI_Abort(MPI_COMM_WORLD,-10);
                     final_cleanup(-11);
                 }
+                stats.num_irecvs++;
                 
                 token_obj[j].start_edge = current_edge;
                 token_obj[j].current_edge = current_edge;
@@ -429,6 +433,7 @@ void send_recv_buf_init(void) {
                     MPI_Abort(MPI_COMM_WORLD,-10);
                     final_cleanup(-10);
                 }
+                stats.num_irecvs++;
 
                 if (verbose > 1)
                     printf("%d: Pre-posted recv for tag %08x from rank %d\n",
@@ -695,6 +700,7 @@ void topology_roles_init(void) {
 
             roles[i].recv_queue[j].mpi_request = &mpi_request_array[mpi_request_index++];
             roles[i].recv_queue[j].send_mpi_request = &mpi_request_array[mpi_request_index++];
+            roles[i].recv_queue[j].send_request_active = 0;
 
             if (mpi_request_index == num_mpi_requests) {
                 if (verbose > 1)
@@ -1119,6 +1125,8 @@ int main(int argc, char *argv[])
                                MPI_COMM_WORLD,
                                roles[i].recv_queue[j].send_mpi_request);
 
+				roles[i].recv_queue[j].send_request_active = 1;
+
                 if (rc != MPI_SUCCESS) {
                     printf("%d: MPI_Isend failed for tag %08x to edge %d (rank %d)\n",
                            my_rank,token_obj[j].tag,token_obj[j].start_edge,
@@ -1133,6 +1141,7 @@ int main(int argc, char *argv[])
                 if (mpi_call_scheme == 0) {
                     /* we don't care about the request object from Isends */
                     MPI_Request_free(roles[i].recv_queue[j].send_mpi_request);
+					roles[i].recv_queue[j].send_request_active = 0;
                 }
                 
                 token_obj[j].status = TAG_RUNNING;
@@ -1185,11 +1194,18 @@ int main(int argc, char *argv[])
                          &completion_flag,
                          &roles[i].recv_queue[j].mpi_status);
 
-                if (mpi_call_scheme == 2) {
+                if (mpi_call_scheme == 2 && roles[i].recv_queue[j].send_request_active) {
                     MPI_Test(roles[i].recv_queue[j].send_mpi_request,
                              &completion_flag2,
                              &mpi_status);                
+					roles[i].recv_queue[j].send_request_active = 0;
                 }
+                else if (mpi_call_scheme == 2 && !roles[i].recv_queue[j].send_request_active) {
+					if (verbose > 1) {
+						printf ("%d: DEBUG: send request not active at location 1\n",
+							my_rank);
+					}
+				}
                                 
                 if (completion_flag) {
                     /* the receive seems to be complete according to MPI */
@@ -1201,13 +1217,14 @@ int main(int argc, char *argv[])
                         completion_flag2 = FALSE;
                         temp_uint = 0;
                         
-                        while (!completion_flag2) {
+                        while (!completion_flag2 && roles[i].recv_queue[j].send_request_active) {
                             MPI_Test(roles[i].recv_queue[j].send_mpi_request,
                                      &completion_flag2,
                                      &mpi_status);                    
 
                             temp_uint++;
                         }
+						roles[i].recv_queue[j].send_request_active = 0;
                         
                         stats.num_mpi_test += temp_uint;                        
                     }
@@ -1352,6 +1369,7 @@ int main(int argc, char *argv[])
                             MPI_Abort(MPI_COMM_WORLD,-12);
                             final_cleanup(-12);
                         }
+						stats.num_irecvs++;
 
                         /* send the token to is next destination depending on 
                          * the integrity_check
@@ -1373,6 +1391,7 @@ int main(int argc, char *argv[])
                                                token_obj[j].tag,
                                                MPI_COMM_WORLD,
                                                roles[i].recv_queue[j].send_mpi_request);
+								roles[i].recv_queue[j].send_request_active = 1;
                             }
                             else {
                                 rc = MPI_Isend(roles[i].recv_queue[j].buf,
@@ -1382,6 +1401,7 @@ int main(int argc, char *argv[])
                                                token_obj[j].tag,
                                                MPI_COMM_WORLD,
                                                roles[i].recv_queue[j].send_mpi_request);                            
+								roles[i].recv_queue[j].send_request_active = 1;
                             }
                         }
                         else {
@@ -1395,6 +1415,7 @@ int main(int argc, char *argv[])
                                            token_obj[j].tag,
                                            MPI_COMM_WORLD,
                                            roles[i].recv_queue[j].send_mpi_request);                        
+							roles[i].recv_queue[j].send_request_active = 1;
                         }
                         
                         if (rc != MPI_SUCCESS) {
@@ -1411,31 +1432,13 @@ int main(int argc, char *argv[])
                         if (mpi_call_scheme == 0) {
                             /* we don't care about the request object from Isends */
                             MPI_Request_free(roles[i].recv_queue[j].send_mpi_request);
+							roles[i].recv_queue[j].send_request_active = 0;
                         }
                     }
                     else if (roles[i].role == EDGE) {
                         /* We just need to bounce the tag object back to the dealer it
                          * came from.
                         */
-
-                    /* If we are receiving the token object, then no
-                     * doubt the Isend that bounced it back to the dealer last time
-                     * is completed!
-                    */
-                    if (mpi_call_scheme == 1) {
-                        completion_flag2 = FALSE;
-                        temp_uint = 0;
-                        
-                        while (!completion_flag2) {
-                            MPI_Test(roles[i].recv_queue[j].send_mpi_request,
-                                     &completion_flag2,
-                                     &mpi_status);                    
-
-                            temp_uint++;
-                        }
-                        
-                        stats.num_mpi_test += temp_uint;
-                    }
 
                         /* send the token object back to its dealer */
                         rc = MPI_Isend(roles[i].recv_queue[j].buf,
@@ -1445,6 +1448,8 @@ int main(int argc, char *argv[])
                                        roles[i].recv_queue[j].tag,
                                        MPI_COMM_WORLD,
                                        roles[i].recv_queue[j].send_mpi_request);
+
+						roles[i].recv_queue[j].send_request_active = 1;
 
                         if (rc != MPI_SUCCESS) {
                             printf("%d: MPI_Isend failed for tag %08x to dealer %d\n",
@@ -1459,6 +1464,7 @@ int main(int argc, char *argv[])
                         if (mpi_call_scheme == 0) {
                             /* we don't care about the request object from Isends */
                             MPI_Request_free(roles[i].recv_queue[j].send_mpi_request);
+							roles[i].recv_queue[j].send_request_active = 0;
                         }
 
                         if (verbose > 2)
@@ -1480,6 +1486,7 @@ int main(int argc, char *argv[])
                             MPI_Abort(MPI_COMM_WORLD,-15);
                             final_cleanup(-15);
                         }
+						stats.num_irecvs++;
                     }
                 }
             }
@@ -1556,6 +1563,8 @@ int main(int argc, char *argv[])
                                    MPI_COMM_WORLD,
                                    &stats_mpi_request);
 
+				   stats_mpi_request_active = 1;
+
                     if (rc != MPI_SUCCESS) {
                         printf("%d: MPI_Isend failed for STATS_TAG to rank 0\n",
                                my_rank);
@@ -1574,9 +1583,13 @@ int main(int argc, char *argv[])
                      * reclaim resources when possible, i.e. when completed
                      * Isends are Tested.
                     */ 
-                    MPI_Test(&stats_mpi_request,
-                             &completion_flag,
-                             &stats_mpi_status);
+					if (stats_mpi_request_active) {
+						MPI_Test(&stats_mpi_request,
+								 &completion_flag,
+								 &stats_mpi_status);
+
+					   stats_mpi_request_active = 0;
+					}
                 }
             }
             else if ( (topology != STAR) && (my_rank == 0) ) {
@@ -1672,6 +1685,8 @@ int main(int argc, char *argv[])
 
                 overall_stats.total_bytes_sent = 0.0;
                 overall_stats.total_bytes_recv = 0.0;
+				overall_stats.num_isends = 0.0;
+				overall_stats.num_irecvs = 0.0;
                 overall_stats.time = 0.0;
                 overall_stats.total_bad_bytes = 0;
                 overall_stats.integrity_errors = 0;
@@ -1679,6 +1694,8 @@ int main(int argc, char *argv[])
                 for (i=0; i<stats_size; i++) {
                     overall_stats.total_bytes_sent += allstats[i].total_bytes_sent;
                     overall_stats.total_bytes_recv += allstats[i].total_bytes_recv;
+                    overall_stats.num_isends += allstats[i].num_isends;
+                    overall_stats.num_irecvs += allstats[i].num_irecvs;
                     overall_stats.time += allstats[i].current_time - allstats[i].start_time;
                     overall_stats.total_bad_bytes += allstats[i].total_bad_bytes;
                     overall_stats.integrity_errors += allstats[i].integrity_errors;
@@ -1708,6 +1725,8 @@ int main(int argc, char *argv[])
                        send_rate,recv_rate);
                 printf("0: STATUS: total data sent = %.04f %s  total data recv = %.04f %s  average time = %.02f s\n",
                        send_units,unit_str,recv_units,unit_str,overall_stats.time);
+				printf("0: STATUS: average sent messaging rate = %0.2f msgs/s   average recv messaging rate = %0.2f msgs/s\n",
+						overall_stats.num_isends/overall_stats.time,overall_stats.num_irecvs/overall_stats.time);
                 printf("0: STATUS: integrity_errors = %.01f  total_bad_bytes = %.01f  stats_updates = %lu\n",
                        overall_stats.integrity_errors,overall_stats.total_bad_bytes,stats_updates);
 
@@ -1780,6 +1799,8 @@ int main(int argc, char *argv[])
     if (my_rank == 0) {
         overall_stats.total_bytes_sent = 0.0;
         overall_stats.total_bytes_recv = 0.0;
+		overall_stats.num_isends = 0.0;
+		overall_stats.num_irecvs = 0.0;
         overall_stats.time = 0.0;
         overall_stats.total_bad_bytes = 0;
         overall_stats.integrity_errors = 0;
@@ -1815,6 +1836,12 @@ int main(int argc, char *argv[])
             printf("Rank %d: send rate = %.02f MB/s  recv rate = %.02f MB/s\n",
                    i,send_rate,recv_rate);
             
+			overall_stats.num_isends += allstats[i].num_isends;
+			overall_stats.num_irecvs += allstats[i].num_irecvs;
+			printf("Rank %d: sent messaging rate = %0.2f msgs/s   recv messaging rate = %0.2f msgs/s\n",
+				allstats[i].num_isends/(allstats[i].end_time -stats.start_time),
+				allstats[i].num_irecvs/(allstats[i].end_time -stats.start_time));
+
             overall_stats.total_bad_bytes += allstats[i].total_bad_bytes;
             overall_stats.integrity_errors += allstats[i].integrity_errors;
             printf("Rank %d: integrity_errors = %.01f  total_bad_bytes = %.01f\n",
@@ -1846,13 +1873,16 @@ int main(int argc, char *argv[])
         
         printf("AVERAGE: send rate = %.02f MB/s  recv rate = %.02f MB/s time = %.02f s\n",
                send_rate,recv_rate,overall_stats.time);
+		printf("AVERAGE: sent messaging rate = %0.2f msgs/s   recv messaging rate = %0.2f msgs/s\n",
+				overall_stats.num_isends/overall_stats.time,overall_stats.num_irecvs/overall_stats.time);
         printf("TOTAL: total data sent = %.04f %s total data recv = %.04f %s\n",
                send_units,unit_str,recv_units,unit_str);
         printf("TOTAL: integrity_errors = %.01f  total_bad_bytes = %.01f\n",
                overall_stats.integrity_errors,overall_stats.total_bad_bytes);
     }
     
-    if (FALSE) {
+    if (verbose > 1) {
+		MPI_Barrier(MPI_COMM_WORLD);
         printf("%d: num_isends = %.01f num_mpi_test = %.01f average num mpi_test = %.02f\n",
                 my_rank,stats.num_isends,stats.num_mpi_test,
                 (float)stats.num_mpi_test/(float)stats.num_isends);
