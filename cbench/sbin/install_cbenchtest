@@ -113,19 +113,24 @@ eval "require 'install.pl'";
 	},
 	'lammps' => {
 		'rsync' => {
-				"openapps/lammps/lammps/bench/" => "lammps/bench/",
+                        "openapps/lammps/lammps/bench/" => "lammps/bench/",
 		},
 	},
 	'amg' => {
 		'rsync' => {
-				"openapps/amg/src/test/sstruct.in.AMG.FD" => "amg/",
+                        "openapps/amg/src/test/sstruct.in.AMG.FD" => "amg/",
 		},
 	},
 	'irs' => {
 		'rsync' => {
-				"openapps/irs/decks/" => "irs/decks/",
+                        "openapps/irs/decks/" => "irs/decks/",
 		},
 	},
+        'sweep3d' => {
+                'rsync' => {
+                        "openapps/sweep3d/input_files/" => "sweep3d/input_files/",
+                },
+        },
 );
 
 # get the testing tree location
