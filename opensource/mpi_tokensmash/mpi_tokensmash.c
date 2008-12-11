@@ -1002,9 +1002,9 @@ int main(int argc, char *argv[])
                 
     /* print out our settings and config*/
     if (my_rank == 0  &&  verbose) {
-        printf("%d: sizeof(double) = %d\n",my_rank,sizeof(double));
-        printf("%d: sizeof(unsigned long) = %d\n",my_rank,sizeof(unsigned long));
-        printf("%d: sizeof(unsigned int) = %d\n",my_rank,sizeof(unsigned int));
+        printf("%d: sizeof(double) = %d\n",my_rank,(int)sizeof(double));
+        printf("%d: sizeof(unsigned long) = %d\n",my_rank,(int)sizeof(unsigned long));
+        printf("%d: sizeof(unsigned int) = %d\n",my_rank,(int)sizeof(unsigned int));
         printf("%d: count(iterations) = %d\n",my_rank,count);
         printf("%d: walltime = %ld minutes\n",my_rank,walltime);
         printf("%d: stats period = %.01f seconds\n",my_rank,stats_period);
@@ -1715,12 +1715,12 @@ int main(int argc, char *argv[])
                 recv_rate = (overall_stats.total_bytes_recv / (overall_stats.time * (double)MEGABYTE));
                 overall_stats.time = overall_stats.time / stats_size;
 
-                printf("0: STATUS: average send rate = %.02f MB/s  average recv rate = %.02f MB/s\n",
+                printf("0: STATUS: ave send rate = %.02f MB/s  ave recv rate = %.02f MB/s\n",
                        send_rate,recv_rate);
                 printf("0: STATUS: total data sent = %.04f %s  total data recv = %.04f %s  average time = %.02f s\n",
                        send_units,unit_str,recv_units,unit_str,overall_stats.time);
-				printf("0: STATUS: average sent messaging rate = %0.2f msgs/s   average recv messaging rate = %0.2f msgs/s\n",
-						overall_stats.num_isends/overall_stats.time,overall_stats.num_irecvs/overall_stats.time);
+				printf("0: STATUS: ave sent msgrate = %0.2f msgs/s/rank   ave recv msgrate = %0.2f msgs/s/rank\n",
+						overall_stats.num_isends/overall_stats.time/stats_size,overall_stats.num_irecvs/overall_stats.time/stats_size);
                 printf("0: STATUS: integrity_errors = %.01f  total_bad_bytes = %.01f  stats_updates = %lu\n",
                        overall_stats.integrity_errors,overall_stats.total_bad_bytes,stats_updates);
 
@@ -1832,9 +1832,9 @@ int main(int argc, char *argv[])
             
 			overall_stats.num_isends += allstats[i].num_isends;
 			overall_stats.num_irecvs += allstats[i].num_irecvs;
-			printf("Rank %d: sent messaging rate = %0.2f msgs/s   recv messaging rate = %0.2f msgs/s\n",
-				allstats[i].num_isends/(allstats[i].end_time -stats.start_time),
-				allstats[i].num_irecvs/(allstats[i].end_time -stats.start_time));
+			printf("Rank %d: sent msgrate = %0.2f msgs/s   recv msgrate = %0.2f msgs/s\n",
+				i,allstats[i].num_isends/(allstats[i].end_time - stats.start_time),
+				allstats[i].num_irecvs/(allstats[i].end_time - stats.start_time));
 
             overall_stats.total_bad_bytes += allstats[i].total_bad_bytes;
             overall_stats.integrity_errors += allstats[i].integrity_errors;
@@ -1867,8 +1867,8 @@ int main(int argc, char *argv[])
         
         printf("AVERAGE: send rate = %.02f MB/s  recv rate = %.02f MB/s time = %.02f s\n",
                send_rate,recv_rate,overall_stats.time);
-		printf("AVERAGE: sent messaging rate = %0.2f msgs/s   recv messaging rate = %0.2f msgs/s\n",
-				overall_stats.num_isends/overall_stats.time,overall_stats.num_irecvs/overall_stats.time);
+		printf("AVERAGE: sent msgrate = %0.2f msgs/s/rank   recv msgrate = %0.2f msgs/s/rank\n",
+				overall_stats.num_isends/overall_stats.time/stats_size,overall_stats.num_irecvs/overall_stats.time/stats_size);
         printf("TOTAL: total data sent = %.04f %s total data recv = %.04f %s\n",
                send_units,unit_str,recv_units,unit_str);
         printf("TOTAL: integrity_errors = %.01f  total_bad_bytes = %.01f\n",
