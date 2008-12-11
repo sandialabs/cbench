@@ -145,7 +145,6 @@ if (!defined $testdir) {
 			'innerloop' => 'npb_gen_innerloop',
 		},
         'lammps' => {
-            'init' => 'lammps_gen_init',
             'innerloop' => 'lammps_gen_innerloop',
             'joblist' => 'lammps_gen_joblist',
         },
@@ -155,6 +154,10 @@ if (!defined $testdir) {
         },
         'irs' => {
             'runsizes' => 'irs_gen_runsizes',
+        },
+        'sweep3d' => {
+            'joblist' => 'sweep3d_gen_joblist',
+            'innerloop' => 'sweep3d_gen_innerloop',
         },
 	},
 );
@@ -829,10 +832,6 @@ sub trilinos_epetratest_gen_innerloop {
 	return 0;
 }
 
-sub lammps_gen_init {
-	# no-op for now
-}
-
 sub lammps_gen_joblist {
     my $ppn = shift;
     my $numprocs = shift;
@@ -840,28 +839,21 @@ sub lammps_gen_joblist {
 	# scaled in the lammps testset means weakly scaled, otherwise jobs are
 	# strongly scaled
     my @scaled_joblist = qw(rhodo.scaled chain.scaled lj.scaled eam.scaled);
-    my @normal_joblist = qw(rhodo chain lj eam rhodo.scaled chain.scaled lj.scaled eam.scaled); #this is only a temporary list; LAMMPS has many more codes use 
+    my @normal_joblist = qw(rhodo chain lj eam rhodo.scaled chain.scaled lj.scaled eam.scaled); #this is only a temporary list; LAMMPS has many more codes to use 
     debug_print(3, "DEBUG: entering lammps_gen_joblist($ppn,$numprocs)\n");
 
     my @tmplist =();
 
     # generate normal jobs
     if (not defined $scaled_only) {
-        debug_print(3, "DEBUG: generating only lammps normal jobs (strongly scaled)");
+        debug_print(3, "DEBUG: generating lammps normal jobs (strongly scaled)");
         push(@tmplist, @normal_joblist);
     }
 
-    # create only scaled jobs when --scaled-only parameter is set
+    # create only scaled jobs when --scaled_only parameter is set
     else {
         debug_print(3, "DEBUG: generating lammps scaled jobs (weakly scaled)");
-        #add scaled jobs 
-            push(@tmplist, @scaled_joblist);
-
-        if ( not defined $scaled_only ) {
-            #also generate normal jobs for --scaled parameter
-            debug_print(3, "DEBUG: generating lammps normal jobs (strongly scaled)");
-            push(@tmplist, @normal_joblist );
-        }
+        push(@tmplist, @scaled_joblist);
     }
 
     debug_print(3, "DEBUG: lammps_gen_joblist() joblist=".join(',',@tmplist));
@@ -883,12 +875,6 @@ sub lammps_gen_innerloop {
     debug_print(3,"DEBUG: entering custom_lammps_innerloop()\n");
 
     debug_print(2,"DEBUG:lammps_gen_innerloop() populating files in: $testset_path\/$ident\/$jobname\n");
-
-	# since the job templates point to the input deck with a path, we don't seem to need
-	# to copy it into the jobs working directory
-	#
-	#copy modified lammps in.* files to each jobdir
-    #$jobname !~ /scaled/ and lammps_copy_files("$testset_path\/$ident\/$jobname", $job);
 
 	# symlink any data files into the jobs directory from the directory holding all the input
 	# decks and data files that only need to be read
@@ -913,7 +899,7 @@ sub lammps_gen_innerloop {
 
 		# according to LAMMPS readme file, LJ and EAM decks need to have Px,Py,Pz a factor
 		# of 20 greater than other decks
-		($job =~ /lj\.scaled|eam.scaled/) and $scale = 20 * $scale;
+		($job =~ /lj\.scaled|eam\.scaled/) and $scale = 20 * $scale;
 
 		my $factors = "$scale $scale $scale";
         my $scaling_params = lammps_get_scaling_params($numprocs, $factors);
@@ -988,6 +974,56 @@ sub irs_gen_runsizes {
 
 	main::debug_print(3,"DEBUG:irs_gen_runsizes() runsizes=".join(',',@newsizes));
 	return @newsizes;
+}
+
+sub sweep3d_gen_joblist {
+    my $ppn = shift;
+    my $numprocs = shift;
+
+    debug_print(3, "DEBUG: entering lammps_gen_joblist($ppn,$numprocs)\n");
+
+    my @joblist = qw(sweep3d);
+
+    # only create this testset if an input file exists for this number of processors
+    my $input_file = "$testset_path\/input_files\/input.150.${numprocs}proc";
+    if (-f $input_file) {
+        debug_print(3, "DEBUG: found $input_file\n");
+    }
+    else {
+        debug_print(3, "DEBUG: $input_file does not exist\n");
+        @joblist = qw();    # create empty joblist so that no job is created 
+    }
+
+    debug_print(3, "DEBUG: sweep3d_gen_joblist($ppn, $numprocs) joblist=".join(',',@joblist));
+
+    return @joblist;
+}
+
+sub sweep3d_gen_innerloop {
+    my $outbuf = shift;      # a *reference* to the actual $outbuf
+	my $numprocs = shift;
+    my $ppn = shift;
+    my $numnodes = shift;
+    my $runtype = shift;
+    my $walltime = shift;
+    my $testset = shift;
+    my $jobname = shift;
+    my $ident = shift;
+    my $job = shift;
+
+    debug_print(3,"DEBUG: entering custom_sweep3d_innerloop()\n");
+
+    debug_print(2,"DEBUG:sweep3d_gen_innerloop() populating files in: $testset_path\/$ident\/$jobname\n");
+
+    # symlink input file to each job directory
+    my $input_file = "$testset_path\/input_files\/input.150.${numprocs}proc";
+    if (-f $input_file) {
+        debug_print(2, "DEBUG:sweep3d_gen_innerloop() symlinking $input_file to $testset_path\/$ident\/$jobname\/input\n");
+        system("/bin/ln -sf $input_file $testset_path\/$ident\/$jobname\/input");
+    }
+    else {
+        debug_print(2, "DEBUG:no symlink for $jobname\n");
+    }
 }
 
 
