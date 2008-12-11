@@ -744,6 +744,9 @@ void usage(char *name)
         printf("        1 = ISend + MPI_Test per send request after token bounce (default)\n");
         printf("        2 = ISend + MPI_Test per token every loop\n");
         /*printf("        3 = ISend + MPI_Waitany for all send/recv requests\n");*/
+        printf("    -x <num> number of X planes in the logical mesh\n");
+        printf("    -y <num> number of Y planes in the logical mesh\n");
+        printf("    -z <num> number of Z planes in the logical mesh (implies 3D mesh mode)\n");
     }
 
     MPI_Finalize();
