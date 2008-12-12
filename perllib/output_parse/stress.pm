@@ -112,12 +112,21 @@ sub parse {
 			$data{'ave_alltoall'} = $1;
 			$status = 'FOUNDDATA';
     	}
+		elsif ($l =~ /Message .* should be from/) {
+			$status = 'BADMESSAGES';
+		}
+		elsif ($l =~ /Message from.*is wrong size/) {
+			$status = 'BADMSGSIZE';
+		}
+		elsif ($l =~ /Message from.*is corrupt/) {
+			$status = 'BADDATA';
+		}
     	elsif ($l =~ /Stress completed/ ) {
 			$found_endrecord = 1;
 		}
 	}
 
-	if ($found_endrecord) {
+	if ($found_endrecord and $status !~ /BAD/) {
 		$data{'STATUS'} = "PASSED";
 	}
 	elsif ($status =~ /CBENCH NOTICE/) {
