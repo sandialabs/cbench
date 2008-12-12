@@ -1,19 +1,25 @@
 include ../../make.def
 
-SUBDIRS = ./perftest-1.3a
+SUBDIR = ./perftest-1.3a
 
-EXECS = $(SUBDIRS)/stress
+EXECS = $(SUBDIR)/stress
 
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
 default: $(EXECS)
 
-$(SUBDIRS)/stress:
-	cd $(SUBDIRS); export CC=$(CC); export F77=$(F77); export MPILIB=$(MPICH)/lib; ./configure --with-mpich=$(MPICH); make; make stress
+$(SUBDIR)/stress: $(SUBDIR)/Makefile $(SUBDIR)/stress.c
+	make -C $(SUBDIR) stress
+
+$(SUBDIR)/Makefile:
+	cd $(SUBDIR); export CC=$(CC); export F77=$(F77); ./configure --with-mpich=
 
 clean:
-	cd $(SUBDIRS); make clean; make distclean
+	make -C $(SUBDIR) clean
+
+distclean: clean
+	make -C $(SUBDIR) distclean
 
 install uninstall:
 	$(do-$@)
