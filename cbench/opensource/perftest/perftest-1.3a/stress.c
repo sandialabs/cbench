@@ -150,8 +150,12 @@ int main( int argc, char *argv[] )
     first = svals[0];
     last  = svals[1];
     incr  = svals[2];
-
+	
     if (__MYPROCID == 0) fputs( test_type_msg, stdout );
+
+    if (__MYPROCID == 0) {
+		    fprintf( fp, "Running on %d procs\n", __NUMNODES);
+	}
 
 /* Disable resource checking */
     MPI_Bcast(&endtime.tv_sec, sizeof(int), MPI_BYTE, 0, MPI_COMM_WORLD );
