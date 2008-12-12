@@ -37,6 +37,7 @@ GetOptions(
 
 (!defined $destdir) and $destdir = "$ENV{PWD}/tmp";
 (! -d "$destdir") and mkdir "$destdir",0770;
+(! -f "$destdir/wiki.txt") and system "touch $destdir/wiki.txt";
 
 (!defined $urlbase) and $urlbase = "URLBASE";
 (!defined $urldir) and $urldir = "htdocs";
@@ -79,7 +80,7 @@ push @wikitext, "$rawfiles\n";
 # add image macro to wikitext
 push @wikitext, "\n$indentstr"."    [[Image($urlbase/$urldir/$destbasename\.jpg)]]\n\n";
 
-open(WIKITEXT,">>$destdir/wiki.txt");
+open(WIKITEXT,">>$destdir/wiki.txt") or print "Error ($!) opening $destdir/wiki.txt\n";
 print WIKITEXT @wikitext;
 close(WIKITEXT);
 
