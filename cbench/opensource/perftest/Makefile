@@ -13,7 +13,7 @@ $(SUBDIR)/stress: $(SUBDIR)/Makefile $(SUBDIR)/stress.c
 	make -C $(SUBDIR) stress
 
 $(SUBDIR)/Makefile:
-	cd $(SUBDIR); export CC=$(CC); export F77=$(F77); ./configure --with-mpich=
+	cd $(SUBDIR); export CC=$(CC); export F77=$(F77); export CFLAGS='$(CFLAGS)'; ./configure --with-mpich=
 
 clean:
 	make -C $(SUBDIR) clean
