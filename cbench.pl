@@ -531,7 +531,59 @@ sub slurm_nodespec_build {
 
 sub slurm_query {
 	my $regex = shift;
-	die "Error: UNIMPLEMENTED slurm_query() ...";
+
+	my %jobdata = (
+		'QUEUED' => 0,
+		'RUNNING' => 0,
+		'TOTAL' => 0,
+	);
+
+	my $cmd = 'squeue -o "%.7i %.9P %.25j %.8u %.8T %.9M %.9l %.6D %R"';
+	debug_print(2, "DEBUG:slurm_query() cmd=$cmd\n");
+	my @buf = `$cmd`;
+	debug_print(3, "DEBUG:slurm_query() buffer dump:@buf");
+	foreach my $l (@buf) {
+		chomp $l;
+		# filter out job lines that don't match the incoming regex
+		(defined $regex and $l !~ /$regex/) and next;
+		# filter by user name as well
+		my $uname = getpwuid($<);
+		($l !~ /$uname/) and next;
+
+		debug_print(3, "DEBUG:slurm_query() l=$l\n");
+		#  JOBID PARTITION                      NAME     USER    STATE      TIME TIMELIMIT  NODES NODELIST(REASON)
+		#     8717    pbatch                       rEX  bob  PENDING      0:00 3-00:00:00      8 (JobHeld)
+
+		if ($l =~ /(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) {
+			my $state = $5;
+			my $name = $3;
+			debug_print(3, "DEBUG:slurm_query() l=$l state=$state name=$name\n");
+
+			if ($state =~ 'PENDING') {
+				$jobdata{$name} = 'queued';
+				$jobdata{'QUEUED'}++;
+				$jobdata{'TOTAL'}++;
+			}
+			elsif ($state  =~ 'RUNNING|COMPLETING') {
+				$jobdata{$name} = 'running';
+				$jobdata{'RUNNING'}++;
+				$jobdata{'TOTAL'}++;
+			}
+			else {
+				$jobdata{$name} = $state;
+				$jobdata{'TOTAL'}++;
+				debug_print(1, "DEBUG:slurm_query() ".
+					"job $name had odd state $state\n");
+			}
+		}
+	}
+
+	if (defined $DEBUG and $DEBUG > 1) {
+		print "DEBUG:slurm_query() Dump of \%jobdata:\n";
+		print Dumper (%jobdata);
+	}
+
+	return %jobdata;
 }
 
 sub slurm_batch_extension {
