@@ -58,6 +58,12 @@ open: $(OPEN_SUBDIRS)
 extras: $(OPENEXTRAS_SUBDIRS)
 	$(do-openextras-subdirs)
 
+iotest:
+	$(MAKE) -C opensource/iozone
+	$(MAKE) -C opensource/ior_bench
+	$(MAKE) -C opensource/iozone install
+	$(MAKE) -C opensource/ior_bench install
+
 hwtest: $(HWTEST_SUBDIRS)
 	$(do-hwtest-subdirs)
 	$(MAKE) -C opensource/NPB serial
