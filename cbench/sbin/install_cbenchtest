@@ -165,8 +165,7 @@ if (defined $testtop) {
 		"perllib",
 		"sbin/start_jobs.pl",
 		"sbin/gen_jobs.pl",
-		"templates/$batch_method" . "_header.in",
-		"templates/interactive_header.in",
+		"templates/\*_header.in",
 		"templates/common\*.in",
 		"templates/cbench_functions",
 	);
