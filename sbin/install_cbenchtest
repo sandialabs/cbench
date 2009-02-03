@@ -259,7 +259,7 @@ foreach my $set (@testset_list) {
 
 	if (!$skel) {
 		# symlink install the core templates used by the testset
-		my @files = `cd $CBENCHTEST; ls -1 templates/$set\_*.in 2>&1`;
+		my @files = `cd $CBENCHTEST; ls -1 templates/$set\_*.* 2>&1`;
 		foreach my $file (@files) {
 			($file =~ /no such/i) and next;
 			chomp $file;
