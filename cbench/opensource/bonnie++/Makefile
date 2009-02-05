@@ -17,7 +17,7 @@ untar:
 clean:
 	cd $(SUBDIRS); make realclean
 
-realclean:
+distclean:
 	rm -fr $(SUBDIRS)
 
 install uninstall:
