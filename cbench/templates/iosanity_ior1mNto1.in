@@ -1,5 +1,6 @@
-# iosanity_ior job template
-# IOR MPI filesystem test using posix, 1 MB chunks
+# iosanity_ior1mNto1 job template
+# IOR MPI filesystem test using posix
+# small total file size keeps this a sanity test as opposed to a stress test
 # N to 1 file access pattern
 # NOTE: bash syntax is used here
 

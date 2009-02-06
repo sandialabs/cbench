@@ -1,12 +1,13 @@
-# shakedown_ior job template
-# IOR MPI filesystem test using posix, 1 MB chunks
+# shakedown_iosanity job template
+# IOR MPI filesystem test using posix
+# small total file size keeps this a sanity test as opposed to a stress test
 # N to N file access pattern
 # NOTE: bash syntax is used here
 
 # we are setting the -b parameter small to not stress the data
 # moving side of the equation, but the file create, delete, open,
 # etc. side of it, i.e. the sanity of the filesystem
-ALLARGS="-b 1m -C -i 2 -r -R -t 1m -v -w -W -e -d 30"
+ALLARGS="-b 2m -C -i 4 -t 1m -v -v -r -R -w -W -e -d 30 -g "
 TESTDIR="TESTDIR_HERE/$JOBID"
 mkdir -p $TESTDIR
 PSFILE=`/bin/mktemp $TESTDIR/posix.nto1.XXXXXX`
