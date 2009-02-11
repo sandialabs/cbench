@@ -592,6 +592,7 @@ sub parse_output_file {
 				debug_print(2,"DEBUG: parse_output_file() elapsed=$elapsed1 delta=$delta tmod=$tmod lastmod=$lastmod timestamp=$timestamp\n");
 
 				# record elapsed time data for this module
+				($lastmod eq '') and $lastmod = $tmod;
 				my $k = "$lastmod"."_elapsed";
 				debug_print(3,"DEBUG: parse_output_file() $k => $delta\n");
 				if (! exists $nodehashref->{$node}->{$k}) {
