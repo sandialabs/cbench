@@ -168,6 +168,6 @@ domostall:
 # compile everything in the main tree (not openapps for example)!
 doitall: 
 	$(MAKE) distclean
-	$(MAKE) nodehwtest
 	$(MAKE) install
 	$(MAKE) hpcc
+	$(MAKE) nodehwtest
