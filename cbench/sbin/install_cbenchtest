@@ -200,16 +200,16 @@ if (defined $testtop) {
 	print "  Writing $bench_test/cbench-init.{sh.csh}...\n";
 	my $cbinitfile="$bench_test/cbench-init";
 	open (CBINIT, ">$cbinitfile.sh") or die "Can't create CBENCH INIT FILE $cbinitfile.sh $!";
-	print CBINIT #!/bin/sh
-	"CBENCHOME=$bench_test
-	CBENCHTEST=$bench_test
-	export CBENCHOME
-	export CBENCHTEST\n";
+	print CBINIT "#!/bin/sh
+CBENCHOME=$bench_test
+CBENCHTEST=\$CBENCHOME
+export CBENCHOME
+export CBENCHTEST\n";
 	close (CBINIT);
 	open (CBINIT, ">$cbinitfile.csh") or die "Can't create CBENCH INIT FILE $cbinitfile.sh $!";
-	print CBINIT #!/bin/csh
-	"setenv CBENCHOME $bench_test
-	setenv CBENCHTEST $bench_test
+	print CBINIT "#!/bin/csh
+setenv CBENCHOME $bench_test
+setenv CBENCHTEST \$CBENCHOME
 	\n";
 	close (CBINIT);
 }
