@@ -1,12 +1,12 @@
 # io_ior job template
-# IOR MPI filesystem test using posix, 1 MB chunks
+# IOR MPI filesystem test using posix
 # N to 1 file access pattern
 # NOTE: bash syntax is used here
 
 # FIXME: we should calculate the blocksize, -b, parameter such that
 # the aggregate filesize is either some multiple of memory per node
 # or a filesize set in cluster.def
-ALLARGS="-b 128m -C -i 2 -r -R -t 1m -v -w -W -e -d 30"
+ALLARGS="-b 1024m -C -i 4 -t 128m -v -v -r -R -w -W -e -d 30 -g "
 TESTDIR="TESTDIR_HERE/$JOBID"
 mkdir -p $TESTDIR
 PSFILE=`/bin/mktemp $TESTDIR/posix.nto1.XXXXXX`

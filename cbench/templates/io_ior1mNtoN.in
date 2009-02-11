@@ -6,7 +6,7 @@
 # FIXME: we should calculate the blocksize, -b, parameter such that
 # the aggregate filesize is either some multiple of memory per node
 # or a filesize set in cluster.def
-ALLARGS="-b 256m -C -i 4 -t 128m -v -v -r -R -w -W -e -d 120 -g "
+ALLARGS="-b 1024m -C -i 4 -t 128m -v -v -r -R -w -W -e -d 30 -g "
 TESTDIR="TESTDIR_HERE/$JOBID"
 mkdir -p $TESTDIR
 PSFILE=`/bin/mktemp $TESTDIR/posix.nto1.XXXXXX`
