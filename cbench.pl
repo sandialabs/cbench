@@ -42,7 +42,7 @@ $TASKSET = "/usr/bin/taskset";
 #
 # this is a list of all the supported Cbench testsets that will
 # be installed in the absence of the user picking specific ones
-$core_testsets = "bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown hpccg trilinos lammps amg irs sweep3d";
+$core_testsets = "bandwidth linpack rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity shakedown hpccg npb trilinos lammps amg irs sweep3d";
 
 
 # An array of run sizes (number of processes) that can be used in
