@@ -16,8 +16,8 @@ all normal: $(SRC)
 	$(MAKE) CC=$(CC) -C $(SRC)
 
 $(SRC): $(TAR)
-	[ ! -d $(SRC) ] && tar zxf $(TAR)
-	ln -sf $(SRC) src
+	-[ ! -d $(SRC) ] && tar zxf $(TAR)
+	-[ ! -s src ] && ln -sf $(SRC) src
 
 $(TAR) download:
 	$(call download-url,$(URL))
