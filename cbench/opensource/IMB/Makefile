@@ -3,8 +3,10 @@ include ../../make.def
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = src/IMB-MPI1
 
-default all: src/make_cbench
-	$(MAKE) -C src -f make_cbench $@
+all: src/IMB-MPI1
+
+src/IMB-MPI1: src/make_cbench
+	$(MAKE) -C src -f make_cbench all
 
 src/make_cbench:
 	cp -f make_cbench src/make_cbench
