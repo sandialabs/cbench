@@ -16,14 +16,14 @@ if [ "$CBENCH_GAZEBO" == "YES" ]; then
 	if [ -z "$JOBID" ]; then
 		# why didn't Gazebo set the JOBID????
 		cbench_echo "Warning: did not find JOBID set by Gazebo"
-		JOBID=`date +%j%H%M`
+		JOBID=`date +%j%H%M%S%N`
 	else
 		cbench_echo "Cbench using Gazebo JOBID $JOBID"
 	fi
 else
 	# generate a unique job identifier, it can be used for uniquely
 	# naming output files
-	JOBID=`date +%j%H%M`
+	JOBID=`date +%j%H%M%S%N`
 fi
 
 # init files to catch stdout/stderr
