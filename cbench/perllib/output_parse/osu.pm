@@ -121,21 +121,30 @@ sub parse {
 			$multidata_key = "MULTIDATA:msgsize:$metric:MB:MB/s";
 		}
 		
-    	if ($l =~ /^(\d+)\s+(\d+\.\d+)/) {
+    	if ($l =~ /^\s*(\d+)\s+(\d+\.\d+)\s*$/) {
 			($metric eq 'latency' and $1 == 0) and $data{$metric} = $2;
 			$max = main::max($max,$2);
-			#$msgrate = main::max($msgrate,$2/$1) unless ($metric eq 'latency');
 			$status = 'FOUNDDATA';
 			($1 == 4194304) and $status = 'COMPLETED';
 			# record the msgsize vs latency/bandwidth MULTIdata
 			$data{$multidata_key}{$1} = $2;
+			main::debug_print(2,"DEBUG:$shortpackage.parse() $metric $1 $2");
     	}
+
+		# message rate benchmark format
+    	if ($l =~ /^\s*(\d+)\s+(\S+)\s+(\S+)/) {
+			$max = main::max($max,$3);
+			$status = 'FOUNDDATA';
+			($1 == 4194304) and $status = 'COMPLETED';
+			# record the msgsize vs latency/bandwidth MULTIdata
+			$data{$multidata_key}{$1} = $3;
+			main::debug_print(2,"DEBUG:$shortpackage.parse() $metric $1 $2 $3");
+		}
 	}
 
 	if ($status =~ /COMPLETED/) {
 		$data{'STATUS'} = "PASSED";
 		($metric ne 'latency') and $data{$metric} = $max;
-		#($metric ne 'latency') and $data{'message_rate'} = $max;
 	}
 	elsif ($status =~ /CBENCH NOTICE/) {
 		# this means the job was not an error, but did not
