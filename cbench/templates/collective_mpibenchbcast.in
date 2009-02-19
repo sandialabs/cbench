@@ -1,0 +1,9 @@
+# collective_mpibenchbcast job template
+# LLNL mpiBench_Bcast benchmark
+# using the all-to-all nonblocking pattern
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/mpiBench_Bcast -c"
+
+cbench_run_cmd $CMD
+
