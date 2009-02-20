@@ -193,7 +193,7 @@ This routine is optional.
 sub alias_spec {
     my $self = shift;
 
-    return "";
+    return undef;
 }
 
 =item B<metric_units()> - Return a hash with a mapping of the
