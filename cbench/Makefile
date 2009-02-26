@@ -28,7 +28,7 @@ HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck presta1.2 ior_bench iozone bonnie++ rotate HPLlinpack \
              IMB osutests lanl stab perftest mpi_examples mpi_slowcpu \
-             mpi_malloc mpi_tokensmash phloem
+             mpi_malloc mpi_tokensmash phloem HPLinpack2
 
 OPENEXTRAS_TESTS = NPB hpcc
 
@@ -40,7 +40,7 @@ OPENEXTRAS_SUBDIRS = $(addprefix opensource/, $(OPENEXTRAS_TESTS))
 SUBDIRS = $(OPEN_SUBDIRS) $(HWTEST_SUBDIRS)
 
 # these are the test sets we try to install into the Cbench test tree
-CONFIGURED_TESTSETS = bandwidth linpack npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity
+CONFIGURED_TESTSETS = bandwidth linpack linpack2 npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity
 
 ifndef BINIDENT
   BINDIR = bin
@@ -87,6 +87,8 @@ standalone: mpich
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/lanl
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/HPLlinpack clean
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/HPLlinpack
+	$(MAKE) CBENCH_STANDALONE=yes -C opensource/HPLinpack2 clean
+	$(MAKE) CBENCH_STANDALONE=yes -C opensource/HPLinpack2
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/hpcc clean
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/hpcc
 # install the standalone MPI binaries used in the NODEHWTEST testset
@@ -94,6 +96,7 @@ standaloneinstall:
 	$(MAKE) -C opensource/mpich install
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/lanl install
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/HPLlinpack install
+	$(MAKE) CBENCH_STANDALONE=yes -C opensource/HPLinpack2 install
 	$(MAKE) CBENCH_STANDALONE=yes -C opensource/hpcc install
 
 # compile and install HPCC

@@ -85,6 +85,11 @@ eval "require 'install.pl'";
 			"templates/xhpl_dat.in",
 		],
 	},
+        'linpack2' => {
+                'symlink' => [
+                        "templates/xhpl_dat.in",
+                ],
+        },
 	'hpcc' => {
 		'symlink' => [
 			"templates/hpccinf_txt.in",
