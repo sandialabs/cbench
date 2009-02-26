@@ -101,6 +101,10 @@ if (defined $joblaunchargs) {
 	$joblaunch_extraargs = $joblaunchargs;
 }
 
+if ($testset =~ /linpack2/ and $xhplbin =~ /^xhpl$/) {
+    $xhplbin='xhpl2';
+}
+
 # Gazebo mode stuff
 (defined $gazebo and (!defined $gazebo_home or !defined $gazebo_config)) and
 		die "--gazebo requires --gazebohome and --gazeboconfig parameters";
@@ -131,6 +135,10 @@ if (!defined $testdir) {
 			'init' => 'xhpl_gen_init',
 			'innerloop' => 'xhpl_gen_innerloop',
 		},
+        'xhpl2' => {
+            'init' => 'xhpl_gen_init',      # uses same custom functions as xhpl
+            'innerloop' => 'xhpl_gen_innerloop', 
+        },
 		'hpcc' => {
 			'init' => 'hpcc_gen_init',
 			'innerloop' => 'hpcc_gen_innerloop',
@@ -416,6 +424,7 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				$outbuf =~ s/TESTDIR_HERE/$testdir/gs;
 				$outbuf =~ s/SCRATCHDIR_HERE/$testdir/gs;
 				$outbuf =~ s/XHPL_BIN_HERE/$xhplbin/gs;
+				$outbuf =~ s/XHPL2_BIN_HERE/$xhplbin/gs;
 				$outbuf =~ s/HPCC_BIN_HERE/$hpccbin/gs;
 
 				# run any custom generation inner loop work, passing a reference to $outbuf so custom
