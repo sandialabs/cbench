@@ -13,5 +13,7 @@ all:
 clean:
 	$(MAKE) -C src clean; $(MAKE) -C src/cachebench clobber
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

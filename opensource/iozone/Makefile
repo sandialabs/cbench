@@ -19,5 +19,7 @@ default all:
 clean:
 	$(MAKE) -C src/current clean
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

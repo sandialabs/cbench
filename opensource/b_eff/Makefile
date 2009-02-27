@@ -20,5 +20,7 @@ $(EXEC): $(SRC)
 clean:
 	rm -f *.o $(EXEC)
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

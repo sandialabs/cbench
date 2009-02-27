@@ -126,5 +126,7 @@ mysecond.o: mysecond.c
 clean:
 	rm -f stream-* stream2-* $(MYSECOND) $(MYSECOND_CC) *.o *.oo
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

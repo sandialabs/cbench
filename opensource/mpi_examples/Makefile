@@ -90,6 +90,8 @@ clean:
 	-/bin/rm -f *.o *~ PI* $(EXECS) pi3 simpleio hello++ pi3f90 cpilog
 	-/bin/rm -rf SunWS_cache ii_files pi3f90.f pi3p cpip *.ti *.ii
 
+distclean: clean
+
 .c.o:
 	$(CC) $(CFLAGS) -c $<
 .f.o:

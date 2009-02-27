@@ -30,5 +30,7 @@ clean:
 	cd src/C; $(MAKE) CC.Linux=$(CC) LDFLAGS.Linux=-L$(MPICH)/lib $@
 	/bin/rm -f IOR.*
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

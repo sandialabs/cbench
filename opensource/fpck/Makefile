@@ -24,5 +24,7 @@ static: $(OBJS)
 clean:
 	rm -f $(EXEC) $(OBJS)
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

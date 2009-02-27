@@ -16,7 +16,7 @@ clean:
 	-$(MAKE) -C $(SRC) clean
 
 distclean:
-	/bin/rm -rf $(SRC) .patched src
+	-/bin/rm -rf $(SRC) .patched src
 
 $(SRC): $(TAR)
 	[ -d $(SRC) ] || tar zxf $(TAR) && rm -f .patched

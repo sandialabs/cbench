@@ -11,5 +11,7 @@ all:
 clean:
 	$(MAKE) -C src clean
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

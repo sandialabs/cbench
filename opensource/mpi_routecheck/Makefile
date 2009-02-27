@@ -21,5 +21,7 @@ $(EXEC)-cpumask: $(SRC) meminfo.o
 clean:
 	rm -f *.o $(EXEC) $(EXEC)-cpumask
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)
