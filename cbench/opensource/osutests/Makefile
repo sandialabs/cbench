@@ -30,5 +30,7 @@ osu_bcast: osu_bcast.c
 clean:
 	rm -f *.o $(EXECS)
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

@@ -41,6 +41,8 @@ globalop: globalop.c
 clean:
 	rm -f $(EXES) *.o
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)
 

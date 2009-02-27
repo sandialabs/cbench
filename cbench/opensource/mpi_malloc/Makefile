@@ -15,5 +15,7 @@ $(EXEC): $(SRC) meminfo.o
 clean:
 	rm -f *.o $(EXEC)
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

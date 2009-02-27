@@ -34,6 +34,8 @@ clean:
 	$(MAKE) -C psnap-1.0 clean
 	/bin/rm -f $(EXECS)
 
+distclean: clean
+
 smallclean:
 	$(MAKE) -C psnap-1.0 clean
 	

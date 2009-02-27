@@ -47,11 +47,13 @@ linpack: xerbla
 local: linpack
 	/bin/mv -f hpl/bin/cbench/xhpl hpl/bin/cbench/xhpl.ch_shmem
 
-clean distclean:
+clean:
 	/bin/rm -f linpack-size	
 	$(MAKE) -C hpl make.def
 	$(MAKE) -C hpl clean_arch_all
 	/bin/rm -rf hpl/lib hpl/bin
+
+distclean: clean
 
 install uninstall:
 	$(do-$@)

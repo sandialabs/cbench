@@ -68,5 +68,7 @@ clean:
 realclean: clean
 	rm -f nodeperf.c nodeperf2.c
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

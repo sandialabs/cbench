@@ -20,5 +20,7 @@ rotate_latency: rotate_latency.c
 clean:
 	rm -f *.o $(EXEC)
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

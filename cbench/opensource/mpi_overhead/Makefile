@@ -22,5 +22,7 @@ mpi_overhead_time: mpi_overhead_time.o
 clean:
 	rm -f *.o $(EXEC)
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)

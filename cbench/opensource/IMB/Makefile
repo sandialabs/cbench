@@ -15,5 +15,7 @@ clean:
 	$(MAKE) -C src -f make_cbench $@
 	rm -f src/make_cbench
 
+distclean: clean
+
 install uninstall:
 	$(do-$@)
