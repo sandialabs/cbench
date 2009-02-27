@@ -939,18 +939,29 @@ sub start_jobs {
         # don't go over max number of procs as configured in cluster.def
         ($num_proc > $max_procs) and next;
 
-		# if the --nodes parameter was given, filter jobs that don't meet
+		# if --nodes, --minnodes, or -maxnodes parameters were given, filter jobs that don't meet
 		# the specified number of nodes
+		my $numnodes = calc_num_nodes($num_proc,$ppn);
 		if (exists $$optdata{numnodes}) {
-			my $numnodes = calc_num_nodes($num_proc,$ppn);
 			if ($numnodes != $$optdata{numnodes}) {
 				debug_print(1,"DEBUG: Jobname $i (numnodes=$numnodes) doesn't".
 					" match number of nodes required ($$optdata{numnodes})\n");
 				next;
 			}
-
-			debug_print(1,"DEBUG: Jobname $i (numnodes=$numnodes) matches ".
-				"number of nodes required ($$optdata{numnodes})\n");
+		}
+		if (exists $$optdata{minnumnodes}) {
+			if ($numnodes < $$optdata{minnumnodes}) {
+				debug_print(1,"DEBUG: Jobname $i (numnodes=$numnodes) cedes".
+					" min number of nodes required ($$optdata{minnumnodes})\n");
+				next;
+			}
+		}
+		if (exists $$optdata{maxnumnodes}) {
+			if ($numnodes > $$optdata{maxnumnodes}) {
+				debug_print(1,"DEBUG: Jobname $i (numnodes=$numnodes) exceeds".
+					" max number of nodes required ($$optdata{maxnumnodes})\n");
+				next;
+			}
 		}
 
         # if $maxprocs is defined, don't run jobs bigger than that
