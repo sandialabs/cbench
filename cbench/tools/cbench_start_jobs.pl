@@ -110,7 +110,7 @@ if (defined $procs) {
 }
 (defined $nodes) and $optdata{numnodes} = $nodes;
 (defined $minnodes) and $optdata{minnumnodes} = $minnodes;
-(defined $maxnodes) and $optdata{maxnumnodes} = $minnodes;
+(defined $maxnodes) and $optdata{maxnumnodes} = $maxnodes;
 (defined $batch) and $start_method  = 'batch';
 (defined $inter) and $start_method  = 'interactive';
 if (defined $throttledbatch) {
