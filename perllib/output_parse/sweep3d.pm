@@ -111,7 +111,7 @@ sub parse {
 		($l =~ /SWEEP3D - Method 5 - Pipelined Wavefront with Line-Recursion/) and $status = 'STARTED';
 
         # all processes print a 'FORTRAN STOP' message before exiting
-		($l =~ /FORTRAN STOP/) and $found_endrecord = 1 and 
+		($l =~ /Elapsed time/) and $found_endrecord = 1 and 
 			$status = 'SUCCESSFUL';
 		#	    $status = 'COMPLETED';
 
