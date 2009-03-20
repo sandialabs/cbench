@@ -1116,13 +1116,13 @@ sub usage {
           "   --minprocs       The minimum number of processors to generate\n".
           "                    jobs for\n".
           "   --procs          Only generate jobs for a single processor count\n".
+		  "   --nodes <num>    Same as --maxprocs, --minprocs, --procs but with number\n".
+		  "                    of nodes\n".
 		  "   --minnodes <num>\n".
 		  "   --maxnodes <num>\n".
           "   --runsizes       Comma separated list of run sizes, i.e. processor\n".
           "                    counts, to generate jobs for.  This overrides\n".
           "                    the default array of run sizes declared in cbench.pl\n".
-		  "   --nodes <num>    Same as --maxprocs, --minprocs, --procs but with number\n".
-		  "                    of nodes\n".
           "   --match          This limits the generation of jobs to\n" .
           "                    jobs with a jobname that matches the specified\n" .
           "                    regex string. For example,\n" .
