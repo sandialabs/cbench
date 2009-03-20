@@ -58,6 +58,9 @@ GetOptions(
     'maxprocs=i' => \$maxprocs_cmdline,
     'minprocs=i' => \$minprocs_cmdline,
     'procs=i' => \$procs_cmdline,
+	'minnodes=i' => \$minnodes,
+	'maxnodes=i' => \$maxnodes,
+	'nodes=i' => \$nodes,
     'runsizes=s' => \$runsizes,
 	'testdir|scratchdir=s' => \$testdir,
 	'jobcbenchtest=s' => \$JOBCBENCHTEST,
@@ -302,13 +305,43 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 		# check and make sure we don't generate jobs over the max
 		# number of procs for the cluster or for the current
 		# ppn (as specified in cluster.def)
-		($numprocs > $max_ppn_procs{$ppn}) and next;
-		($numprocs > $max_procs) and next;
+		if ($numprocs > $max_ppn_procs{$ppn}) {
+			debug_print(2,"DEBUG: $numprocs procs exceeds max_ppn_procs at $ppn\ppn in cluster.def");
+			next;
+		}
+		if ($numprocs > $max_procs) {
+			debug_print(2,"DEBUG: $numprocs procs exceeds max_procs in cluster.def");
+			next;
+		}
 
 		# honor any max/min processor count arguments from the command line
-		((defined $maxprocs_cmdline) and ($numprocs > $maxprocs_cmdline)) and next;
-		((defined $minprocs_cmdline) and ($numprocs < $minprocs_cmdline)) and next;
-		((defined $procs_cmdline) and ($numprocs != $procs_cmdline)) and next;
+		if ((defined $maxprocs_cmdline) and ($numprocs > $maxprocs_cmdline)) {
+			debug_print(2,"DEBUG: $numprocs procs exceeds --maxprocs $maxprocs_cmdline");
+			next;
+		}
+		if ((defined $minprocs_cmdline) and ($numprocs < $minprocs_cmdline)) {
+			debug_print(2,"DEBUG: $numprocs procs below --minprocs $minprocs_cmdline");
+			next;
+		}
+		if ((defined $procs_cmdline) and ($numprocs != $procs_cmdline)) {
+			debug_print(2,"DEBUG: $numprocs procs != --procs $procs_cmdline");
+			next;
+		}
+
+		my $numnodes = calc_num_nodes($numprocs,$ppn);
+		# honor any max/min node count arguments from the command line
+		if ((defined $maxnodes) and ($numnodes > $maxnodes)) {
+			debug_print(2,"DEBUG: $numnodes nodes exceeds --maxnodes $maxnodes");
+			next;
+		}
+		if ((defined $minnodes) and ($numnodes < $minnodes)) {
+			debug_print(2,"DEBUG: $numnodes nodes below --minnodes $minnodes");
+			next;
+		}
+		if ((defined $nodes) and ($numnodes != $nodes)) {
+			debug_print(2,"DEBUG: $numnodes nodes != --nodes $nodes");
+			next;
+		}
 
 		# iterate over the job templates we need to process
 		foreach $job (custom_gen_joblist($ppn,$numprocs)) {
@@ -1083,9 +1116,13 @@ sub usage {
           "   --minprocs       The minimum number of processors to generate\n".
           "                    jobs for\n".
           "   --procs          Only generate jobs for a single processor count\n".
+		  "   --minnodes <num>\n".
+		  "   --maxnodes <num>\n".
           "   --runsizes       Comma separated list of run sizes, i.e. processor\n".
           "                    counts, to generate jobs for.  This overrides\n".
           "                    the default array of run sizes declared in cbench.pl\n".
+		  "   --nodes <num>    Same as --maxprocs, --minprocs, --procs but with number\n".
+		  "                    of nodes\n".
           "   --match          This limits the generation of jobs to\n" .
           "                    jobs with a jobname that matches the specified\n" .
           "                    regex string. For example,\n" .
