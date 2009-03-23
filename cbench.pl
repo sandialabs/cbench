@@ -538,7 +538,7 @@ sub slurm_query {
 		'TOTAL' => 0,
 	);
 
-	my $cmd = 'squeue -o "%.7i %.9P %.25j %.8u %.8T %.9M %.9l %.6D %R"';
+	my $cmd = "squeue -o \"%.7i %.9P %.25j %.8u %.8T %.9M %.9l %.6D %R\" -u $ENV{USER}";
 	debug_print(2, "DEBUG:slurm_query() cmd=$cmd\n");
 	my @buf = `$cmd`;
 	debug_print(3, "DEBUG:slurm_query() buffer dump:@buf");
@@ -555,22 +555,26 @@ sub slurm_query {
 		#     8717    pbatch                       rEX  bob  PENDING      0:00 3-00:00:00      8 (JobHeld)
 
 		if ($l =~ /(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) {
+			my $jobid = $1;
 			my $state = $5;
 			my $name = $3;
-			debug_print(3, "DEBUG:slurm_query() l=$l state=$state name=$name\n");
+			debug_print(3, "DEBUG:slurm_query() l=$l jobid=$1 state=$state name=$name\n");
 
 			if ($state =~ 'PENDING') {
 				$jobdata{$name} = 'queued';
+				$jobdata{$jobid} = 'queued';
 				$jobdata{'QUEUED'}++;
 				$jobdata{'TOTAL'}++;
 			}
 			elsif ($state  =~ 'RUNNING|COMPLETING') {
 				$jobdata{$name} = 'running';
+				$jobdata{$jobid} = 'running';
 				$jobdata{'RUNNING'}++;
 				$jobdata{'TOTAL'}++;
 			}
 			else {
 				$jobdata{$name} = $state;
+				$jobdata{$jobid} = $state;
 				$jobdata{'TOTAL'}++;
 				debug_print(1, "DEBUG:slurm_query() ".
 					"job $name had odd state $state\n");
@@ -2399,16 +2403,27 @@ sub print_job_err {
 
 	$status =~ s/\n$//;
 
-	print BOLD RED "**DIAG**";
-	print BOLD WHITE "(";
-	print GREEN "$fileid";
-	print BOLD WHITE ") ";
-	print BOLD WHITE "had a ";
-	print BOLD RED "$err ";
-	print BOLD WHITE "with status ";
-	print BOLD RED "$status";
-	(defined $extra) and print " ($extra)";
-	print RESET "\n";
+	# check cached jobdata from Slurm, job might be RUNNING and thus in an
+	# ERROR state with respect to what an output_parse module is looking for
+	if (exists $main::slurm_jobdata{$JOBID} and $main::slurm_jobdata{$JOBID} eq 'running') {
+		print BOLD RED "**DIAG**";
+		print BOLD WHITE "(";
+		print GREEN "$fileid";
+		print BOLD WHITE ") is still ";
+		print BOLD GREEN "RUNNING";
+		print RESET "\n";
+	}
+	else {
+		print BOLD RED "**DIAG**";
+		print BOLD WHITE "(";
+		print GREEN "$fileid";
+		print BOLD WHITE ") had ";
+		print BOLD RED "$err ";
+		print BOLD WHITE "with status ";
+		print BOLD RED "$status";
+		(defined $extra) and print " ($extra)";
+		print RESET "\n";
+	}
 }
 
 
