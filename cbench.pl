@@ -2417,7 +2417,7 @@ sub print_job_err {
 		print BOLD RED "**DIAG**";
 		print BOLD WHITE "(";
 		print GREEN "$fileid";
-		print BOLD WHITE ") had ";
+		print BOLD WHITE ") had a ";
 		print BOLD RED "$err ";
 		print BOLD WHITE "with status ";
 		print BOLD RED "$status";
