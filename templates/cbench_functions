@@ -76,3 +76,11 @@ cbench_echo()
 	fi
 }
 
+cbench_runin_tempdir()
+{
+	# make a uniquely named directory to allow a job to isolate itself
+	# from other jobs
+	TEMPDIR="job$JOBID"
+	mkdir -p $PWD/$TEMPDIR
+	cd $TEMPDIR
+}
