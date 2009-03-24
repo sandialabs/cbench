@@ -319,6 +319,9 @@ my %success_data;
 # failed jobs
 my %nodediag_data;
 
+# This hash is used to hold aggregated data about custom parse filter
+# hits.
+my %customparse_hits;
 
 # HERE IS WHERE THE REAL PARSING WORK GETS KICKED OFF...
 #
@@ -704,6 +707,8 @@ if (defined $grepable) {
 
 (defined $diagnose) and dump_jobdiag_stats(\%jobdiag_data);
 
+(defined $customparse) and dump_customparse_hits(\%customparse_hits);
+
 (defined $nodediag) and dump_nodediag_stats(\%nodediag_data);
 
 if (defined $listfound) {
@@ -784,6 +789,7 @@ if (!defined $usecache) {
 
 # build a dplot if asked
 (defined $dplot) and results_to_dplot(\%outhash) unless (defined $successstats);
+
 
 
 ###############################################################
@@ -1284,6 +1290,9 @@ sub parse_output_file {
                             print BOLD CYAN, "$temp";
 							print RESET "\n";
 							$filterhits{$filter}++;
+
+							# add to aggregated custom parse hit data
+							$customparse_hits{"$temp"}++;
 						}
 					}
 				}
@@ -1875,7 +1884,16 @@ sub dump_jobdiag_stats {
 		}
 		print "\n";
 	}
+}
 
+
+sub dump_customparse_hits {
+	my $hash = shift;
+
+	print GREEN "\nCustomparse Matches Summary:\n----------------------------\n";
+	for my $hit (sort {$a <=> $b} (keys %{$hash}) ) {
+		print "\'$hit\' => $hash->{$hit} matches\n"; 
+	}
 }
 
 
