@@ -1,10 +1,10 @@
-README for handling sweep3d input files
+README for cbench sweep3d input files
 
-sweep3d requires a file named 'input' to be in the current working directory of the script or executable running the 'sweep' executable.
+sweep3d requires an input deck file named 'input' to be in the current working directory of the script or executable running the 'sweep' executable.
 
 The 'input' file can either be an actual file or a symbolic link to an actual file of the following form:
 
-file input.150.16proc:
+for example, the file input.150.16proc is:
 
 4 4 10 3 2
 150 150 150 6 1
@@ -12,6 +12,8 @@ file input.150.16proc:
 0 0 0
 0 1 -7
 
-The Cbench cbench_gen_jobs.pl script will look for a file or symlink named 'input' in the testset directory ($CBENCHTEST/sweep3d/) and will make a symlink to the input file in each of the individual job directories that it creates.  
+The Cbench cbench_gen_jobs.pl script will look for an 'input' file in the testset directory ($CBENCHTEST/sweep3d/) and will make a symlink to the input file in each of the individual job directories that it creates.  
 
 Failure to create or link an 'input' file in $CBENCHTEST/sweep3d/ will result in an error and aborted execution of the cbench_gen_jobs.pl script.
+
+Only ppn counts with a corresponding 'input' file in this directory will be created by the gen_jobs script.
