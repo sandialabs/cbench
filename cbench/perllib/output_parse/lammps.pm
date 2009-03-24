@@ -109,6 +109,9 @@ sub parse {
 
 		($l =~ /LAMMPS/) and $status = 'STARTED';
 
+		($l =~ /Failed to reallocate (\d+) bytes for array atom/) and 
+			$status = "REALLOC FAILED";
+
 		#not sure if this is the best way to find the end of the output, but it's
 		# the last thing the rhodo output prints
 		($l =~ /Dangerous builds/) and $found_endrecord = 1 and 
