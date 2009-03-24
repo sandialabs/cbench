@@ -306,40 +306,40 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 		# number of procs for the cluster or for the current
 		# ppn (as specified in cluster.def)
 		if ($numprocs > $max_ppn_procs{$ppn}) {
-			debug_print(2,"DEBUG: $numprocs procs exceeds max_ppn_procs at $ppn\ppn in cluster.def");
+			debug_print(3,"DEBUG: $numprocs procs exceeds max_ppn_procs at $ppn\ppn in cluster.def");
 			next;
 		}
 		if ($numprocs > $max_procs) {
-			debug_print(2,"DEBUG: $numprocs procs exceeds max_procs in cluster.def");
+			debug_print(3,"DEBUG: $numprocs procs exceeds max_procs in cluster.def");
 			next;
 		}
 
 		# honor any max/min processor count arguments from the command line
 		if ((defined $maxprocs_cmdline) and ($numprocs > $maxprocs_cmdline)) {
-			debug_print(2,"DEBUG: $numprocs procs exceeds --maxprocs $maxprocs_cmdline");
+			debug_print(3,"DEBUG: $numprocs procs exceeds --maxprocs $maxprocs_cmdline");
 			next;
 		}
 		if ((defined $minprocs_cmdline) and ($numprocs < $minprocs_cmdline)) {
-			debug_print(2,"DEBUG: $numprocs procs below --minprocs $minprocs_cmdline");
+			debug_print(3,"DEBUG: $numprocs procs below --minprocs $minprocs_cmdline");
 			next;
 		}
 		if ((defined $procs_cmdline) and ($numprocs != $procs_cmdline)) {
-			debug_print(2,"DEBUG: $numprocs procs != --procs $procs_cmdline");
+			debug_print(3,"DEBUG: $numprocs procs != --procs $procs_cmdline");
 			next;
 		}
 
 		my $numnodes = calc_num_nodes($numprocs,$ppn);
 		# honor any max/min node count arguments from the command line
 		if ((defined $maxnodes) and ($numnodes > $maxnodes)) {
-			debug_print(2,"DEBUG: $numnodes nodes exceeds --maxnodes $maxnodes");
+			debug_print(3,"DEBUG: $numnodes nodes exceeds --maxnodes $maxnodes");
 			next;
 		}
 		if ((defined $minnodes) and ($numnodes < $minnodes)) {
-			debug_print(2,"DEBUG: $numnodes nodes below --minnodes $minnodes");
+			debug_print(3,"DEBUG: $numnodes nodes below --minnodes $minnodes");
 			next;
 		}
 		if ((defined $nodes) and ($numnodes != $nodes)) {
-			debug_print(2,"DEBUG: $numnodes nodes != --nodes $nodes");
+			debug_print(3,"DEBUG: $numnodes nodes != --nodes $nodes");
 			next;
 		}
 
@@ -881,7 +881,7 @@ sub lammps_gen_joblist {
 	# scaled in the lammps testset means weakly scaled, otherwise jobs are
 	# strongly scaled
     my @scaled_joblist = qw(rhodo.scaled chain.scaled lj.scaled eam.scaled);
-    my @normal_joblist = qw(rhodo chain lj eam rhodo.scaled chain.scaled lj.scaled eam.scaled); #this is only a temporary list; LAMMPS has many more codes to use 
+    my @normal_joblist = qw(rhodo chain lj eam rhodo.scaled rhodolong.scaled chain.scaled lj.scaled eam.scaled); #this is only a temporary list; LAMMPS has many more codes to use 
     debug_print(3, "DEBUG: entering lammps_gen_joblist($ppn,$numprocs)\n");
 
     my @tmplist =();
@@ -941,7 +941,11 @@ sub lammps_gen_innerloop {
 
 		# according to LAMMPS readme file, LJ and EAM decks need to have Px,Py,Pz a factor
 		# of 20 greater than other decks
-		($job =~ /lj\.scaled|eam\.scaled/) and $scale = 20 * $scale;
+		#
+		# UPDATE (03-24-09): It looks like the in.lj and in.eam input decks already 
+		# 	account for the scale factor of 20. In some testing, it seems like a
+		#   additional scale factor of 2-3 results in an about 200MB/process footprint.
+		($job =~ /lj\.scaled|eam\.scaled/) and $scale = 3;
 
 		my $factors = "$scale $scale $scale";
         my $scaling_params = lammps_get_scaling_params($numprocs, $factors);
