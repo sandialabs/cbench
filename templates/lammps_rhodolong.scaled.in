@@ -1,0 +1,18 @@
+# lammps_rhodolong.scaled job template
+# Uses LAMMPS benchmark code Rhodopsin
+#
+# The goal of this job is to run 24-96 hours, write restart files,
+# and restart from a set of restart files at least once.
+#
+# NOTE: bash syntax is used here
+
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/lmp_cbench SCALING_PARAMS_HERE"
+STDIN_FILE="$CBENCHTEST/lammps/bench/in.rhodolong.scaled"
+
+# use cbench_runin_tempdir() to run ourselves in a unique isolated directory
+cbench_runin_tempdir
+# symlink files into our isolated working directory
+ln -s ../data.rhodolong
+
+cbench_run_cmd $CMD
+
