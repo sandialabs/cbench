@@ -5,6 +5,8 @@
 A __brief__ summary of changes in each release of Cbench.
 
 * Cbench release (1.2.1)
+	* Made the Cbench release tarball conform to more common opensource
+	release "standards".
 	* Found that the LAMMPS eam.scaled and lj.scaled job templates
 	were blowing up memory. Tweak the scaling factors for them.
 	* Add a new LAMMPS job template, rhodolong.scaled, which will
