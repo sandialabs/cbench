@@ -1259,6 +1259,8 @@ sub start_jobs {
 	}
 	else {
 		# plain old batch or interactive start mode
+		my $job_count = 0;
+		print "Found $total_jobs jobs to start in the ".uc($$optdata{testset})." testset\n";
 		for my $iter (1..$repeat) {
 			foreach $i (sort sort_by_numprocs keys(%scripts)) {
 				# chdir into the job's directory
@@ -1286,8 +1288,11 @@ sub start_jobs {
 
 				# be nice to the system and wait a sec
 				sleep $delay unless $DRYRUN;
+
+				$job_count++;
 			}
 		}
+		print "Started $job_count jobs in the ".uc($$optdata{testset})." testset.\n";
 	}
 
 }
