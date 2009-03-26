@@ -285,6 +285,7 @@ foreach $numprocs (sort {$a <=> $b} @run_sizes) {
 #
 # HERE BEGINS the main job generation loop
 #
+my $job_count = 0;
 
 # outer loop iterates over the various ppn cases as defined in
 # the max_ppn_procs hash in cluster.def
@@ -484,7 +485,11 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 
 				($runtype eq 'interactive') and
 					`/bin/chmod gu+x $testset_path\/$ident\/$jobname\/$outfile`;
+
 			}
+			
+			# update stat
+			$job_count++;
 		}
 	}
 }
@@ -498,6 +503,7 @@ if (defined $gazebo) {
 	close(SUBMITCONFIG);
 }
 
+print "Generated $job_count jobs in the ".uc($testset)." testset\n";
 
 ######################################################################
 ######################################################################
