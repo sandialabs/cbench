@@ -4,7 +4,55 @@
         
 A __brief__ summary of changes in each release of Cbench.
 
-* next Cbench release (1.2.1)
+* Cbench release (1.2.1)
+	* Found that the LAMMPS eam.scaled and lj.scaled job templates
+	were blowing up memory. Tweak the scaling factors for them.
+	* Add a new LAMMPS job template, rhodolong.scaled, which will
+	be long running job (24-96 hours targeted) with restart file
+	dumping and restarting the job from a restart file within
+	the same batch job. This is a work in progress...
+	* When the cbench_output_parse.pl --customparse mode is used,
+	keep a hash summarizing the various matches (some of which will
+	likely be repeated) and print out a section with the summary information.
+	* Update LAMMPS output parse module to catch a LAMMPS memory allocation failure
+	message
+	* Added tools/cbench_rm_failed_jobs.pl as a Simple utility script to remove
+	output files from jobs that had ERROR states so they no longer show up in
+	output parsing.  The --force parameter must be given to actualy
+	delete anything. For example:
+		bandwidth_output_parse.pl --ident ompi13-intel11 --diag --report | cbench_rm_failed_jobs.pl
+
+	* cbench_output_parse.pl now intelligently deals with currently RUNNING
+	Slurm jobs and does not erroneously classify them with an ERROR state.
+	* Update cbench_output_parse.pl, cbench_start_jobs.pl, and cbench_gen_jobs.pl
+	to all accept the --maxnodes, --minnodes, --nodes options.
+	* Get rid of "make[1]: *** No rule to make target `distclean'.  Stop." errors
+	by making distclean targets where none existed.
+	* First-pass addition of High-Performance Linpack 2.0 to Cbench.
+	* Adding support for mpiBench collective benchmark from LLNL Phloem benchmarks
+	* Added support for LLNL Sequoia message rate benchmark named SQMR from the
+	Phloem benchmarks
+	* Make the --interactive mode JOBID generation more resistant to collisions
+	* Updated the BANDWIDTH and LATENCY testsets to use the newest 'com' bandwidth
+	benchmark found in the LLNL Phloem 1.0.0 benchmark suite.
+	* Adding Phloem MPI Benchmarks v1.0.0 from ASCI Sequoia benchmarks.  Phloem
+	has mpiBench and mpiGraph and Presta among others.
+	* Tweaked the IOR parameters used in the jobs in the IO and and IOSANITY
+	testsets.  Made the IOR jobs in the IO testset more stressful.
+	* Allow testsets to install alternate job templates or other files properly named.
+	* IO testset: remove the Nto1 test case as a default job
+	* In conjunction with the Cbench Openapps tree, added support for building
+	* the SWEEP3D application and running it in a testset.
+	* Implemented slurm_query() so throttledbatch mode works with Slurm
+	* cbench/Makefile - add iotest target to allow just building IO testing
+	binaries
+	* mpi_tokensmash has been resurrected and debugged
+	* Various minor tweaks to custom parse filters for Slurm
+	* In cbench_output_parse.pl handle the case where open_and_slurp() attempts to
+	slurp a file that is too big to sanely parse more gracefully.
+	* Prototype code for the --usecache cache feature talked about in
+	ticket #13 (from the read-only Trac site at cbench.org)
+	* many other tweaks and bugfixes
 
 * Cbench release (1.2.0)
 	* added LLNL Matmult and Stride memory stress tests
