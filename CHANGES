@@ -42,7 +42,7 @@ A __brief__ summary of changes in each release of Cbench.
 	* Allow testsets to install alternate job templates or other files properly named.
 	* IO testset: remove the Nto1 test case as a default job
 	* In conjunction with the Cbench Openapps tree, added support for building
-	* the SWEEP3D application and running it in a testset.
+	the SWEEP3D application and running it in a testset.
 	* Implemented slurm_query() so throttledbatch mode works with Slurm
 	* cbench/Makefile - add iotest target to allow just building IO testing
 	binaries
