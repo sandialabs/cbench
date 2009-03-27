@@ -1,5 +1,9 @@
 = Quick HOWTO on using the archive_data_to_trac.pl script =
 
+
+
+[wiki:doc/CbenchDocumentation Back to Cbench Documentation]
+
 The [source:trunk/cbench/tools/archive_data_for_trac.pl script] is just a helper script to assist in "archiving" data to a Trac based wiki page.  It makes some assumptions but it might be useful to others maybe.
 
 Basically you output parse and gnuplot and then archive the gnuplot related files, i.e. the .cmd, .dat, .png, etc files, to a directory with optional renaming enroute.  Then the script generates some TRAC wiki text for you to cut and paste.
@@ -50,4 +54,3 @@ which you can then cut and paste into a wiki page.  I'll paste it just below her
 Clearly the --urlbase and --urldir need to be tweaked for your webserver setup.  But it assumes there is some directory tree to put static content with a URL alias to point to it.
 
 Works for me!
-

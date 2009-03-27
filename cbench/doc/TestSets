@@ -1,5 +1,9 @@
 = Cbench Testsets =
 
+
+
+[wiki:doc/CbenchDocumentation Back to Cbench Documentation]
+
 "Test sets" are a concept in Cbench used to package up useful collections of testing work with utility scripts to highly assist the entire testing process. Each test set is a subdirectory within the Cbench testing tree.
 
 There are three key utility scripts that facilitate the use of a given test set (TESTSET below gets replaced with the actual test set name, e.g. linpack, bandwidth, ...):

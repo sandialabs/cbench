@@ -1,4 +1,9 @@
 = Creating A New Output Parse Module =
+
+
+
+[wiki:doc/CbenchDocumentation Back to Cbench Documentation]
+
 The [source:trunk/cbench/perllib/output_parse output parse modules] are used by the [source:trunk/cbench/tools/output_parse_generic.pl core output parsing code] to contextually understand output from MPI tests, benchmarks, applications, etc.
 
 There currently is no easy way to create these modules. At some point, one will always have to figure out how to parse the text output of the test they want to use in Cbench.  Ticket #110 is version 1.2 work which when implemented should make it much easier to create new output parsing logic for 90% of the MPI output one would want to parse.

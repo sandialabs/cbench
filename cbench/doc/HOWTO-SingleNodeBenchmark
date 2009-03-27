@@ -1,5 +1,9 @@
 = Using the Single Node Benchmarking Capabilities =
 
+
+
+[wiki:doc/CbenchDocumentation Back to Cbench Documentation]
+
 '''UNDER CONSTRUCTION'''
 Just dropping rough notes at this point.
 
@@ -12,4 +16,3 @@ Example runs:
 Example report generation:
  * $CBENCHOME/tools/single_node_benchmark.pl --destdir $CBENCHTEST/snb --report --ident nofixB2-acml-pgi716 --node tcompute2 --debug 1 --pdftag nofixB2-acml-pgi716 --savepdfsrc
    * run was done on tcompute3 with test identifier nofixB2-acml-pgi716
-
