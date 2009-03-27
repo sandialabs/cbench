@@ -1,5 +1,9 @@
 = Compiling the Openapps Tree of Cbench =
 
+
+
+[wiki:doc/CbenchDocumentation Back to Cbench Documentation]
+
 [wiki:doc/HOWTO-CheckoutOpenAppsTree Check it out first].
 
 Build linkage requirements:
@@ -9,7 +13,7 @@ Build linkage requirements:
 
 FFTW linkage can be edited in make.def directly (search for FFTWLIB to see the logic).  Alternatively you can specify FFTW_LIB and FFTW_INCLUDE in the environment and make.def should pick it up correctly in most cases.
 
-LAPACK linkage can be edit in make.def directly (search for LAPACKLIB to see the logic).  If your BLASLIB environment variable points to a library setup that has LAPACK (like linking with ACML for BLAS), you can set LAPACKLIB like:
+LAPACK linkage can be edited in make.def directly (search for LAPACKLIB to see the logic).  If your BLASLIB environment variable points to a library setup that has LAPACK (like linking with ACML for BLAS), you can set LAPACKLIB like:
 {{{
 export LAPACKLIB=" "
 }}}

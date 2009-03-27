@@ -1,3 +1,7 @@
+
+
+[wiki:doc/CbenchDocumentation Back to Cbench Documentation]
+
 == What is Cbench? ==
 
 Cbench in a phrase is hopefully a "Scalable Cluster Benchmarking and Testing Toolkit."
@@ -62,5 +66,4 @@ to Sandia.  These days many fine contributions come from others.  Other contribu
  * Ryan Braithwaite (Undergraduate Intern to Sandia)
  * Randy Scott (Hewlett-Packard contractor to Sandia)
  * Jonathan Atencio (Hewlett-Packard contractor to Sandia)
-
 

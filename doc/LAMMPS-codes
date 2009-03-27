@@ -1,96 +1,13 @@
 = Testing Results for LAMMPS benchmark and example codes =
 
-[[PageOutline(1-10,Table of Contents)]]
-
-''Page last updated 14 August 2008''
 
 
-== rhodo.scaled memory scaling tests ==
+[wiki:doc/APPS-LAMMPS Back to Main Cbench+LAMMPS page]
 
-[[Image(mem_scaling_by_volume.png)]]
+''Page last updated 26 February 2009''
 
-||'''var x,y,z'''||	'''x*y*z'''||	'''32 procs'''||	'''96 procs'''||	'''192 procs'''||	'''400 procs'''||	'''800 procs'''||	'''1600 procs'''||
-||3,3,3||	27||	116.84||	50.76||	30.31||	24.12||	12.48||	10.93||
-||4,4,4||	64||	230.83||	92.98||	55.14||	31.89||	25.01||	12.64||
-||5,5,5||	125||	419.66||	164.80||	91.68||	53.53||	31.97||	24.74||
-||6,6,6||	216||	696.15||	251.53||	141.04||	81.93||	50.22||	29.75||
-||7,7,7||	343||	1067.26||	381.77||	213.31||	118.19||	63.90||	45.13||
-||8,8,8||	512||	1546.95||	567.90||	296.95||	162.92||	90.68||	54.31||
-||9,9,9||	729||	NODATA||	776.65||	408.96||	214.98||	122.96||	66.21||
-||10,10,10||	1000||	NODATA||	1031.04||	548.88||	282.57||	152.24||	89.17||
-||11,11,11||	1331||	NODATA||	1348.07||	713.76||	367.85||	198.47||	115.68||
-||12,12,12||	1728||	NODATA||	NODATA||	903.01||	453.14||	244.70||	137.01||
-||13,13,13||	2197||	NODATA||	NODATA||	1126.52||	579.72||	303.14||	170.78||
-||14,14,14||	2744||	NODATA||	NODATA||	1389.97||	706.94||	369.83||	205.19||
-||15,15,15||	3375||	NODATA||	NODATA||	1481.50||	856.33||	443.57||	239.59||
-||16,16,16||	4096||	NODATA||	NODATA||	NODATA||	1016.90||	526.27||	285.49||
-||17,17,17||	4913||	NODATA||	NODATA||	NODATA||	1205.34||       633.94||	336.85||
-||18,18,18||	5832||	NODATA||	NODATA||	NODATA||	1420.36||	751.27||	395.69||
-||20,20,20||	8000||	NODATA||	NODATA||	NODATA||	NODATA||	995.92||	518.69||
-||21,21,21||	9261||	NODATA||	NODATA||	NODATA||	NODATA||	1135.48||	604.96||
-||22,22,22||	10648||	NODATA||	NODATA||	NODATA||	NODATA||	1291.61||	687.30||
-||23,23,23||	12167||	NODATA||	NODATA||	NODATA||	NODATA||	1472.51||	777.65||
-||25,25,25||	15625||	NODATA||	NODATA||	NODATA||	NODATA||	NODATA||	974.39||
-||30,30,30||	27000||	NODATA||	NODATA||	NODATA||	NODATA||	NODATA||	1620.26||
- 
- 
- 
-== Tests of all LAMMPS benchmark/example codes ==
-=== 14 May 2008 Benchmark Code Scaling Runs - 1 ppn 1 node on trps ===
+[wiki:doc/LAMMPS-scaling_tests Summary of Scaling Tests]
 
+[wiki:doc/LAMMPS-rhodo-memtest rhodo.scaled memory scaling tests]
 
-[[Image(benchmark_codes_cputime_all_100steps.png)]]   [[Image(benchmark_codes_memory_all_100steps.png)]]
-
-[[Image(benchmark_codes_totalusage_all_100steps.png)]]
-
-
-||'''Benchmark Code'''||'''Scaling (x y z)'''||'''ppn'''||'''nodes'''||'''Atoms'''||'''Memory (MB)'''||'''Loop Time (s)'''||
-||chain.scaled	      ||1 1 1                || 1       || 1         || 32k       || 8.37288	||1.67363||
-||                    ||2 1 1               || 1       || 1         ||  64k      ||17.4093	      ||4.03516           ||
-||                    ||2 2 1               || 1       || 1         || 128k      ||33.0585	      ||8.81864           ||
-|| || || || || || || || 
-||chute.scaled	      ||1 1 -                || 1       || 1         || 32k       ||34.1137	||1.47615||
-||                    ||2 1 -               || 1       || 1         ||  64k      ||59.2416	      ||3.94993           ||
-||                    ||2 2 -               || 1       || 1         || 128k      || 113.965	      ||9.08002           ||
-|| || || || || || || || 
-||eam	              ||20 20 20                || 1       || 1         || 32k       ||13.3815	||9.82626||
-||                    ||40 20 20            || 1       || 1         ||  64k      ||24.2696	      ||19.7555           ||
-||                    ||40 40 20            || 1       || 1         || 128k      || 45.5814	      ||40.3252           ||
-|| || || || || || || || 
-||lj	              ||20 20 20                || 1       || 1         || 32k       ||11.5405	||3.6435||
-||                    ||40 20 20            || 1       || 1         ||  64k      ||21.1262	      ||7.48384           ||
-||                    ||40 40 20            || 1       || 1         || 128k      || 39.8364	      ||15.2637           ||
-|| || || || || || || || 
-||rhodo.scaled	      ||1 1 1                || 1       || 1         || 32k       ||124.369	||64.0337||
-||                    ||2 1 1               || 1       || 1         ||  64k      ||232.002   	      ||136.545           ||
-||                    ||2 2 1               || 1       || 1         || 128k      || 429.742	      ||284.429           ||
-
-
-=== 13 May 2008 Example Code Runs - 1 ppn 1 node on trps ===
-
-[[Image(lammps_example_codes.png)]]
-
-||'''Example Code'''	||'''Memory (MB)''' || '''Loop Time (s)''' ||
-||colloid	|| 1.84805 || 12.2157||
-||crack	|| 1.98601 || 11.3958||
-||diploe	|| 2.56176 || 1.57349||
-||ellipse - gayberne	|| 2.5914 || 1.08811||
-||ellipse - resquared	|| 2.5914 || 1.99323||
-||flow-couette	|| 1.68525 || 0.495686||
-||flow-poission	|| 1.68525 || 0.611013||
-||friction	|| 1.73539 || 9.54733||
-||indent	|| 1.681	|| 3.81989||
-||indent-min	|| 2.13877 || 1||
-||meam	||4.62954	||0.110863||
-||meam-shear	||6.09291	||2.13663||
-||melt	|| 2.19355 || 1.1163||
-||micelle	|| 1.84502 || 22.5599||
-||min	|| 1.70423 || 0.306506||
-||nemd	|| 1.79413 || 1.22244||
-||obstacle	|| 1.70365 || 2.5635||
-||peptide	|| 19.2806 || 10.0259||
-||pour	|| 3.27422 || 35.5152||
-||pour.2d	|| 3.12551 || 6.21093||
-||rigid	|| 1.62637 || 0.191214||
-||rigid.poems ||1.70328	||5.29969||
-||shear	|| 1.98543 || 12.758||
+[wiki:doc/LAMMPS-all-comparison LAMMPS benchmark and example comparison]
