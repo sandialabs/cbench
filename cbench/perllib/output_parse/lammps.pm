@@ -99,24 +99,41 @@ sub parse {
     my $numlines = scalar @$txtbuf;
 
     my $status = 'NOTSTARTED';
-    my $found_endrecord = 0;
-#use Data::Dumper;
-#print STDERR Dumper(\$txtbuf);
+    my $restart_test = 0;
+	my $baserun_done = 0;
+
     foreach my $l (@{$txtbuf}) {
 
 		($l =~ /NOT BUILT/) and
 			$status = 'NOTBUILT';
 
-		($l =~ /LAMMPS/) and $status = 'STARTED';
+		# if we see a line like this we are running a lammps job template
+		# that will be restarting lammps within the job
+		($l =~ /\= LAMMPS base run \=/) and $restart_test = 1;
+
+		# this catches the beginning of LAMMPS jobs for all jobs including the
+		# restart jobs
+		(($l =~ /LAMMPS\s+\(/) and !$baserun_done) and $status = 'STARTED';
+
+		# this catches teh beginning of the second LAMMPS run in a job that
+		# has a restart in the job
+		($baserun_done and ($l =~ /Reading restart/)) and $status = 'RESTARTED';
 
 		($l =~ /Failed to reallocate (\d+) bytes for array atom/) and 
 			$status = "REALLOC FAILED";
 
 		#not sure if this is the best way to find the end of the output, but it's
 		# the last thing the rhodo output prints
-		($l =~ /Dangerous builds/) and $found_endrecord = 1 and 
+		if ($l =~ /Dangerous builds/ and !$restart_test) {
 			$status = 'SUCCESSFUL';
-		#	    $status = 'COMPLETED';
+		}
+		elsif ($l =~ /Dangerous builds/ and $restart_test and !$baserun_done) {
+			$status = 'PRERESTART';
+			$baserun_done = 1;
+		}
+		elsif ($l =~ /Dangerous builds/ and $restart_test and $baserun_done) {
+			$status = 'SUCCESSFUL';
+		}
 
 		#this is where the data parsing takes place
 		if ($l =~ /Memory usage per processor = ([\d\.]+)/) {
@@ -151,10 +168,7 @@ sub parse {
 	$data{'STATUS'} = "ERROR($status)";
 	defined $main::diagnose and main::print_job_err($fileid,'ERROR',$status);
     }
-#	$found_endrecord or next;
 
-#use Data::Dumper;
-#print STDERR Dumper(\%data);
     return \%data;
 }
 	    
