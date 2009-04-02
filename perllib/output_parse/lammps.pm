@@ -119,8 +119,11 @@ sub parse {
 		# has a restart in the job
 		($baserun_done and ($l =~ /Reading restart/)) and $status = 'RESTARTED';
 
+		# some lammps errors to catch
 		($l =~ /Failed to reallocate (\d+) bytes for array atom/) and 
 			$status = "REALLOC FAILED";
+		($l =~ /Found no restart file matching pattern/) and 
+			$status = "NO RESTART FILE";
 
 		#not sure if this is the best way to find the end of the output, but it's
 		# the last thing the rhodo output prints

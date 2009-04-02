@@ -22,7 +22,12 @@ cbench_run_cmd $CMD
 
 # LAMMPS will exit based on the timesteps in the in.rhodolong.scaled input
 # deck. Wait just a bit and then attempt a restart.
-sleep 30
+cbench_echo ""
+cbench_echo ""
+cbench_echo "Sleeping before starting the restart run...."
+cbench_echo ""
+cbench_echo ""
+sleep 60
 
 cbench_echo "======= LAMMPS restart run ======="
 STDIN_FILE="$CBENCHTEST/lammps/bench/in.rhodolong.scaled.restart"
