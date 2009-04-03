@@ -632,10 +632,8 @@ sub npb_gen_init {
 	# all jobs
 	$use_single_template_for_testset = 1;
 
-	# The list of NAS codes to build. The IS (integer sort) and 
-	# EP (embarrasingly parallel) benchmarks are really not workloads
-	# we care about.
-	my @codes = ('cg','ft','sp','bt','mg','lu');
+	# The list of NAS codes to build.
+	my @codes = ('cg','ft','sp','bt','mg','lu','ep','is');
 
 	# The list of NAS code classes (which correspond to how much memory
 	# a NAS code uses and how much work is done) to generate.
