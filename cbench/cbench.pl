@@ -1113,7 +1113,8 @@ sub start_jobs {
 				$total_jobs--;
 
 				# be nice to the system and wait a sec
-				sleep $delay unless (defined $DRYRUN);
+				(!defined $DRYRUN and defined $delay) and sleep $delay;
+
 				#print "here2 d=$delta t=$total_jobs l=$last_job_script\n";
 				# generate the throttled batch status line
 				my $runtime = (time() - $start) / 60;
@@ -1286,10 +1287,23 @@ sub start_jobs {
 
 				chdir $pwd;
 
-				# be nice to the system and wait a sec
-				sleep $delay unless $DRYRUN;
-
 				$job_count++;
+
+				# if the --delay parameter exists, then just sleep $delay between
+				# jobs. otherwise submit jobs in a "bursty" way by submitting N
+				# jobs without any sleep, and then between batches of N job submissions
+				# sleep for a bit
+				if (!defined $delay and ($start_method =~ /batch/)) {
+					# submit jobs in a bursty way
+					((($job_count % 32) == 0) and sleep 2) unless $DRYRUN;
+				}
+				elsif ($start_method =~ /interactive/) {
+					(!defined $delay) and $delay = 1;
+					sleep $delay;
+				}
+				else {
+					sleep $delay unless $DRYRUN;
+				}
 			}
 		}
 		print "Started $job_count jobs in the ".uc($$optdata{testset})." testset.\n";
