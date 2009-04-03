@@ -165,13 +165,12 @@ sub parse {
 			next;
 		}
 
-        # we need at least 6 more lines in the buffer to make
+        # we need at least 4 more lines in the buffer to make
         # a determination for this chunk of results. we do
         # this check to keep from overflowing our buffer as
         # we parse....
-		if ($i + 6 > $numlines) {
-			(defined $main::DEBUG and $main::DEBUG > 2) and print
-				"parsing ended, buffer would overflow\n";
+		if (($i + 5) > $numlines) {
+			main::debug_print(2,"DEBUG:$shortpackage.parse() parsing ended, buffer would overflow\n");
 			last;
 		}
 
@@ -180,44 +179,29 @@ sub parse {
 		$i += 2;
         my $l =  $txtbuf->[$i];
         chomp $l;
-		my ($exp, $mantissa, $exp_str);
 		# matches a result line with Gflops in exponent notation
-        if ($l =~ /(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)e\+(\d+)/) {
+		# WR00C2L4       98092    80     3     3            2164.52              2.907e+02
+        if ($l =~ /(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\S+)/) {
 			$total_time += $6;
-			$exp = $8;
-			$mantissa = $7;
-			$exp_str = 'e+';
-			$gflops = $mantissa * (10 ** $exp);
+			$gflops = $7;
         }
-		# matches a result line without exponent notation
-        elsif ($l =~ /(\S+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/) {
-			$total_time += $6;
-			$mantissa = $7;
-			$exp = 'noexp';
-			$gflops = $mantissa;
-			$exp_str = 'noexp';
-        }
-
 
 		# check for the PASSED or FAILED status of the result
 		$i += 2;
 		my $pass = 0;
 		$pass = ($txtbuf->[$i++] =~ /PASSED/);
-		$pass += ($txtbuf->[$i++] =~ /PASSED/);
-		$pass += ($txtbuf->[$i] =~ /PASSED/);
 
 		# if the parsed Gigaflops result passed and if the result is the max
 		# of any previous results from this file, then record it locally
 		# pending the determination whether the overall output file is deemed
 		# to pass (this check is done further down)
-		if ($pass == 3) {
+		if ($pass == 1) {
 			if ($gflops > $local_max_gflops) {
 				$local_max_gflops = $gflops;
 			}
 		}
 
-		(defined $main::DEBUG and $main::DEBUG > 2) and print
-			"RESULT, $gflops, $mantissa, $exp, $exp_str, $pass, $status\n";
+		main::debug_print(2,"DEBUG:$shortpackage.parse() RESULT, $gflops, $total_time, $pass, $status\n");
 
 		# we finished parsing a test result, prime the loop for finding the next
 		# result in case there are multiple results in the output
