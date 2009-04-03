@@ -82,9 +82,9 @@ for $f (`/bin/ls -1`) {
 	(defined $DEBUG) and $cmd .= "--debug $DEBUG ";
     $cmd .= join(' ',@ARGV);
 
+	debug_print(1, "DEBUG: cmd=$cmd\n");
 	($dryrun) and $cmd .= " --dryrun";
-	($DEBUG) and print "DEBUG: cmd=$cmd\n";
-	system("$cmd | tee /tmp/cbench.tmp$$") unless $dryrun;
+	system("$cmd | tee /tmp/cbench.tmp$$");
 	my @tmp = `cat /tmp/cbench.tmp$$`;
 	foreach (@tmp) {
 		(/Started (\d+) jobs in the (\S+) testset/) and $totaljobs += $1;
@@ -93,7 +93,8 @@ for $f (`/bin/ls -1`) {
 	chdir $pwd;
 }
 
-print "Total jobs started: $totaljobs\n";
+(!defined $dryrun) and print "Total jobs started: $totaljobs\n";
+(defined $dryrun) and print "Total jobs that would be started: $totaljobs\n";
 unlink "/tmp/cbench.tmp$$";
 
 sub usage {

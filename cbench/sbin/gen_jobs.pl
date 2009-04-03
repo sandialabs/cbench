@@ -76,10 +76,10 @@ for $f (`/bin/ls -1`) {
     (defined $DEBUG) and $cmd .= " --debug $DEBUG ";
     $cmd .= join(' ',@ARGV);
 	
-	($DEBUG) and print "DEBUG: cmd=$cmd\n";
+	debug_print(1, "DEBUG: cmd=$cmd\n");
 	($dryrun) and print "$cmd\n";
 	system("$cmd | tee /tmp/cbench.tmp$$") unless $dryrun;
-	my @tmp = `cat /tmp/cbench.tmp$$`;
+	my @tmp = `cat /tmp/cbench.tmp$$` unless $dryrun;
 	foreach (@tmp) {
 		(/Generated (\d+) jobs in the (\S+) testset/) and $totaljobs += $1;
 	}
