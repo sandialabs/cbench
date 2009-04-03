@@ -44,8 +44,8 @@ GetOptions( 'debug:i' => \$DEBUG,
 			'batchargs=s' => \$batchargs,
 			'batch' => \$batch,
 			'dryrun' => \$dryrun,
-			'tsetexclude=s' => \$tsetexclude,
-			'tsetinclude=s' => \$tsetinclude,
+			'tsetexclude|texclude=s' => \$tsetexclude,
+			'tsetinclude|tinclude=s' => \$tsetinclude,
 			'help' => \$help,
 );
 
@@ -58,6 +58,7 @@ $bench_test = get_bench_test();
 
 $pwd = `pwd`;
 chomp $pwd;
+$totaljobs = 0;
 
 for $f (`/bin/ls -1`) {
 	chomp $f;
@@ -69,7 +70,7 @@ for $f (`/bin/ls -1`) {
 	(defined $tsetexclude and $f =~ /$tsetexclude/) and next;
 	(defined $tsetinclude) and next unless $f =~ /$tsetinclude/;
 	
-	print "Starting jobs in ". uc($f) . " test set\n";
+	print "Starting jobs in ". uc($f) . " testset\n";
 	
 	chdir $f;
 	
@@ -83,10 +84,17 @@ for $f (`/bin/ls -1`) {
 
 	($dryrun) and $cmd .= " --dryrun";
 	($DEBUG) and print "DEBUG: cmd=$cmd\n";
-	system($cmd);
-	
+	system("$cmd | tee /tmp/cbench.tmp$$") unless $dryrun;
+	my @tmp = `cat /tmp/cbench.tmp$$`;
+	foreach (@tmp) {
+		(/Started (\d+) jobs in the (\S+) testset/) and $totaljobs += $1;
+	}
+
 	chdir $pwd;
 }
+
+print "Total jobs started: $totaljobs\n";
+unlink "/tmp/cbench.tmp$$";
 
 sub usage {
     print "USAGE: $0 \n";

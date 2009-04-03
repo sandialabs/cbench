@@ -503,7 +503,7 @@ if (defined $gazebo) {
 	close(SUBMITCONFIG);
 }
 
-print "Generated $job_count jobs in the ".uc($testset)." testset\n";
+print "Generated $job_count jobs in the ".uc($testset)." testset (--ident \'$ident\').\n";
 
 ######################################################################
 ######################################################################
