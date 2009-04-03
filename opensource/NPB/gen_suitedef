@@ -17,10 +17,8 @@ $BENCH_HOME = $ENV{CBENCHOME} ? $ENV{CBENCHOME} :
 unshift @INC, "$BENCH_HOME";
 require "cbench.pl";
 
-# The list of NAS codes to build. The IS (integer sort) and 
-# EP (embarrasingly parallel) benchmarks are really not workloads
-# we care about.
-@codes = qw/ cg ft sp bt mg lu /;
+# The list of NAS codes to build.
+@codes = qw/ cg ft sp bt mg lu ep is/;
 
 # The list of NAS code classes (which correspond to how much memory
 # a NAS code uses and how much work is done) to generate.
