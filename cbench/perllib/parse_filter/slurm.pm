@@ -50,6 +50,10 @@ our %parse_filters = (
 
 	'\* JOB\s+(\S+)\s+CANCELLED .* DUE TO NODE FAILURE' =>
 		'SLURM JOB $1 NODE FAILURE',
+	
+	# slurmd[n262]: *** JOB 1666 CANCELLED AT 04/03-08:41:23 ***
+	'\* JOB.*CANCELLED AT.* \*' =>
+		'SLURM JOB CANCELLED',
 );
 
 1;
