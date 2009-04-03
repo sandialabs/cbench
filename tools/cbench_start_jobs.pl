@@ -97,7 +97,6 @@ if (defined $waitall and !defined $throttledbatch) {
 }
 
 (!defined $match) and $match = ".*";
-(!defined $delay) and $delay = "1";
 (!defined $polldelay) and $polldelay = "120";
 (!defined $repeat) and $repeat = "1";
 (!defined $batchargs) and $batchargs = " ";
