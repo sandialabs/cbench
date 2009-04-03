@@ -1306,7 +1306,7 @@ sub start_jobs {
 				}
 			}
 		}
-		print "Started $job_count jobs in the ".uc($$optdata{testset})." testset.\n";
+		print "Started $job_count jobs in the ".uc($$optdata{testset})." testset (--ident \'$ident\').\n";
 	}
 
 }

@@ -41,8 +41,8 @@ Getopt::Long::Configure("pass_through");
 
 GetOptions( 'debug:i' => \$DEBUG,
             'dryrun' => \$dryrun,
-			'tsetexclude=s' => \$tsetexclude,
-			'tsetinclude=s' => \$tsetinclude,
+			'tsetexclude|texclude=s' => \$tsetexclude,
+			'tsetinclude|tinclude=s' => \$tsetinclude,
             'help' => \$help,
 );
 
@@ -55,6 +55,7 @@ $bench_test = get_bench_test();
 
 $pwd = `pwd`;
 chomp $pwd;
+$totaljobs = 0;
 
 for $f (`/bin/ls -1`) {
 	chomp $f;
@@ -66,7 +67,7 @@ for $f (`/bin/ls -1`) {
 	(defined $tsetexclude and $f =~ /$tsetexclude/) and next;
 	(defined $tsetinclude) and next unless $f =~ /$tsetinclude/;
 
-	print "Generating jobs in ". uc($f) . " test set\n";
+	print "Generating jobs in ". uc($f) . " testset\n";
 	
 	chdir $f;
 	
@@ -77,10 +78,17 @@ for $f (`/bin/ls -1`) {
 	
 	($DEBUG) and print "DEBUG: cmd=$cmd\n";
 	($dryrun) and print "$cmd\n";
-	system($cmd) unless $dryrun;
+	system("$cmd | tee /tmp/cbench.tmp$$") unless $dryrun;
+	my @tmp = `cat /tmp/cbench.tmp$$`;
+	foreach (@tmp) {
+		(/Generated (\d+) jobs in the (\S+) testset/) and $totaljobs += $1;
+	}
 	
 	chdir $pwd;
 }
+
+print "Total jobs generated: $totaljobs\n";
+unlink "/tmp/cbench.tmp$$";
 
 sub usage {
     print "USAGE: $0 \n";
