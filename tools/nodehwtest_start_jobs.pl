@@ -38,6 +38,13 @@ Getopt::Long::Configure("pass_through");
 GetOptions( 'ident=s' => \$ident,
 			'background|bg' => \$background,
             'batch' => \$batch,
+            'nodebatch' => \$nodebatch,
+			'maxprocs=i' => \$maxprocs,
+			'minprocs=i' => \$minprocs,
+			'procs=i' => \$procs,
+			'minnodes=i' => \$minnodes,
+			'maxnodes=i' => \$maxnodes,
+			'nodes=i' => \$nodes,
             'remote' => \$remote,
 			'batchargs=s' => \$batchargs,
             'nodelist=s' => \$nodelist,
@@ -61,8 +68,8 @@ if (defined $help) {
 
 (!defined $ident) and $ident = $cluster_name . "1";
 
-if (!defined $remote and !defined $batch) {
-    die "--remote or --batch parameter required\n";
+if (!defined $remote and !defined $batch and !defined $nodebatch) {
+    die "--batch or --nodebatch or --remote parameter required\n";
 }
 
 my $pwd = `pwd`;
@@ -95,7 +102,7 @@ elsif (defined $nodefile) {
 	}
 	close(IN);
 }
-else {
+elsif (!defined $batch) {
 	my $infile = "$testset_path/$ident/nodelist";
 	open (IN,"<$infile") or die
 		"Could not read $infile ($!)";
@@ -129,10 +136,39 @@ if (defined $ignorenodes) {
 	} 
 }
 
-# how many nodes will we be running tests on 
+# how many nodes will we be running tests on?
+# in --nodebatch mode, this is just the count of the %nodehash.
+# in --batch mode, we have to do some figuring.
 my $numtestnodes = 0;
-foreach my $node (keys %nodehash) {
-	($nodehash{$node} == 1) and $numtestnodes++;
+if (!defined $batch) {
+	foreach my $node (keys %nodehash) {
+		($nodehash{$node} == 1) and $numtestnodes++;
+	}
+}
+else {
+	if (defined $procs) {
+		$numtestnodes = int ($procs / $procs_per_node);
+		($numtestnodes == 0) and $numtestnodes = 1;
+	}
+	elsif (defined $maxprocs) {
+		$numtestnodes = int ($maxprocs / $procs_per_node);
+		($numtestnodes == 0) and $numtestnodes = 1;
+	}
+	elsif (defined $nodes) {
+		$numtestnodes = $nodes;
+	}
+	elsif (defined $maxnodes) {
+		$numtestnodes = $maxnodes;
+	}
+	else {
+		$numtestnodes = $max_nodes;
+	}
+
+	# to make the block of code below abled to deal with --nodebatch and
+	# cases, we put some dummy info in the %nodehash array.
+	for (1..$numtestnodes) {
+		$nodehash{"dummy$_"} = "dummy";
+	}
 }
 (defined $DEBUG) and print "DEBUG: numtestnodes=$numtestnodes\n";
 
@@ -190,9 +226,9 @@ else {
 }
 
 # We have to do somewhat different work to startup the node level hw tests
-# in a batch mode versus a remote execution mode versus a remote execution
-# mode with offload
-if (defined $batch) {
+# in a batch versus nodebatch mode versus a remote execution mode versus a
+# remote execution mode with offload
+if (defined $nodebatch or defined $batch) {
 	# make sure the directory is there with the proper test identification
 	(! -d "$testset_path\/$ident") and mkdir "$testset_path\/$ident",0750;
 
@@ -240,7 +276,7 @@ if (defined $batch) {
 	$numsubmitted = 0;
 	$ppn = $numnodes = $numprocs = 1; 
 	$runtype = 'batch';
-	$jobname = "node_hw_test-1ppn-1";
+	$jobname = "nodetest-1ppn-1";
 	foreach my $node (sort sort_by_nodename keys(%nodehash)) {
 		# make sure the node wasn't excluded
 		($nodehash{$node} == 0xdead) and next;
@@ -248,13 +284,20 @@ if (defined $batch) {
 		# get clean batch job template
 		$outbuf = $outbuf_clean;
 
-		# build the string that we will put into the batch template
-		# that will target the batch script for a specific node
-		@nodearray = ("$node");
-		$nodespec = batch_nodespec_build(\@nodearray); 
-		# update the batch job file with the nodespec
-		$outbuf =~ s/TORQUE_NODESPEC_HERE/$nodespec/gs;
-		$outbuf =~ s/SLURM_NODESPEC_HERE/-w $nodespec/gs;
+		if (defined $nodebatch) {
+			# build the string that we will put into the batch template
+			# that will target the batch script for a specific node
+			@nodearray = ("$node");
+			$nodespec = batch_nodespec_build(\@nodearray); 
+			# update the batch job file with the nodespec
+			$outbuf =~ s/TORQUE_NODESPEC_HERE/$nodespec/gs;
+			$outbuf =~ s/SLURM_NODESPEC_HERE/-w $nodespec/gs;
+		}
+		else {
+			# update the batch job file with a generic nodecount
+			$outbuf =~ s/TORQUE_NODESPEC_HERE/1\:ppn\=$procs_per_node/gs;
+			$outbuf =~ s/SLURM_NODESPEC_HERE/-N 1/gs;
+		}
 
 		# updated the batch job template with possible preamble stuff
 		if (defined $preamble) {
@@ -350,7 +393,7 @@ if (defined $offloadmap) {
 			"$bench_test/$testset/nodehwtest_start_jobs.pl");
 		$offloadcmd .= "--nodelist $nodelist ";
 		(defined $remote) and $offloadcmd .= "--remote ";
-		(defined $batch) and $offloadcmd .= "--batch ";
+		(defined $nodebatch) and $offloadcmd .= "--nodebatch ";
 		(defined $background) and $offloadcmd .= "--bg ";
 		(defined $preamble) and $offloadcmd .= "--preamble \'$preamble\' ";
 		(defined $DRYRUN) and $offloadcmd .= "--dryrun ";
@@ -438,7 +481,10 @@ sub usage {
 	      "Cbench script to start jobs in the $testset test set\n".
           "   --remote             Start jobs via remote command execution in\n" .
 		  "                        parallel\n".
-		  "   --batch              Start node hw test jobs via a batch scheduler\n".
+		  "   --batch              Start nodehwtest jobs via a batch scheduler that will\n".
+		  "                        run wherever the batch system puts them\n".
+		  "   --nodebatch          Start nodehwtest jobs targeted for specific list\n".
+		  "                        of nodes via a batch scheduler\n".
 		  "   --batchargs 'args'   Pass extra arguments to the batch or remote execution\n".
 		  "                        methods. For example:\n".
 		  "                            --batchargs '-l walltime=08:00:00'\n".
