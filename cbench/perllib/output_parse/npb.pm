@@ -182,7 +182,7 @@ This routine is optional.
 sub alias_spec {
 	my $self = shift;
 
-	return "(cg|ft|sp|bt|mg|lu)[A-D]";
+	return "(cg|ft|sp|bt|mg|lu|ep|is)[A-D]";
 }
 
 =item B<metric_units()> - Return a hash with a mapping of the
