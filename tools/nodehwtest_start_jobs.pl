@@ -317,6 +317,7 @@ if (defined $nodebatch or defined $batch) {
 
 		# write out the generated job file
 		$outfile = "nhwt\-$node\.$batch_extension";
+		(defined $batch) and $outfile = "nhwt\.$batch_extension";
 		open (OUT,">$testset_path\/$ident\/$outfile") or die
 			"Could not write $testset_path\/$ident\/$outfile ($!)";
 		print OUT $outbuf;
