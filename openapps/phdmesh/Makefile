@@ -6,7 +6,7 @@ SRC=phdMesh
 TAR=$(SRC).tar.gz
 URL=https://software.sandia.gov/mantevo/downloads/$(TAR)
 
-EXECS = $(SRC)/test_HPCCG
+EXECS = $(SRC)/build_cbench/test_mesh.exe
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 

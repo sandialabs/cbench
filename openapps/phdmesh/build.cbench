@@ -20,7 +20,13 @@ SAVECC="${CC}"
 SAVECXX="${CXX}"
 SAVELDCXX="${CXX}"
 
-source ${PHDMESH_PATH}/config/${COMPILERCOLLECTION} mpi
+compiler=${COMPILERCOLLECTION}
+opts="mpi"
+if [ ${COMPILERCOLLECTION} == "gcc" ]; then
+	compiler=gnu
+	opts="mpich"
+fi
+source ${PHDMESH_PATH}/config/${compiler} ${opts}
 
 # save CC, CXX, and LDCXX since the next source command wipes them out
 CC="${SAVECC}"
