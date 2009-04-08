@@ -767,7 +767,7 @@ print "FAILED = $tmperrs\n";
 print join('',@tmpbuf) . "\n";
 
 my $temp = 0;
-my $temp2 = $total_jobs_parsed - $statusdata{'NOTICE'};
+my $temp2 = $total_jobs_parsed - $statusdata{'NOTICE'} - $statusdata{'RUNNING'};
 $temp = $statusdata{'PASSED'}/$temp2 unless ($temp2 == 0);
 printf "Overall Job Success = %0.2f%%\n",$temp*100;
 push @invocation_data, sprintf "# Overall Job Success = %0.2f%%\n",$temp*100;
@@ -1052,7 +1052,7 @@ sub parse_output_file {
 				$statusdata{$status}++;
 
 				# updated job failure diagnostic data
-				if ($status ne 'PASSED' and $status ne 'NOTICE') {
+				if ($status ne 'PASSED' and $status ne 'NOTICE' and $status ne 'RUNNING') {
 					$jobdiag_data{$np}{$filedata->{$k}}++;
 					$jobpassed = 0;
 
@@ -1119,6 +1119,10 @@ sub parse_output_file {
 						$reportdata{testsets}{$testident}{$currtestset}{$bench}{notice} = 0;
 					}
 					$reportdata{testsets}{$testident}{$currtestset}{$bench}{notice}++;
+				}
+				elsif ($status eq 'RUNNING') {
+					$jobpassed = 1;
+					print "-------------------------------------------------------------\n";
 				}
 
 				$success_data{$np}{'TOTAL'}++;
