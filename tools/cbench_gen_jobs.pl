@@ -170,6 +170,10 @@ if (!defined $testdir) {
             'joblist' => 'sweep3d_gen_joblist',
             'innerloop' => 'sweep3d_gen_innerloop',
         },
+        'phdmesh' => {
+            'runsizes' => 'phdmesh_gen_runsizes',
+            'innerloop' => 'phdmesh_gen_innerloop',
+        },
 	},
 );
 
@@ -1076,6 +1080,88 @@ sub sweep3d_gen_innerloop {
     }
 }
 
+sub phdmesh_gen_runsizes {
+	my $sizes = shift;
+
+	main::debug_print(3,"DEBUG: entering phdmesh_gen_runsizes(@$sizes)\n");
+
+	# powers of two only
+	my @newsizes = (1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192);
+
+	main::debug_print(3,"DEBUG:phdmesh_gen_runsizes() runsizes=".join(',',@newsizes));
+	return @newsizes;
+}
+
+sub phdmesh_gen_innerloop {
+	my $outbuf = shift;      # a *reference* to the actual $outbuf
+	my $numprocs = shift;
+	my $ppn = shift;
+	my $numnodes = shift;
+	my $runtype = uc shift;
+	my $walltime = shift;
+	my $testset = shift;
+	my $jobname = shift;
+	my $ident = shift;
+	my $job = shift;
+
+	main::debug_print(3,"DEBUG: entering phdmesh_gen_innerloop()\n");
+
+	my %fact = (
+		1 => '2,1,1',
+		2 => '2,1,2',
+		4 => '4,1,2',
+		8 => '4,1,4',
+		16 => '4,2,4',
+		32 => '8,2,4',
+		64 => '8,2,8',
+		128 => '8,4,8',
+		256 => '16,4,8',
+		512 => '16,4,16',
+		1024 => '16,8,16',
+		2048 => '32,8,16',
+		4096 => '32,8,32',
+		8192 => '32,16,32',
+	);
+
+	# get the base factors 
+	my ($px,$py,$pz) = split(',',$fact{$numprocs});
+
+	# for the standard gears job that phdmesh has as an example, i.e. the scaling.i
+	# file, we just need to multiply the py base factor by 3.
+	($job eq 'gearsstd') and $py = $py * 3;
+
+	# for the gearsbig job, we just want to scale things some. the amount is based
+	# on some sample runs, but is subject to change as needed.
+	if ($job eq 'gearsbig') {
+		$px = $px * 2;
+		$py = $py * 6;
+		$pz = $pz * 2;
+	}
+
+	my $numgears_per_proc = ($px * $py * $pz) / $numprocs;
+
+	main::debug_print(3,"DEBUG:phdmesh_gen_innerloop() px=$px py=$py pz=$pz\n");
+
+	# build the input file contents
+	my $datbuf = "threadpool 1
+#
+# Weak scaling test with $numgears_per_proc gears per processor,
+# such that the gear-grid dimensions grow roughly
+# uniformly in each spatial dimension.
+#
+# $numprocs Processes:
+gears $px $py $pz
+";
+
+	# write out the generated phdmesh input file
+	my $full_test_path = "$testset_path\/$ident\/$jobname\/input.i";
+	open (PHDFILE,">$full_test_path") or die
+		"Could not write $full_test_path ($!)";
+	print PHDFILE $datbuf;
+	close(PHDFILE);
+
+	return 0;
+}
 
 
 ######################################################################
@@ -1182,5 +1268,5 @@ sub usage {
           "   --scale_factor <factor>   The additional factor by which you would like to \n".
           "                             scale the x,y,z values in the scaling benchmarks\n".
 		  "                             For example:\n".
-		  "                               --scaled_factor 20\n";
+		  "                               --scale_factor 20\n";
 }
