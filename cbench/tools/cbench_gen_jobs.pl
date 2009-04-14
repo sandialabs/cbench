@@ -167,6 +167,7 @@ if (!defined $testdir) {
             'runsizes' => 'irs_gen_runsizes',
         },
         'sweep3d' => {
+            'init' => 'sweep3d_gen_init',
             'joblist' => 'sweep3d_gen_joblist',
             'innerloop' => 'sweep3d_gen_innerloop',
         },
@@ -1030,32 +1031,44 @@ sub irs_gen_runsizes {
 	return @newsizes;
 }
 
+sub sweep3d_gen_init {
+    my $testset = shift;
+    %sweep3d_files = ();
+
+    my $file;
+    debug_print(3,"DEBUG: entering sweep3d_gen_init()\n");
+
+    # cache the input file generation templates
+    @sweep3d_templates = qw(150std long);
+    for my $template (@sweep3d_templates) {
+        debug_print(3, "DEBUG: reading in $template input file template\n");
+
+        open (INFILE,"<$bench_test\/$testset\/input_files\/sweep3d_$template") or die
+            "ERROR:sweep3d_gen_init() Could not open $bench_test\/$testset\/input_files\/sweep3d_$template ($!)";
+        undef $/;
+
+        $sweep3d_files{$template} = <INFILE>;
+
+        close(INFILE);
+        $file = "";
+    }
+    $/ = "\n";
+}
+
 sub sweep3d_gen_joblist {
-    my $ppn = shift;
-    my $numprocs = shift;
 
-    debug_print(3, "DEBUG: entering lammps_gen_joblist($ppn,$numprocs)\n");
+    debug_print(3, "DEBUG: entering sweep3d_gen_joblist\n");
 
-    my @joblist = qw(sweep3d);
+    my @joblist = qw(150std long);
 
-    # only create this testset if an input file exists for this number of processors
-    my $input_file = "$testset_path\/input_files\/input.150.${numprocs}proc";
-    if (-f $input_file) {
-        debug_print(3, "DEBUG: found $input_file\n");
-    }
-    else {
-        debug_print(3, "DEBUG: $input_file does not exist\n");
-        @joblist = qw();    # create empty joblist so that no job is created 
-    }
-
-    debug_print(3, "DEBUG: sweep3d_gen_joblist($ppn, $numprocs) joblist=".join(',',@joblist));
+    debug_print(3, "DEBUG: sweep3d_gen_joblist=".join(',',@joblist));
 
     return @joblist;
 }
 
 sub sweep3d_gen_innerloop {
     my $outbuf = shift;      # a *reference* to the actual $outbuf
-	my $numprocs = shift;
+        my $numprocs = shift;
     my $ppn = shift;
     my $numnodes = shift;
     my $runtype = shift;
@@ -1066,18 +1079,22 @@ sub sweep3d_gen_innerloop {
     my $job = shift;
 
     debug_print(3,"DEBUG: entering custom_sweep3d_innerloop()\n");
+    debug_print(2,"DEBUG: sweep3d_gen_innerloop() populating files in: $testset_path\/$ident\/$jobname\n");
+    debug_print(3,"DEBUG: writing input file for $job with NP=$numprocs and PPN=$ppn\n");
 
-    debug_print(2,"DEBUG:sweep3d_gen_innerloop() populating files in: $testset_path\/$ident\/$jobname\n");
+    # substitute in required input deck information for this job size
+    $databuf = $sweep3d_files{$job};
+    $databuf =~ s/NP_HERE/$numprocs/gs;
+    $databuf =~ s/PPN_HERE/$ppn/gs;
 
-    # symlink input file to each job directory
-    my $input_file = "$testset_path\/input_files\/input.150.${numprocs}proc";
-    if (-f $input_file) {
-        debug_print(2, "DEBUG:sweep3d_gen_innerloop() symlinking $input_file to $testset_path\/$ident\/$jobname\/input\n");
-        system("/bin/ln -sf $input_file $testset_path\/$ident\/$jobname\/input");
-    }
-    else {
-        debug_print(2, "DEBUG:no symlink for $jobname\n");
-    }
+    # write out the generated input file
+    my $full_test_path = "$testset_path\/$ident\/$jobname\/input";
+    open (OUTFILE,">$full_test_path") or die
+        "Could not write $full_test_path ($!)";
+    print OUTFILE $databuf;
+    close(OUTFILE);
+
+    return 0;
 }
 
 sub phdmesh_gen_runsizes {
