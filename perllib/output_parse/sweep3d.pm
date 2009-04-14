@@ -100,6 +100,9 @@ sub parse {
 
     my $status = 'NOTSTARTED';
     my $found_endrecord = 0;
+
+    my $mem_per_domain = 0;
+    my $domains = 1;
 #use Data::Dumper;
 #print STDERR Dumper(\$txtbuf);
     foreach my $l (@{$txtbuf}) {
@@ -119,7 +122,7 @@ sub parse {
 		# this is where the data parsing takes place
         #
 		if ($l =~ /memory usage per domain:\s+(.*)/) {
-			$data{'memory'} = $1;
+            $mem_per_domain = $1;
 		}
 
 		# capture CPU time
@@ -131,6 +134,11 @@ sub parse {
 		if ($l =~ /CPU grind time:\s+(.*)/) {
 			$data{'cpu_grind_time'} = $1;
 		}
+
+        # save # of domains for calculating overall memory usage
+        if ($l =~ /\s+(.*)domains.*/) {
+            $domains = $1;
+        }
 
         #
         # end data parsing
@@ -149,6 +157,9 @@ sub parse {
 	defined $main::diagnose and main::print_job_err($fileid,'ERROR',$status);
     }
 #	$found_endrecord or next;
+
+    # calculate the total amount of memory used
+    $data{'memory_total'} = $mem_per_domain * $domains;
 
 #use Data::Dumper;
 #print STDERR Dumper(\%data);
@@ -193,7 +204,7 @@ This routine is optional.
 sub alias_spec {
     my $self = shift;
 
-    return undef;
+    return "150std|long";
 }
 
 =item B<metric_units()> - Return a hash with a mapping of the
