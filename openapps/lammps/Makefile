@@ -15,6 +15,7 @@ INSTALLTARGETS = $(EXECS)
 all: $(SRC)
 	$(MAKE) -C $(SRC)/lib/poems -f Makefile.cbench
 	make -C $(SRC)/lib/meam -f Makefile.cbench
+	make -C $(SRC)/lib/reax -f Makefile.cbench
 	$(MAKE) -C $(SRC)/src yes-all
 	$(MAKE) -C $(SRC)/src cbench
 
@@ -25,6 +26,7 @@ $(SRC): $(TAR)
 	cd $(SRC)/src/MAKE; ln -sf ../../../Makefile.cbench .
 	cd $(SRC)/lib/poems; ln -sf ../../../Makefile.cbench-poems Makefile.cbench
 	cd $(SRC)/lib/meam; ln -sf ../../../Makefile.cbench-meam Makefile.cbench
+	cd $(SRC)/lib/reax; ln -sf ../../../Makefile.cbench-reax Makefile.cbench
 	touch $(SRC)
 
 $(TAR) download:
