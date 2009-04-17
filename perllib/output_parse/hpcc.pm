@@ -109,6 +109,8 @@ sub parse {
 	my $start_time = 0;
 	my $end_time = 0;
     foreach my $l (@{$txtbuf}) {
+        ($l =~ /CBENCH NOTICE/) and $status = $l;
+        
         ($l =~ /DARPA\/DOE HPC Challenge Benchmark/) and
 			$status = 'STARTED';
 		($l =~ /Begin of Summary section/) and $found_endrecord = 1 and
@@ -172,6 +174,11 @@ sub parse {
 	elsif ($status =~ /COMPLETED/ and $fail > 0) {
 		$data{'STATUS'} = "PARTIAL FAILED RESIDUALS";
 	}
+    elsif ($status =~ /CBENCH NOTICE/) {
+        $data{'STATUS'} = 'NOTICE';
+        (my $tmp = $status) =~ s/CBENCH NOTICE://;
+        defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
+    }
 	else {
 		$data{'STATUS'} = "ERROR($status)";
         defined $main::diagnose and main::print_job_err($fileid,'ERROR',$status);
@@ -260,7 +267,8 @@ sub _init {
 
 	# this is a KEY array... see the file_list method above for
 	# more info
-	@{$self->{FILE_LIST}} = qw/hpccoutf.txt.JOBID STDOUT/;
+	#@{$self->{FILE_LIST}} = qw/hpccoutf.txt.JOBID STDOUT/;
+	@{$self->{FILE_LIST}} = qw/STDOUT hpccoutf.txt.JOBID/;
 
 	# this is a KEY array... see the metric_units method above for
 	# more info

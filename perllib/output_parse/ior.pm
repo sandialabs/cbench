@@ -107,6 +107,7 @@ sub parse {
 	my $errors = 0;
 	main::debug_print(3,"DEBUG:$shortpackage\.parse() beginning parse loop\n");
     foreach my $l (@{$txtbuf}) {
+        ($l =~ /CBENCH NOTICE/) and $status = $l;
         ($l =~ /Run began/) and $status = 'STARTED';
 		($l =~ /Run finished/) and $found_endrecord = 1 and
 			$status = 'COMPLETED';
@@ -146,6 +147,11 @@ sub parse {
 	if ($status =~ /COMPLETED/ and $errors == 0) {
 		$data{'STATUS'} = "PASSED";
 	}
+    elsif ($status =~ /CBENCH NOTICE/) {
+        $data{'STATUS'} = 'NOTICE';
+        (my $tmp = $status) =~ s/CBENCH NOTICE://;
+        defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
+    }
 	else {
 		$data{'STATUS'} = "ERROR($status)";
         defined $main::diagnose and main::print_job_err($fileid,'ERROR',$status);

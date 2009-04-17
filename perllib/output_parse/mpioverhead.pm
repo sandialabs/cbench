@@ -110,6 +110,7 @@ sub parse {
 	my $total_mpi_mem = 0;
 	my $num_ranks_found = 0;
     foreach my $l (@{$txtbuf}) {
+        ($l =~ /CBENCH NOTICE/) and $status = $l;
         if ($l =~ /Timestamp before MPI launch = (\d+)/) {
 			$start_time = $1;
 		}
@@ -143,6 +144,11 @@ sub parse {
         $data{'launch_time'} = $launch_time;
         $data{'ave_mpi_mem'} = ($total_mpi_mem/$main::np)/1024;
 	}
+    elsif ($status =~ /CBENCH NOTICE/) {
+        $data{'STATUS'} = 'NOTICE';
+        (my $tmp = $status) =~ s/CBENCH NOTICE://;
+        defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
+    }
 	else {
 		$data{'STATUS'} = "ERROR($status)";
         defined $main::diagnose and main::print_job_err($fileid,'ERROR',$status);
