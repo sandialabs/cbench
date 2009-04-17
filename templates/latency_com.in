@@ -1,5 +1,9 @@
 # latency_com job template
 # NOTE: bash syntax is used here
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/com
+
+cbench_check_for_bin CBENCHTEST_BIN_HERE/com
 
 # com does not like odd numbers of processes, so don't
 # run if we an odd number

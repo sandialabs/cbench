@@ -1,6 +1,11 @@
 # bandwidth_sqmr job template
 # LLNL Sequoia message rate benchmark
 # NOTE: bash syntax is used here
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/sqmr
+
+cbench_check_for_bin CBENCHTEST_BIN_HERE/sqmr
+
 
 # the NCA and NBA nomenclature comes from the Sequoia benchmark examples
 NCA=NUM_PPN_HERE

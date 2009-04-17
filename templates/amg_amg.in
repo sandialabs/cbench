@@ -9,6 +9,10 @@
 # symlink the input files
 #ln -s TESTSET_PATH_HERE//pg.input pg-input-data
 #cbench_echo "Cbench job tempdir: $PWD"
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/amg2006
+
+cbench_check_for_bin CBENCHTEST_BIN_HERE/amg2006
 
 PX=PX_HERE
 PY=PY_HERE

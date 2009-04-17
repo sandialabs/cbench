@@ -1,10 +1,9 @@
 # NAS Parallel Benchmarks job template
 # NOTE: bash syntax is used here
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/npb/NPB_HERE
 
-if [ ! -e "CBENCHTEST_BIN_HERE/npb/NPB_HERE" ]; then
-	cbench_echo "CBENCH NOTICE: CBENCHTEST_BIN_HERE/npb/NPB_HERE binary NOT BUILT"
-	exit 1
-fi
+cbench_check_for_bin CBENCHTEST_BIN_HERE/npb/NPB_HERE
 
 # The ft.D.* mpi binaries seem to need more than 2GB of memory and seem
 # to run fine at 6GB of memory.  So, for now, check cluster.def for the

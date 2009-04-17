@@ -76,11 +76,17 @@ cbench_echo()
 	fi
 }
 
-cbench_runin_tempdir()
-{
-	# make a uniquely named directory to allow a job to isolate itself
-	# from other jobs
-	TEMPDIR="job$JOBID"
-	mkdir -p $PWD/$TEMPDIR
-	cd $TEMPDIR
+cbench_check_for_bin() {
+    
+    local cbench_bin=$@
+
+    if [ ! -e $cbench_bin ]; then
+        cbench_echo "CBENCH NOTICE: $cbench_bin NOT BUILT"
+        exit 1
+    fi
+
+    if [ ! -x $cbench_bin ]; then
+        cbench_echo "CBENCH NOTICE: $cbench_bin NOT EXECUTABLE BY USER"
+        exit 1
+    fi
 }
