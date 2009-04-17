@@ -1,5 +1,9 @@
 # linpack_xhpl job template
 # NOTE: bash syntax is used here
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/XHPL_BIN_HERE
+
+cbench_check_for_bin CBENCHTEST_BIN_HERE/XHPL_BIN_HERE
 
 cbench_echo "Cbench memory_util_factors: MEM_UTIL_FACTORS_HERE"
 cbench_echo

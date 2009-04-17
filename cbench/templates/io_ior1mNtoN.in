@@ -2,6 +2,10 @@
 # IOR MPI filesystem test using posix, modeled after SWL posix IOR test
 # N to N file access pattern
 # NOTE: bash syntax is used here
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/IOR.posix
+
+cbench_check_for_bin CBENCHTEST_BIN_HERE/IOR.posix
 
 # FIXME: we should calculate the blocksize, -b, parameter such that
 # the aggregate filesize is either some multiple of memory per node

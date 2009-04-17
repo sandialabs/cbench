@@ -2,6 +2,10 @@
 # 'stress' MPI benchmark from the MPICH perftest code
 # using the all-to-all nonblocking pattern
 # NOTE: bash syntax is used here
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/stress
+
+cbench_check_for_bin CBENCHTEST_BIN_HERE/stress
 
 # does not run on less than 2 processes 
 ONEPROC=`expr NUM_PROCS_HERE \< 2`

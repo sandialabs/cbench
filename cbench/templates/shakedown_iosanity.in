@@ -3,6 +3,10 @@
 # small total file size keeps this a sanity test as opposed to a stress test
 # N to N file access pattern
 # NOTE: bash syntax is used here
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/IOR.posix
+
+cbench_check_for_bin CBENCHTEST_BIN_HERE/IOR.posix
 
 # we are setting the -b parameter small to not stress the data
 # moving side of the equation, but the file create, delete, open,

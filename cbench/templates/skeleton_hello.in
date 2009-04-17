@@ -33,6 +33,10 @@
 #     TESTSET_NAME_HERE
 #
 # NOTE: bash syntax is used and required here
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/mpi_hello
+
+cbench_check_for_bin CBENCHTEST_BIN_HERE/mpi_hello
 
 
 # here we construct the command line to run a hello world MPI binary

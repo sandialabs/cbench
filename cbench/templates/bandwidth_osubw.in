@@ -1,6 +1,10 @@
 # bandwidth_osubw job template
 # Uses the OSU unidirectional bw test
 # NOTE: bash syntax is used here
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/osu_bw
+
+cbench_check_for_bin CBENCHTEST_BIN_HERE/osu_bw
 
 # does not run on less than 2 processes 
 ONEPROC=`expr NUM_PROCS_HERE \< 2`

@@ -2,6 +2,11 @@
 # Intel MPI Benchmarks for some collective ops that often don't
 # work at scale
 # NOTE: bash syntax is used here
+#
+# Cbench job binary: CBENCHTEST_BIN_HERE/IMB-MPI1
+
+cbench_check_for_bin CBENCHTEST_BIN_HERE/IMB-MPI1
+
 
 # build the message lengths file if it doesn't exist
 if [ ! -f ./lengths ]; then
