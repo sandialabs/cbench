@@ -140,6 +140,8 @@ sub parse {
 	my $total_time = 0;
     while ($i < $numlines) {
         ($txtbuf->[$i] =~ /matrix A is randomly generated/) and $status = 'STARTED';
+        
+        ($txtbuf->[$i] =~ /CBENCH NOTICE/) and $status = $txtbuf->[$i];
 
 		#HPL ERROR from process # 0, on line 170 of function HPL_pdtest:
 		#>>> [39,47] Memory allocation failed for A, x and b. Skip. <<<
@@ -221,7 +223,7 @@ xhplendrecord:
 		elsif ($l =~ /\s+(\d+)\s+tests completed and failed.*$/) {
 			$local_failed_tests = $1;
 		}			
-
+        
 		$i++;
 	}
 
@@ -238,6 +240,11 @@ xhplendrecord:
 		# noop
 		$status = $status;
 	}
+    elsif ($status =~ /CBENCH NOTICE/) {
+        $data{'STATUS'} = 'NOTICE';
+        (my $tmp = $status) =~ s/CBENCH NOTICE://;
+        defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
+    }
 	elsif ($status =~ /FINISHED/ and $local_passed_tests < $local_total_tests) {
 		$status = 'FAILED RESIDUALS';
 	}

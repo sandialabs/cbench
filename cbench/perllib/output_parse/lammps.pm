@@ -104,8 +104,7 @@ sub parse {
 
     foreach my $l (@{$txtbuf}) {
 
-		($l =~ /NOT BUILT/) and
-			$status = 'NOTBUILT';
+        ($l =~ /CBENCH NOTICE/) and $status = $l;
 
 		# if we see a line like this we are running a lammps job template
 		# that will be restarting lammps within the job
@@ -166,6 +165,11 @@ sub parse {
     }
     elsif ($status =~ /UNSUCCESSFUL/) {
 		$data{'STATUS'} = "FAILED VERIFICATION";
+    }
+    elsif ($status =~ /CBENCH NOTICE/) {
+        $data{'STATUS'} = 'NOTICE';
+        (my $tmp = $status) =~ s/CBENCH NOTICE://;
+        defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
     }
     else {
 	$data{'STATUS'} = "ERROR($status)";

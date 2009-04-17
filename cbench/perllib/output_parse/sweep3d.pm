@@ -107,8 +107,7 @@ sub parse {
 #print STDERR Dumper(\$txtbuf);
     foreach my $l (@{$txtbuf}) {
 
-		($l =~ /NOT BUILT/) and
-			$status = 'NOTBUILT';
+        ($l =~ /CBENCH NOTICE/) and $status = $l;
 
         # first line output by SWEEP3D
 		($l =~ /SWEEP3D - Method 5 - Pipelined Wavefront with Line-Recursion/) and $status = 'STARTED';
@@ -151,6 +150,11 @@ sub parse {
     }
     elsif ($status =~ /UNSUCCESSFUL/) {
 		$data{'STATUS'} = "FAILED VERIFICATION";
+    }
+    elsif ($status =~ /CBENCH NOTICE/) {
+        $data{'STATUS'} = 'NOTICE';
+        (my $tmp = $status) =~ s/CBENCH NOTICE://;
+        defined $main::diagnose and main::print_job_err($fileid,'NOTICE',$tmp);
     }
     else {
 	$data{'STATUS'} = "ERROR($status)";
