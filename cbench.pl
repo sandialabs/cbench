@@ -890,6 +890,51 @@ sub build_job_templates {
 	}
 }
 
+#
+# This routine checks for the existence and executability of a binary file found in
+# a job script.  It is passed in the test name, batch extension, current working directory,
+# and a reference to a hash containing error messages for this benchmark so that all errors
+# are printed at once at the end of submission for that test.
+sub check_bin {
+    my $test = shift;
+    my $batch_extension = shift;
+    my $pwd = shift;
+    my $not_started_ref = shift; # reference to actual %not_started hash
+
+    my $binary = "";
+
+    debug_print(2," DEBUG:check_bin() checking $test\n");
+
+    # iterate over each script and look for the necessary job binary
+    for my $script ("sh","$batch_extension") {
+
+        debug_print(3, " DEBUG: check_bin() checking $test/$test.$script\n");
+
+        # parse each job script and pull out the specified job binary name
+        open(FILE, "$pwd/$test/$test.$script") or print "Could not open $pwd/$test/$test.$script: $!\n" and return 1;
+        while (<FILE>) {
+            $_ =~ /Cbench job binary: (.*)/ and $binary = $1;
+        }
+        close(FILE);
+
+        debug_print(3, " DEBUG: check_bin() binary: $binary\n");
+        
+        # something went wrong - every template should specify the job binary
+        ($binary eq "") and print "  ERROR: No 'Cbench job binary:' found in $script\n" and return 1;
+
+        # check for existence and executability of specified binary file
+        if (!(-e $binary)) {
+            $$not_started_ref{$test} = "$binary does not exist: $!\n";
+            return 1;
+        }
+        if (!(-x $binary)) {
+            $$not_started_ref{$test} = "$binary is not executable by user\n";
+            return 1;
+        }
+    }
+    return 0;
+}
+
 
 # 
 # This routine contains the core functionality for the various
@@ -912,6 +957,7 @@ sub start_jobs {
 
 	my %scripts = ();
 	my %bench_list = ();
+    my %not_started = ();
 	my $total_jobs = 0;
 	my @buf;
 	my $cmd;
@@ -980,6 +1026,9 @@ sub start_jobs {
 				"DEBUG: Jobname $i (numprocs=$num_proc) cedes min number of processes to use ($minprocs)\n");
 			next;
 		}
+       
+        # check to see if specified binary exists and is executable
+        (check_bin($i,$batch_extension,$pwd,\%not_started)) and next;
 
 		$scripts{$i} = $repeat;
 		$total_jobs += $repeat;
@@ -1307,6 +1356,12 @@ sub start_jobs {
 			}
 		}
 		print "Started $job_count jobs in the ".uc($$optdata{testset})." testset (--ident \'$ident\').\n";
+        # print error information for those jobs that failed check_bin()
+        (keys(%not_started) > 0) and print RED BOLD,"  THE FOLLOWING JOBS WERE NOT STARTED:\n",RESET;
+        for my $key (sort keys %not_started) {
+            print "  $key -- $not_started{$key}";
+        }
+        print "\n";
 	}
 
 }
