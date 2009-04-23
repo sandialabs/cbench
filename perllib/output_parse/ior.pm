@@ -245,7 +245,8 @@ sub _init {
 	# this is a KEY array... see the metric_units method above for
 	# more info
 	%{$self->{METRIC_UNITS}} = (
-		'mops' => 'MB/s',
+		'read' => 'MB/s',
+		'write' => 'MB/s',
 	);
 	
 	return 1;
