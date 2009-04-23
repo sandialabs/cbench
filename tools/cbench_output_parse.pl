@@ -1499,7 +1499,7 @@ sub results_to_stdout {
 
 	$numjobs -= 1;
 	my $jobindex = 1;
-	for $job (sort {$a <=> $b} (keys %{$outhash->{'0'}}) ) {
+	for $job (sort {$outhash{'0'}{$a} cmp $outhash{'0'}{$b} } (keys %{$outhash{'0'}}) ) {
     	($job == 0) and next;
 
 		if ($column == 0 ){
@@ -1576,7 +1576,7 @@ sub results_to_stdout_grephappy {
 	# print header line
 	push @output, "SERIES, NUMPROCS, MEAN, MAX, MIN, STDDEVIATION, SAMPLECOUNT, UNITS\n";
 
-	for $job (sort {$a <=> $b} (keys %{$outhash->{'0'}}) ) {
+	for $job (sort {$outhash{'0'}{$a} cmp $outhash{'0'}{$b} } (keys %{$outhash{'0'}}) ) {
     	($job == 0) and next;
 
 		for $np (sort {$a <=> $b} (keys %{$outhash}) ) {
