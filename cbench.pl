@@ -49,14 +49,14 @@ $core_testsets = "bandwidth linpack linpack2 rotate nodehwtest mpioverhead laten
 # generation loops. It includes powers of 2, perfect squares, some nice
 # even numbers to increase resolution, and whatever else is desired.
 @run_sizes = (1,2,4,8,9,16,25,32,36,49,64,72,81,96,100,110,112,121,128,
-	144,169,192,200,225,236,256,289,300,324,361,384,400,441,462,
-	468,472,484,500,506,512,529,576,600,625,650,676,700,729,768,
+	144,169,192,200,225,256,289,300,324,361,384,400,441,462,
+	468,484,500,506,512,529,576,600,625,650,676,700,729,768,
 	784,800,841,850,900,960,961,992,1000,1024,1089,1100,1156,1200,
-	1225,1296,1300,1369,1400,1444,1500,1521,1600,1600,1681,1700,1764,
+	1225,1296,1300,1369,1400,1444,1500,1521,1600,1600,1681,1700,1728,1764,
 	1800,1849,1900,1920,1936,2000,2025,2048,2100,2116,2200,2209,2300,2304,
 	2400,2401,2500,2500,2600,2601,2700,2704,2800,2809,2900,2916,3000,
 	3025,3072,3100,3136,3200,3249,3300,3364,3400,3481,3500,3600,3700,
-	3721,3800,3840,3844,3900,3969,4000,4096);
+	3721,3800,3840,3844,3900,3969,4000,4096,6912,8192,10240,12288,13824);
 
 # Determine the file extension that should be used for batch scripts
 if (defined $batch_method) {
@@ -920,7 +920,7 @@ sub check_bin {
         debug_print(3, " DEBUG: check_bin() binary: $binary\n");
         
         # something went wrong - every template should specify the job binary
-        ($binary eq "") and print "  ERROR: No 'Cbench job binary:' found in $script\n" and return 1;
+        ($binary eq "") and error_print("'# Cbench job binary:' directive missing in $test/$test.$script\n") and return 1;
 
         # check for existence and executability of specified binary file
         if (!(-e $binary)) {
@@ -1357,9 +1357,11 @@ sub start_jobs {
 		}
 		print "Started $job_count jobs in the ".uc($$optdata{testset})." testset (--ident \'$ident\').\n";
         # print error information for those jobs that failed check_bin()
-        (keys(%not_started) > 0) and print RED BOLD,"  THE FOLLOWING JOBS WERE NOT STARTED:\n",RESET;
+        (keys(%not_started) > 0) and
+			print RED BOLD,"  THE FOLLOWING JOBS WERE NOT STARTED DUE TO MISSING BINARIES:\n",RESET;
+
         for my $key (sort keys %not_started) {
-            print "  $key -- $not_started{$key}";
+            print BOLD WHITE "  $key -- ",RESET,"$not_started{$key}";
         }
         print "\n";
 	}
@@ -2897,6 +2899,13 @@ sub info_print {
 	my $msg = shift;
 	$msg =~ s/\n$//;
     print BLUE BOLD "INFO: $msg",RESET,"\n";
+}
+
+# print out cbench error messages
+sub error_print {
+	my $msg = shift;
+	$msg =~ s/\n$//;
+    print RED BOLD "ERROR: $msg",RESET,"\n";
 }
 
 
