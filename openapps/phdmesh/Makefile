@@ -22,7 +22,7 @@ $(SRC): $(TAR)
 	-[ ! -d $(SRC) ] && mkdir $(SRC)
 	cd $(SRC); tar zxf ../$(TAR)
 	/bin/ln -sf $(SRC) src
-	[ ! -d $(SRC)/build_cbench ] && mkdir $(SRC)/build_cbench
+	-[ ! -d $(SRC)/build_cbench ] && mkdir $(SRC)/build_cbench
 	cd $(SRC)/build_cbench && /bin/ln -sf ../../build.cbench build.cbench
 	patch -p0 < test_mesh_big.patch
 

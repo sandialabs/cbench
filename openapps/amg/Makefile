@@ -9,12 +9,14 @@ EXECS = $(SRC)/test/amg2006
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
-all: $(SRC)
+all: $(EXECS)
+
+$(SRC)/test/amg2006: $(SRC)
 	make CC=$(CC) -C $(SRC) veryclean
 	$(MAKE) CC=$(CC) -C $(SRC)
 
 $(SRC) src: $(TAR)
-	[ ! -d $(SRC) ] && tar zxf $(TAR)
+	-[ ! -d $(SRC) ] && tar zxf $(TAR)
 	ln -sf $(SRC) src
 	cd $(SRC); /bin/rm -f Makefile.include
 	cd $(SRC); ln -sf ../Makefile.include .

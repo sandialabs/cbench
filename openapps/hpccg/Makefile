@@ -1,4 +1,4 @@
-include ../../make.def
+include $(CBENCHOME)/make.def
 
 export CFLAGS
 
@@ -15,7 +15,7 @@ all normal: $(SRC)
 	$(MAKE) CXX=$(CXX) LINKER=$(CXX) -C $(SRC) -f Makefile.cbench
 
 $(SRC): $(TAR)
-	[ ! -d $(SRC) ] && tar zxf $(TAR)
+	-[ ! -d $(SRC) ] && tar zxf $(TAR)
 	ln -sf $(SRC) src
 
 $(TAR) download:

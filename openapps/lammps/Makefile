@@ -12,7 +12,9 @@ EXECS = $(SRC)/src/lmp_cbench
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
-all: $(SRC)
+all: $(EXECS)
+
+$(EXECS): $(SRC)
 	$(MAKE) -C $(SRC)/lib/poems -f Makefile.cbench
 	make -C $(SRC)/lib/meam -f Makefile.cbench
 	make -C $(SRC)/lib/reax -f Makefile.cbench
@@ -20,8 +22,9 @@ all: $(SRC)
 	$(MAKE) -C $(SRC)/src cbench
 
 $(SRC): $(TAR)
-	[ ! -d $(SRC) ] && tar zxf $(TAR)
-	mv lammps-* $(SRC)
+	-[ ! -d $(SRC) ] && tar zxf $(TAR)
+	@-ls -d lammps-*
+	@-mv lammps-* $(SRC)
 	ln -sf $(SRC) src
 	cd $(SRC)/src/MAKE; ln -sf ../../../Makefile.cbench .
 	cd $(SRC)/lib/poems; ln -sf ../../../Makefile.cbench-poems Makefile.cbench

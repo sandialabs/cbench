@@ -6,11 +6,13 @@ TAR=sppm1.1.tar
 URL=https://asc.llnl.gov/computing_resources/purple/archive/benchmarks/sppm/$(TAR)
 
 
-EXECS = $(SRC)/test/amg2006
+EXECS = $(SRC)/sppm
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
-all: $(SRC)
+all:
+
+HIDDENall: $(SRC)
 	make CC=$(CC) -C $(SRC) veryclean
 	$(MAKE) CC=$(CC) -C $(SRC)
 

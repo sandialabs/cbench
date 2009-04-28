@@ -17,7 +17,7 @@ src/Makefile:
 	cd src && ./configure --with-mpi F77=$(F90) CC=$(CC) CPP="cpp" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)"
 
 $(SRC) src: $(TAR)
-	[ ! -d $(SRC) ] && tar zxf $(TAR)
+	-[ ! -d $(SRC) ] && tar zxf $(TAR)
 	ln -sf $(SRC) src
 	touch $(SRC)
 

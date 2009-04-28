@@ -1,4 +1,4 @@
-include ../../make.def
+include $(CBENCHOME)/make.def
 
 SRC=trilinos-8.0.5
 TAR=$(SRC).tar.gz
@@ -32,7 +32,7 @@ $(SRC)/EPETRA_MPI_OPT/$(BENCH_SRC)/$(BENCH_EXEC_RENAMED): $(SRC)
 	cd $(SRC)/EPETRA_MPI_OPT/$(BENCH_SRC) && $(MAKE) && mv $(BENCH_EXEC) $(BENCH_EXEC_RENAMED)
 
 $(SRC): $(TAR) $(BENCH_TAR)
-	[ ! -d $(SRC) ] && tar zxf $(TAR)
+	-[ ! -d $(SRC) ] && tar zxf $(TAR)
 	ln -sf $(SRC) src
 	cd $(SRC) && mkdir EPETRA_MPI_OPT && cd EPETRA_MPI_OPT && tar zxf ../../$(BENCH_TAR)
 

@@ -4,8 +4,6 @@ MPQC_VERSION = 2.3.1
 MPQC = mpqc-$(MPQC_VERSION)
 NUM_CPUS := $(shell /usr/bin/getconf _NPROCESSORS_ONLN)
 
-default: .make-$(MPQC)
-
 all:
 
 .make-$(MPQC): .configure-$(MPQC)
