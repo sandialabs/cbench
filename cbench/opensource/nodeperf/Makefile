@@ -32,43 +32,37 @@ dclock.o: dclock.c
 	$(CC) $(OPTFLAGS) -c $<
 
 nodeperf.c:
-ifeq "$(wildcard $(BENCH_HOME)/restricted/nodeperf/nodeperf.c)" "$(BENCH_HOME)/restricted/nodeperf/nodeperf.c"
-	@echo "NOTE: Found Cbench restricted tree, grabbing nodeperf.c..."
-	@cp $(BENCH_HOME)/restricted/nodeperf/nodeperf.c .
-else
-  ifeq "$(wildcard nodeperf.c)" ""
-	  @echo
-	  @echo "ERROR:  Please download Intel's MP Linpack package from the following address,"
-	  @echo "ERROR:  extract nodeperf.c to this directory, and try the make again:"
-	  @echo "ERROR:"
-	  @echo "ERROR:  http://www.intel.com/software/products/mkl/linpack.htm"
-	  @echo
-	  @false
-  else
-  endif
-endif
+	$(call download-url,http://synapse.sandia.gov/static/tarballs/nodeperf.c)
+	@if [ -e nodeperf.c ]; then \
+		touch nodeperf.c;\
+	else \
+		echo; \
+		echo "ERROR:  Please download Intel's MP Linpack package from the following address,"; \
+		echo "ERROR:  extract nodeperf.c to this directory, and try the make again:"; \
+		echo "ERROR:"; \
+		echo "ERROR:  http://www.intel.com/software/products/mkl/linpack.htm"; \
+		echo "ERROR:  http://www.intel.com/cd/software/products/asmo-na/eng/363191.htm"; \
+		echo; \
+		false; \
+	fi
 
 nodeperf2.c:
-ifeq "$(wildcard $(BENCH_HOME)/restricted/nodeperf/nodeperf2.c)" "$(BENCH_HOME)/restricted/nodeperf/nodeperf2.c"
-	@echo "NOTE: Found Cbench restricted tree, grabbing nodeperf2.c..."
-	@cp $(BENCH_HOME)/restricted/nodeperf/nodeperf2.c .
-else
-  ifeq "$(wildcard nodeperf2.c)" ""
-	  @echo
-	  @echo "ERROR:  You'll need the Cbench Restricted tree to get nodeperf2..."
-	  @echo
-	  @false
-  else
-  endif
-endif
+	$(call download-url,http://synapse.sandia.gov/static/tarballs/nodeperf2.c)
+	@if [ -e nodeperf.c ]; then \
+		touch nodeperf.c;\
+	else \
+		echo; \
+		echo "ERROR:  You'll need the Cbench Restricted tree to get nodeperf2.c ..."; \
+		false; \
+	fi
+
+download: nodeperf.c nodeperf2.c
 
 clean:
 	rm -f $(INSTALLTARGETS) nodeperf.o nodeperf2.o $(OBJS)
 
-realclean: clean
-	rm -f nodeperf.c nodeperf2.c
-
 distclean: clean
+	rm -f nodeperf.c nodeperf2.c
 
 install uninstall:
 	$(do-$@)
