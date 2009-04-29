@@ -43,3 +43,5 @@ distclean:
 
 install uninstall:
 	$(do-$@)
+
+include $(CBENCHOME)/make.inc

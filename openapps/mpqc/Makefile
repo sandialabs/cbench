@@ -50,3 +50,5 @@ quickclean:
 
 distclean: clean
 	rm -rf $(MPQC)
+
+include $(CBENCHOME)/make.inc
