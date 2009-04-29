@@ -13,9 +13,9 @@ CCFLAGS =	-DFFT_FFTW -I$(FFTWINCLUDE) $(CFLAGS) -I../../lib -I../../lib/poems -I
 
 DEPFLAGS =	-M
 LINK =		$(CXX)
-LINKFLAGS =	$(FFTWLIB) -L../../lib/meam -L../../lib/poems -L../../lib/reax
-USRLIB =	-lfftw -lstdc++ -lpoems -lmeam -lreax
-SYSLIB =	-lm
+LINKFLAGS =	-L../../lib/meam -L../../lib/poems -L../../lib/reax
+USRLIB =	-lstdc++ -lpoems -lmeam -lreax -lfftw
+SYSLIB =	$(FFTWLIB) -lm
 SIZE =		size
 
 ifeq ($(COMPILER),pgi)
