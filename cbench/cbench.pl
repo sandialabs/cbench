@@ -2384,6 +2384,13 @@ sub std_substitute {
 		$benchtest = $JOBCBENCHTEST;
 	}
 
+	# build the job launching command and substitute
+	my $funcname = "$joblaunch_method\_joblaunch_cmdbuild";
+	*func = \&$funcname;
+	($DEBUG > 1) and print "DEBUG: using $funcname for job launch substitution\n";
+	my $jobcmd = func($numprocs,$ppn,$numnodes);
+	$string =~ s/JOBLAUNCH_CMD_HERE/$jobcmd/gs;
+
 	$string =~ s/BENCH_HOME_HERE/$BENCH_HOME/gs;
 	$string =~ s/CBENCHOME_HERE/$BENCH_HOME/gs;
 	my $temp = $benchtest;
@@ -2413,12 +2420,6 @@ sub std_substitute {
 	$temp =join(',',@memory_util_factors);
 	$string =~ s/MEM_UTIL_FACTORS_HERE/$temp/gs;
 
-	# build the job launching command and substitute
-	my $funcname = "$joblaunch_method\_joblaunch_cmdbuild";
-	*func = \&$funcname;
-	($DEBUG > 1) and print "DEBUG: using $funcname for job launch substitution\n";
-	my $jobcmd = func($numprocs,$ppn,$numnodes);
-	$string =~ s/JOBLAUNCH_CMD_HERE/$jobcmd/gs;
 
 	return $string;
 }
