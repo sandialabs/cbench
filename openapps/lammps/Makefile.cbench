@@ -9,7 +9,7 @@ SHELL = /bin/sh
 # Because LAMMPS has both Fortran and C++ components, linking requires special options
 
 CC =		$(CXX)
-CCFLAGS =	-DFFT_FFTW -I$(FFTWINCLUDE) $(CFLAGS) -I../../lib -I../../lib/poems -I../../lib/reax
+CCFLAGS =	-DFFT_FFTW $(FFTWINCLUDE) $(CFLAGS) -I../../lib -I../../lib/poems -I../../lib/reax
 
 DEPFLAGS =	-M
 LINK =		$(CXX)
