@@ -206,15 +206,15 @@ endif
 ifndef FFTWLIB
   ifdef FFTW_LIB
   	FFTWLIB=-Wl,-rpath,$(FFTW_LIB) -L$(FFTW_LIB) -lfftw
-  	FFTWINCLUDE=$(FFTW_INCLUDE)
+  	FFTWINCLUDE="-I$(FFTW_INCLUDE)"
   else
     ifdef MKL_LIB
 	  FFTWLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lfftw $(BLASLIB)
-	  FFTWINCLUDE = $(MKLHOME)/include/fftw
+	  FFTWINCLUDE = "-I$(MKLHOME)/include/fftw"
     else
       ifdef ACML_LIB
         FFTWLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
-        FFTWINCLUDE=$(ACML_LIB)/../include
+        FFTWINCLUDE="-I$(ACML_LIB)/../include"
       else
         FFTWlIB = PLEASE_DEFINE_FFTWLIB_IN_make.def
       endif
