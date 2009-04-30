@@ -913,7 +913,7 @@ sub check_bin {
         # parse each job script and pull out the specified job binary name
         open(FILE, "$pwd/$test/$test.$script") or print "Could not open $pwd/$test/$test.$script: $!\n" and return 1;
         while (<FILE>) {
-            $_ =~ /Cbench job binary: (.*)/ and $binary = $1;
+            $_ =~ /Cbench job binary:\s+(\S+)\s*$/ and $binary = $1;
         }
         close(FILE);
 
@@ -1358,7 +1358,7 @@ sub start_jobs {
 		print "Started $job_count jobs in the ".uc($$optdata{testset})." testset (--ident \'$ident\').\n";
         # print error information for those jobs that failed check_bin()
         (keys(%not_started) > 0) and
-			print RED BOLD,"  THE FOLLOWING JOBS WERE NOT STARTED DUE TO MISSING BINARIES:\n",RESET;
+			print RED BOLD " THE FOLLOWING JOBS WERE NOT STARTED DUE TO MISSING BINARIES:",RESET,"\n";
 
         for my $key (sort keys %not_started) {
             print BOLD WHITE "  $key -- ",RESET,"$not_started{$key}";
