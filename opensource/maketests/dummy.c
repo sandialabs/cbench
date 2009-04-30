@@ -9,8 +9,15 @@
 
 int main(int argc, char *argv[])
 {
-	
+	#ifdef BLAS
+	dgemm_();
+	#endif
+
 	#ifdef FFTW
-	ftw_print_max_memory_usage();
+	fftw_print_max_memory_usage();
+	#endif
+
+	#ifdef LAPACK
+	cheev_();
 	#endif
 }
