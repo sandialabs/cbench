@@ -4,9 +4,6 @@ include $(CBENCHOME)/make.def
 
 TESTS = dummy_blas dummy_fftw dummy_blas_fftw dummy_lapack
 
-CCFLAGS = -DFFTW -I$(FFTWINCLUDE) $(CFLAGS)
-LINKFLAGS =	$(FFTWLIB)
-
 all: $(TESTS) linkstatus
 
 dummy_blas: dummy.c
@@ -17,13 +14,13 @@ dummy_blas: dummy.c
 
 dummy_fftw: dummy.c
 	@echo "===== Testing FFTW linkage ===="
-	$(CC) -DFFTW -I$(FFTWINCLUDE) $(CFLAGS) -c -o $@.o $<
+	$(CC) -DFFTW $(FFTWINCLUDE) $(CFLAGS) -c -o $@.o $<
 	$(CC) $@.o $(FFTWLIB) -o $@
 	@echo;echo
 
 dummy_blas_fftw: dummy.c
 	@echo "===== Testing BLAS+FFTW linkage ===="
-	$(CC) -DBLAS -DFFTW  -I$(FFTWINCLUDE) $(CFLAGS) -c -o $@.o $<
+	$(CC) -DBLAS -DFFTW  $(FFTWINCLUDE) $(CFLAGS) -c -o $@.o $<
 	$(CC) $@.o $(FFTWLIB) $(BLASLIB)  -o $@
 	@echo;echo
 
