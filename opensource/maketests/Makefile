@@ -2,7 +2,7 @@ include $(CBENCHOME)/make.def
 
 # vim: syntax=make
 
-TESTS = dummy_blas dummy_fftw dummy_blas_fftw dummy_lapack
+TESTS = dummy_blas dummy_lapack dummy_fftw dummy_blas_fftw 
 
 all: $(TESTS) linkstatus
 
