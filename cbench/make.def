@@ -190,6 +190,8 @@ ifndef BLASLIB
   endif
 endif
 
+###### LAPACK library settings
+
 ifndef LAPACKLIB
   ifdef MKL_LIB
     LAPACKLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lmkl_lapack
@@ -202,6 +204,8 @@ ifndef LAPACKLIB
     endif
   endif
 endif
+
+###### FFTW library settings
 
 ifndef FFTWLIB
   ifdef FFTW_LIB
@@ -219,6 +223,10 @@ ifndef FFTWLIB
         FFTWlIB = PLEASE_DEFINE_FFTWLIB_IN_make.def
       endif
     endif
+  endif
+
+  ifndef FFTWINCLUDE
+    FFTWINCLUDE = PLEASE_DEFINE_FFTWINCLUDE_IN_make.def
   endif
 endif
 
@@ -313,6 +321,9 @@ CFLAGS += $(OPTFLAGS) $(COMMON_FLAGS)
 FFLAGS += $(OPTFLAGS) $(COMMON_FLAGS)
 LIBS = $(MPILIB) 
 
+######
+###### EDITING BELOW THIS POINT NOT REQUIRED OR RECOMMENDED
+######
 
 ###### Common functions
 
