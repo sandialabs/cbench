@@ -7,9 +7,9 @@
 cbench_check_for_bin CBENCHTEST_BIN_HERE/osu_bibw
 
 # does not run on less than 2 processes 
-ONEPROC=`expr NUM_PROCS_HERE \< 2`
-if [ "$ONEPROC" == "1" ]; then
-	cbench_echo "CBENCH NOTICE: osubibw needs at least 2 processes"
+ONEPROC=`expr NUM_PROCS_HERE == 2`
+if [ "$ONEPROC" == "0" ]; then
+	cbench_echo "CBENCH NOTICE: osubibw requires exactly 2 processes"
 	exit
 fi
 
