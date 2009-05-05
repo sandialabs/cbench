@@ -50,7 +50,6 @@ $max_procs = $max_nodes * $procs_per_node;
 #
 # This is specified in MBytes.  So 1GB is specified as 1024 for example.
 $memory_per_node = 2048;
-#$memory_per_node = 5120;
 $memory_per_processor = $memory_per_node / $procs_per_node;
 
 # This parameter sets the default walltime specifier used when submitting
@@ -110,7 +109,7 @@ $joblaunch_cmd = "";
 $joblaunch_extraargs = "";
 
 # Select the batch system to use
-$batch_method = "torque";
+$batch_method = "slurm";
 
 # optional parameter to set the exact binary, including path, used
 # for batch system submissions
