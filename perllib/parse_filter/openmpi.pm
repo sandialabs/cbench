@@ -103,6 +103,11 @@ our %parse_filters = (
 	'\[(\S+)\:\S+\]\s+MPI_ABORT invoked on rank\s+(\S+)\s+in.*' =>
 		'OMPI saw MPI_ABORT on node $1 (rank $2)',
 
+	'There are not enough slots on the nodes' =>
+		'OMPI says not enough slots on the nodes to run as requested',
+
+	'There are not enough nodes in your allocation' =>
+		'OMPI says not enough nodes to run as requested',
 );
 
 1;
