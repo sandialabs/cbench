@@ -1067,10 +1067,6 @@ sub parse_output_file {
 						print RESET "\n";
 					}
 
-					# for a Cbench NOTICE, set jobpassed to 1 to make the whitespace
-					# printing better
-					($status =~ /NOTICE/ and !$SHOWNOTICES) and $jobpassed = 1;
-
 					if (defined $report) {
 						if (! exists $reportdata{testsets}{$testident}{$currtestset}{$bench})  {
 							$reportdata{testsets}{$testident}{$currtestset}{$bench}{passed} = 0;
@@ -1119,6 +1115,10 @@ sub parse_output_file {
 						$reportdata{testsets}{$testident}{$currtestset}{$bench}{notice} = 0;
 					}
 					$reportdata{testsets}{$testident}{$currtestset}{$bench}{notice}++;
+				}
+				elsif ($status eq 'NOTICE' and $SHOWNOTICES ) {
+					$jobpassed = 1;
+					print "-------------------------------------------------------------\n";
 				}
 				elsif ($status eq 'RUNNING') {
 					$jobpassed = 1;
