@@ -1028,7 +1028,12 @@ sub start_jobs {
 		}
        
         # check to see if specified binary exists and is executable
-        (check_bin($i,$batch_extension,$pwd,\%not_started)) and next;
+        if (check_bin($i,$batch_extension,$pwd,\%not_started)) {
+			if ($start_method !~ /^batch/) {
+				print "Skipping job".BOLD WHITE,"$i -- ".RESET,"$not_started{$i}";
+			}
+			next;
+		}
 
 		$scripts{$i} = $repeat;
 		$total_jobs += $repeat;
