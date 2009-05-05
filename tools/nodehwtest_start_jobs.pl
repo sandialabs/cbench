@@ -272,6 +272,8 @@ if (defined $nodebatch or defined $batch) {
 	# node (i.e. a batch script per node which only works on batch schedulers
 	# that support this), and then submit each script 
 
+	print "Starting jobs for test identifier \'$ident\':\n";
+
 	# need to prime some vars
 	$numsubmitted = 0;
 	$ppn = $numnodes = $numprocs = 1; 
@@ -339,6 +341,8 @@ if (defined $nodebatch or defined $batch) {
 			sleep 2;
 		}
 	}
+
+	print "Started $numsubmitted jobs in the NODEHWTEST testset (--ident \'$ident\').\n";
 
 	exit;
 }
