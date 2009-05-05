@@ -37,10 +37,15 @@ use Getopt::Long;
 use Data::Dumper;
 
 my $skelname = 'setvars';
+my $ppn = 1;
+my $numprocs = 1;
 
 GetOptions(
 	'batch_method=s' => \$batch_method,
 	'skelname=s' => \$skelname,
+	'ppn=i' => \$ppn,
+	'numprocs|procs=i' => \$numprocs,
+
 );
 
 if (defined $help) {
@@ -61,10 +66,8 @@ if (defined $batch_method) {
 
 #print "$batch_method, $skelname\n";
 
-my $ppn = 1;
-my $numprocs = 1;
 my $testset = 'skel';
-my $numnodes = 1;
+my $numnodes = calc_num_nodes($numprocs,$ppn);
 
 (!defined $ident) and $ident = $cluster_name . "1";
 
