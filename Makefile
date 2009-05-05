@@ -26,7 +26,7 @@ include make.def
 HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride
 
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
-             mpi_routecheck presta1.2 ior_bench iozone bonnie++ rotate HPLlinpack \
+             mpi_routecheck ior_bench iozone bonnie++ rotate HPLlinpack \
              IMB osutests lanl stab perftest mpi_examples mpi_slowcpu \
              mpi_malloc mpi_tokensmash phloem HPLinpack2
 
@@ -38,9 +38,6 @@ OPEN_SUBDIRS       = $(addprefix opensource/, $(OPEN_TESTS))
 OPENEXTRAS_SUBDIRS = $(addprefix opensource/, $(OPENEXTRAS_TESTS))
 
 SUBDIRS = $(OPEN_SUBDIRS) $(HWTEST_SUBDIRS)
-
-# these are the test sets we try to install into the Cbench test tree
-CONFIGURED_TESTSETS = bandwidth linpack linpack2 npb rotate nodehwtest mpioverhead latency collective io iosanity hpcc mpisanity
 
 ifndef BINIDENT
   BINDIR = bin
