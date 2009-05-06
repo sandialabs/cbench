@@ -13,14 +13,14 @@ INSTALLTARGETS = $(EXECS)
 all:
 
 HIDDENall: $(SRC)
-	make CC=$(CC) -C $(SRC) veryclean
-	$(MAKE) CC=$(CC) -C $(SRC)
+	make CC=$(CC) -C $(SRC) -f Makefile.cbench
+	#$(MAKE) CC=$(CC) -C $(SRC)
 
 $(SRC) src: $(TAR)
 	[ ! -d $(SRC) ] && tar xf $(TAR)
 	ln -sf $(SRC) src
-	cd $(SRC); /bin/rm -f Makefile.include
-	cd $(SRC); ln -sf ../Makefile.include .
+	cd $(SRC); /bin/rm -f Makefile.cbench
+	cd $(SRC); ln -sf ../Makefile.cbench .
 	touch $(SRC)
 
 $(TAR) download:
@@ -28,7 +28,7 @@ $(TAR) download:
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
-	make CC=$(CC) -C $(SRC) veryclean
+	@echo make CC=$(CC) -C $(SRC) veryclean
 
 distclean:
 	/bin/rm -rf $(TAR) $(SRC) src
