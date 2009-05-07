@@ -33,6 +33,11 @@ CC="${SAVECC}"
 CXX="${SAVECXX}"
 LDCXX="${SAVECXX}"
 
+# if you have trouble compiling phdMesh with Intel 11.0, uncomment the following
+# two lines
+#CC="${SAVECC} -diag-disable 980"
+#CXX="${SAVECXX} -diag-disable 980"
+
 #----------------------------------------------------------------------
 # SNL ACCESS ExodusII and NemesisI library configuration:
 
