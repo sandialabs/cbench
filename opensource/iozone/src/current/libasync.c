@@ -3,7 +3,7 @@
 /* 
  * Library for Posix async read operations with hints.
  * Author: Don Capps
- * Company: Hewlett Packard
+ * Company: Iozone
  * Date: 4/24/1998
  *
  * Two models are supported.  First model is a replacement for read() where the async
@@ -102,7 +102,9 @@
 #endif
 #include <sys/errno.h>
 #include <unistd.h>
+#ifndef bsd4_4
 #include <malloc.h>
+#endif
 #ifdef VXFS
 #include <sys/fs/vx_ioctl.h>
 #endif
@@ -148,7 +150,7 @@ extern int one;
  * cache, pointed to by async_init(gc) will be of
  * this structure type.
  */
-char version[] = "Libasync Version $Revision: 3.19 $";
+char version[] = "Libasync Version $Revision: 3.23 $";
 struct cache_ent {
 	struct aiocb myaiocb;			/* For use in small file mode */
 #ifdef _LARGEFILE64_SOURCE 
@@ -193,6 +195,7 @@ struct cache_ent *alloc_cache();
 struct cache_ent *incache();
 void async_init();
 void end_async();
+int async_suspend();
 int async_read();
 void takeoff_cache();
 void del_cache();
@@ -261,6 +264,33 @@ struct cache *gc;
 	free((void *)gc);
 }
 
+/***********************************************/
+/* Wait for a request to finish                */
+/***********************************************/
+int
+async_suspend(struct cache_ent *ce)
+{
+#ifdef _LARGEFILE64_SOURCE 
+#ifdef __LP64__
+	const struct aiocb * const cblist[1] = {&ce->myaiocb};
+#else
+	const struct aiocb64 * const cblist[1] = {&ce->myaiocb64};
+#endif
+#else
+	const struct aiocb * const cblist[1] = {&ce->myaiocb};
+#endif
+
+#ifdef _LARGEFILE64_SOURCE 
+#ifdef __LP64__
+	return aio_suspend(cblist, 1, NULL);
+#else
+	return aio_suspend64(cblist, 1, NULL);
+#endif
+#else
+	return aio_suspend(cblist, 1, NULL);
+#endif
+}
+
 /*************************************************************************
  * This routine is a generic async reader assist funtion. It takes
  * the same calling parameters as read() but also extends the
@@ -320,18 +350,24 @@ long long depth;
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
 		while((ret=aio_error(&ce->myaiocb))== EINPROGRESS)
+		{
+			async_suspend(ce);
+		}
 #else
 		while((ret=aio_error64(&ce->myaiocb64))== EINPROGRESS)
+		{
+			async_suspend(ce);
+		}
 #endif
 #else
 		while((ret=aio_error(&ce->myaiocb))== EINPROGRESS)
-#endif
 		{
-			;
+			async_suspend(ce);
 		}
+#endif
 		if(ret)
 		{
-			printf("aio_error 1: ret %ld %d\n",ret,errno);
+			printf("aio_error 1: ret %d %d\n",ret,errno);
 		}
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
@@ -369,10 +405,10 @@ long long depth;
 		if(retval < ce->myaiocb.aio_nbytes)
 #endif
 		{
-			printf("aio_return error1: ret %ld %d\n",retval,errno);
+			printf("aio_return error1: ret %d %d\n",retval,errno);
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
-			printf("aio_return error1: fd %d offset %ld buffer %lx size %ld Opcode %d\n",
+			printf("aio_return error1: fd %d offset %ld buffer %lx size %d Opcode %d\n",
 				ce->myaiocb.aio_fildes,
 				ce->myaiocb.aio_offset,
 				(long)(ce->myaiocb.aio_buf),
@@ -421,7 +457,7 @@ again:
 			if(errno==EAGAIN)
 				goto again;
 			else
-				printf("error returned from aio_read(). Ret %ld errno %d\n",ret,errno);
+				printf("error returned from aio_read(). Ret %d errno %d\n",ret,errno);
 		}
 	}
 	if(stride==0)	 /* User does not want read-ahead */
@@ -467,17 +503,23 @@ out:
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
 		while((ret=aio_error(&first_ce->myaiocb))== EINPROGRESS)
+		{
+			async_suspend(first_ce);
+		}
 #else
 		while((ret=aio_error64(&first_ce->myaiocb64))== EINPROGRESS)
+		{
+			async_suspend(first_ce);
+		}
 #endif
 #else
 		while((ret=aio_error(&first_ce->myaiocb))== EINPROGRESS)
-#endif
 		{
-			;
+			async_suspend(first_ce);
 		}
+#endif
 		if(ret)
-			printf("aio_error 2: ret %ld %d\n",ret,errno);
+			printf("aio_error 2: ret %d %d\n",ret,errno);
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
 		retval=aio_return(&first_ce->myaiocb);
@@ -497,10 +539,10 @@ out:
 		if(retval < first_ce->myaiocb.aio_nbytes)
 #endif
 		{
-			printf("aio_return error2: ret %ld %d\n",retval,errno);
+			printf("aio_return error2: ret %d %d\n",retval,errno);
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
-			printf("aio_return error2: fd %d offset %lld buffer %lx size %ld Opcode %d\n",
+			printf("aio_return error2: fd %d offset %lld buffer %lx size %d Opcode %d\n",
 				first_ce->myaiocb.aio_fildes,
 				first_ce->myaiocb.aio_offset,
 				(long)(first_ce->myaiocb.aio_buf),
@@ -825,17 +867,23 @@ long long depth;
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
 		while((ret=aio_error(&ce->myaiocb))== EINPROGRESS)
+		{
+			async_suspend(ce);
+		}
 #else
 		while((ret=aio_error64(&ce->myaiocb64))== EINPROGRESS)
+		{
+			async_suspend(ce);
+		}
 #endif
 #else
 		while((ret=aio_error(&ce->myaiocb))== EINPROGRESS)
-#endif
 		{
-			;
+			async_suspend(ce);
 		}
+#endif
 		if(ret)
-			printf("aio_error 3: ret %ld %d\n",ret,errno);
+			printf("aio_error 3: ret %d %d\n",ret,errno);
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
 		if(ce->oldbuf != ce->myaiocb.aio_buf ||
@@ -885,10 +933,10 @@ long long depth;
 		if(retval < ce->myaiocb.aio_nbytes)
 #endif
 		{
-			printf("aio_return error4: ret %ld %d\n",retval,errno);
+			printf("aio_return error4: ret %d %d\n",retval,errno);
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
-			printf("aio_return error4: fd %d offset %lld buffer %lx size %ld Opcode %d\n",
+			printf("aio_return error4: fd %d offset %lld buffer %lx size %d Opcode %d\n",
 				ce->myaiocb.aio_fildes,
 				ce->myaiocb.aio_offset,
 				(long)(ce->myaiocb.aio_buf),
@@ -948,7 +996,7 @@ again:
 			if(errno==EAGAIN)
 				goto again;
 			else
-				printf("error returned from aio_read(). Ret %ld errno %d\n",ret,errno);
+				printf("error returned from aio_read(). Ret %d errno %d\n",ret,errno);
 		}
 	}
 	if(stride==0)	 /* User does not want read-ahead */
@@ -1003,17 +1051,23 @@ out:
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
 		while((ret=aio_error(&first_ce->myaiocb))== EINPROGRESS)
+		{
+			async_suspend(first_ce);
+		}
 #else
 		while((ret=aio_error64(&first_ce->myaiocb64))== EINPROGRESS)
+		{
+			async_suspend(first_ce);
+		}
 #endif
 #else
 		while((ret=aio_error(&first_ce->myaiocb))== EINPROGRESS)
-#endif
 		{
-			;
+			async_suspend(first_ce);
 		}
+#endif
 		if(ret)
-			printf("aio_error 4: ret %ld %d\n",ret,errno);
+			printf("aio_error 4: ret %d %d\n",ret,errno);
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
 		if(first_ce->oldbuf != first_ce->myaiocb.aio_buf ||
@@ -1045,10 +1099,10 @@ out:
 		if(retval < first_ce->myaiocb.aio_nbytes)
 #endif
 		{
-			printf("aio_return error5: ret %ld %d\n",retval,errno);
+			printf("aio_return error5: ret %d %d\n",retval,errno);
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
-			printf("aio_return error5: fd %d offset %lld buffer %lx size %ld Opcode %d\n",
+			printf("aio_return error5: fd %d offset %lld buffer %lx size %d Opcode %d\n",
 				first_ce->myaiocb.aio_fildes,
 				first_ce->myaiocb.aio_offset,
 				(long)(first_ce->myaiocb.aio_buf),
@@ -1204,7 +1258,7 @@ again:
 		}
 		else
 		{
-			printf("Error in aio_write: ret %ld errno %d count %lld\n",ret,errno,gc->w_count);
+			printf("Error in aio_write: ret %d errno %d count %lld\n",ret,errno,gc->w_count);
 			/*
 			printf("aio_write_no_copy: fd %d buffer %x offset %lld size %d\n",
 				ce->myaiocb64.aio_fildes,
@@ -1386,21 +1440,27 @@ struct cache *gc;
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
 	while((ret=aio_error(&ce->myaiocb))== EINPROGRESS)
+	{
+		async_suspend(ce);
+	}
 #else
 	while((ret=aio_error64(&ce->myaiocb64))== EINPROGRESS)
+	{
+		async_suspend(ce);
+	}
 #endif
 #else
 	while((ret=aio_error(&ce->myaiocb))== EINPROGRESS)
-#endif
 	{
-		;
+		async_suspend(ce);
 	}
+#endif
 	if(ret)
 	{
-		printf("aio_error 5: ret %ld %d\n",ret,errno);
+		printf("aio_error 5: ret %d %d\n",ret,errno);
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
-		printf("fd %d offset %lld size %ld\n",
+		printf("fd %d offset %lld size %d\n",
 			ce->myaiocb.aio_fildes,
 			ce->myaiocb.aio_offset,
 			ce->myaiocb.aio_nbytes);
@@ -1503,10 +1563,10 @@ again:
 		}
 		else
 		{
-			printf("Error in aio_write: ret %ld errno %d\n",ret,errno);
+			printf("Error in aio_write: ret %d errno %d\n",ret,errno);
 #ifdef _LARGEFILE64_SOURCE 
 #ifdef __LP64__
-			printf("aio_write_no_copy: fd %d buffer %lx offset %lld size %ld\n",
+			printf("aio_write_no_copy: fd %d buffer %lx offset %lld size %d\n",
 				ce->myaiocb.aio_fildes,
 				(long)(ce->myaiocb.aio_buf),
 				ce->myaiocb.aio_offset,

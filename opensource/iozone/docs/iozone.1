@@ -4,7 +4,7 @@ Iozone \- Filesystem Benchmark
 .SH SYNOPSIS
 .B Iozone
 .nh
-{\fB\-a | -A\fP}
+[\fB\-a|\-A\fP]
 [\fB\-s\fP \fIfilesize_Kb\fP]
 [\fB\-r\fP \fIrecord_size_Kb\fP]
 [\fB\-f\fP \fI[path]filename\fP]
@@ -67,6 +67,7 @@ Iozone \- Filesystem Benchmark
 [\fB\-+A\fP \fImadvise_selector\fP]
 [\fB\-+h\fP \fIhostname\fP]
 [\fB\-+T\fP]
+[\fB\-+w\fP \fIPercent de-dupable.\fP]
 
 .hy
 .SH DESCRIPTION
@@ -223,9 +224,9 @@ have a file to measure.
 is also supported so that one may select more than one test.
 .TP
 .BI \-I
-Use VxFS VX_DIRECT for all file operations. Tells the VXFS filesystem that
+Use DIRECT IO if possible for all file operations. Tells the filesystem that
 all operations to the file are to bypass the buffer cache and go directly to 
-disk.
+disk. (not available on all platforms)
 .TP
 .BI \-j\ #
 Set stride of file accesses to (# * record size). The stride read test will
@@ -430,7 +431,7 @@ Used to specify a filename that will be used for the
 write telemetry information. The file contains lines
 with offset, size, delay_in_milliseconds. Each of 
 these lines are used to perform an I/O operation. 
-This is used when an application'ss specific I/O operations
+This is used when an application's specific I/O operations
 are known, and one wishes to benchmark the system 
 with this specific application file behavior.
 .TP
@@ -450,7 +451,7 @@ Used to specify a filename that will be used for the
 read telemetry information. The file contains lines
 with offset, size, delay_in_milliseconds. Each of 
 these lines are used to perform an I/O operation. 
-This is used when an application'ss specific I/O operations
+This is used when an application's specific I/O operations
 are known, and one wishes to benchmark the system 
 with this specific application file behavior.
 .TP
@@ -512,6 +513,9 @@ Enable time stamps logging.
 .TP
 .BI \-+h
 Manually set hostname.
+.TP
+.BI \-+w #
+Percentage of data to be de-dupable between files.
 
 .SH AUTHOR
 Original Author: William D. Norcott. wnorcott@us.oracle.com

@@ -20,11 +20,7 @@
 /* Its purpose is to provide automated filesystem characterization.	*/
 /* Enhancements have been made by:					*/
 /*									*/
-/* Don Capps	   (HP)	         capps@rsn.hp.com			*/ 
-/* Isom Crawford   (HP)	         isom@rsn.hp.com			*/
-/* Kirby Collins   (HP)	         kcollins@rsn.hp.com			*/
-/* Al Slater	   (HP)		aslater@jocko.bri.hp.com		*/
-/* Mark Kelly	   (HP)		mkelly@rsn.hp.com			*/
+/* Don Capps	   (HP)	         capps@iozone.org			*/ 
 /*									*/
 /* Iozone can perform single stream and multi stream I/O		*/
 /* also it now performs read, write, re-read, re-write, 		*/
@@ -51,7 +47,7 @@
 
 
 /* The version number */
-#define THISVERSION "        Version $Revision: 3.263 $"
+#define THISVERSION "        Version $Revision: 3.323 $"
 
 #if defined(linux)
   #define _GNU_SOURCE
@@ -71,6 +67,7 @@ extern  int h_errno; /* imported for errors */
 
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #if defined (__LP64__) || defined(OSF_64) || defined(__alpha__) || defined(__arch64__) || defined(_LP64) || defined(__s390x__) || defined(__AMD64__)
 #define MODE "\tCompiled for 64 bit mode."
 #define _64BIT_ARCH_
@@ -108,6 +105,8 @@ void Kill();
 long long l_min();
 long long l_max();
 long long mythread_create();
+int gen_new_buf();
+void touch_dedup();
 #endif
 
 #include <fcntl.h>
@@ -123,7 +122,8 @@ char *help[] = {
 "                  [-J milliseconds] [-X write_telemetry_filename] [-w] [-W]",
 "                  [-Y read_telemetry_filename] [-y minrecsize_Kb] [-q maxrecsize_Kb]",
 "                  [-+u] [-+m cluster_filename] [-+d] [-+x multiplier] [-+p # ]",
-"                  [-+r] [-+t] [-+X] [-+Z]",
+"                  [-+r] [-+t] [-+X] [-+Z] [-+w percent dedupable] [-+y percent_interior_dedup]",
+"                  [-+C percent_dedup_within]",
 " ",
 "           -a  Auto mode",
 "           -A  Auto2 mode",
@@ -216,6 +216,9 @@ char *help[] = {
 "           -+Z Enable old data set compatibility mode. WARNING.. Published",
 "               hacks may invalidate these results and generate bogus, high",
 "               values for results.",
+"           -+w ## Percent of dedup-able data in buffers.",
+"           -+y ## Percent of dedup-able within & across files in buffers.",
+"           -+C ## Percent of dedup-able within & not across files in buffers.",
 "" };
 
 char *head1[] = {
@@ -242,7 +245,7 @@ THISVERSION,
   " ",
   "  Other contributors:",
   " ",
-  "  Don Capps       (Hewlett Packard)	capps@iozone.org",
+  "  Don Capps       (Network Appliance)	capps@iozone.org",
   " ",
   ""};
 
@@ -257,17 +260,23 @@ THISVERSION,
 #include <unistd.h>
 
 #include <fcntl.h>
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__APPLE__)
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__APPLE__) && !defined(__DragonFly__)
 #include <malloc.h>
 #endif
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__APPLE__) || defined(__DragonFly__)
 #include <stdlib.h>
 #include <string.h>
 #endif
 
-#if defined (__FreeBSD__) || defined(__OpenBSD__) || defined(__bsdi__) || defined(__APPLE__)
+#if defined (__FreeBSD__) || defined(__OpenBSD__) || defined(__bsdi__) || defined(__APPLE__) || defined(__DragonFly__)
 #ifndef O_SYNC
 #define O_SYNC O_FSYNC
+#endif
+#endif
+
+#if defined (__FreeBSD__)
+#ifndef O_RSYNC
+#define O_RSYNC O_FSYNC
 #endif
 #endif
 
@@ -286,7 +295,10 @@ THISVERSION,
 #include <arpa/inet.h>
 
 #endif
-
+#if ( defined(solaris) && defined(studio11) )
+#include <strings.h>
+#include <stdlib.h>
+#endif
 
 #if defined(OSFV5) || defined(linux)
 #include <string.h>
@@ -306,6 +318,12 @@ THISVERSION,
 typedef long long off64_t;
 #endif
 
+#if defined(__DragonFly__)
+#define __off64_t_defined
+typedef off_t off64_t;
+#endif
+
+
 #ifndef solaris
 #ifndef off64_t
 #ifndef _OFF64_T
@@ -313,7 +331,9 @@ typedef long long off64_t;
 #ifndef __off64_t_defined
 #ifndef SCO_Unixware_gcc
 #ifndef UWIN
+#ifndef __DragonFly__
 typedef long long off64_t;
+#endif
 #endif
 #endif
 #endif
@@ -331,7 +351,7 @@ typedef long long off64_t;
 #endif
 
 #ifdef unix
-#if defined (__APPLE__) || defined(__FreeBSD__)
+#if defined (__APPLE__) || defined(__FreeBSD__) || defined(__DragonFly__)
 #include <sys/time.h>
 #endif
 #include <sys/times.h>
@@ -363,7 +383,7 @@ typedef long long off64_t;
 #define MS_ASYNC 0
 #endif
 
-#ifdef bsd4_4
+#if defined(bsd4_4) || defined(__DragonFly__)
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
@@ -387,11 +407,23 @@ long long page_size = 4096; /* Used when all else fails */
 
 #ifdef HAVE_PREAD
 #ifdef HAVE_PREADV
-#include <sys/puio.h>
 #define PVECMAX 16
+
+#ifdef _HPUX_SOURCE
+#define PER_VECTOR_OFFSET
+#include <sys/puio.h>
 struct piovec piov[PVECMAX];
+#else
+#include <sys/uio.h>
+struct iovec piov[PVECMAX];
+#define piov_base iov_base
+#define piov_len iov_len
+#endif
+
 #endif
 #endif
+
+#define DEDUPSEED 0x2719362
 
 
 /*
@@ -432,14 +464,16 @@ struct runtime {
  * This is used when using the network distributed mode.
  */
 struct client_command {
-	char c_host_name[128];
-	char c_client_name[128];
-	char c_working_dir[256];
-	char c_path_dir[256];
-	char c_execute_name[256];
-	char c_write_traj_filename[256];
-	char c_read_traj_filename[256];
+	char c_host_name[100];
+	char c_client_name[100];
+	char c_working_dir[200];
+	char c_file_name[200];
+	char c_path_dir[200];
+	char c_execute_name[200];
+	char c_write_traj_filename[200];
+	char c_read_traj_filename[200];
 	int c_oflag;
+	int c_mfflag;
 	int c_unbuffered;
 	int c_noretest;
 	int c_read_sync;
@@ -454,6 +488,9 @@ struct client_command {
 	int c_sverify;
 	int c_odsync;
 	int c_diag_v;
+	int c_dedup;
+	int c_dedup_interior;
+	int c_dedup_compress;
 	int c_Q_flag;
 	int c_L_flag;
 	int c_OPS_flag;
@@ -519,13 +556,15 @@ struct client_command {
  */
 struct client_neutral_command {
 	char c_host_name[40];
-	char c_client_name[128];
+	char c_client_name[100];
 	char c_working_dir[100];
+	char c_file_name[100];
 	char c_path_dir[100];
 	char c_execute_name[100];
 	char c_write_traj_filename[100];
 	char c_read_traj_filename[100];
 	char c_oflag[2];
+	char c_mfflag[2];
 	char c_unbuffered[2];
 	char c_noretest[2];
 	char c_read_sync[2];
@@ -540,6 +579,9 @@ struct client_neutral_command {
 	char c_sverify[2];
 	char c_odsync[2];
 	char c_diag_v[2];
+	char c_dedup[4];
+	char c_dedup_interior[4];
+	char c_dedup_compress[4];
 	char c_Q_flag[2];
 	char c_L_flag[2];
 	char c_OPS_flag[2];
@@ -598,10 +640,11 @@ struct client_neutral_command {
  * This is used when using the network distributed mode.
  */
 struct master_command {
-	char m_host_name[128];
-	char m_client_name[128];
+	char m_host_name[100];
+	char m_client_name[100];
 	char m_stop_flag; 
 	int m_client_number;
+	int m_client_error;
 	int m_child_port;
 	int m_child_async_port;
 	int m_command;
@@ -621,9 +664,10 @@ struct master_command {
  * This is used when using the network distributed mode.
  */
 struct master_neutral_command {
-	char m_host_name[128];
-	char m_client_name[128];
+	char m_host_name[100];
+	char m_client_name[100];
 	char m_client_number[20];	/* int */
+	char m_client_error[20];	/* int */
 	char m_stop_flag[4];		/* char +space */
 	char m_child_port[20];		/* int */
 	char m_child_async_port[20];	/* int */
@@ -753,20 +797,20 @@ struct master_neutral_command {
 #ifdef HAVE_PREAD
 #include <sys/times.h>
 #if defined(HAVE_PREAD) && defined(HAVE_PREADV)
-#define CONTROL_STRING1 "%16ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%9ld%9ld%8ld%10ld%9ld%10ld%9ld%10ld%10ld%9ld\n"
-#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s%8s%9s%7s%10s%10s%10s%9s%9s\n"
-#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s\n"
+#define CONTROL_STRING1 "%16ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld %8ld %8ld%8ld%8ld%9ld%9ld%8ld%10ld%9ld%10ld%9ld%10ld%10ld%9ld\n"
+#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s%8s%9s%7s%10s%10s%10s%9s%9s\n"
+#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s\n"
 #define CONTROL_STRING4 "%16s%8s%8s%8s%8s%10s\n"
 #else
-#define CONTROL_STRING1 "%16ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%9ld%9ld%8ld%10ld%9ld%10ld\n"
-#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s%8s%9s%7s%10s\n"
-#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s\n"
+#define CONTROL_STRING1 "%16ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld %8ld %8ld%8ld%8ld%9ld%9ld%8ld%10ld%9ld%10ld\n"
+#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s%8s%9s%7s%10s\n"
+#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s\n"
 #define CONTROL_STRING4 "%16s%8s%8s%8s%8s%10s\n"
 #endif
 #else
-#define CONTROL_STRING1 "%16ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%9ld%9ld\n"
-#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s\n"
-#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s\n"
+#define CONTROL_STRING1 "%16ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld %8ld %8ld%8ld%8ld%9ld%9ld\n"
+#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s\n"
+#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s\n"
 #define CONTROL_STRING4 "%16s%8s%8s%8s%8s%10s\n"
 #endif
 #endif
@@ -775,20 +819,20 @@ struct master_neutral_command {
 #ifdef HAVE_PREAD
 #include <sys/times.h>
 #if defined(HAVE_PREAD) && defined(HAVE_PREADV)
-#define CONTROL_STRING1 "%16lld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%9ld%9ld%8ld%10ld%9ld%10ld%9ld%10ld%10ld%9ld\n"
-#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s%8s%9s%7s%10s%10s%10s%9s%9s\n"
-#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s\n"
+#define CONTROL_STRING1 "%16lld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld %8ld %8ld%8ld%8ld%9ld%9ld%8ld%10ld%9ld%10ld%9ld%10ld%10ld%9ld\n"
+#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s%8s%9s%7s%10s%10s%10s%9s%9s\n"
+#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s\n"
 #define CONTROL_STRING4 "%16s%8s%8s%8s%8s%10s\n"
 #else
-#define CONTROL_STRING1 "%16lld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%9ld%9ld%8ld%10ld%9ld%10ld\n"
-#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s%8s%9s%7s%10s\n"
-#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s\n"
+#define CONTROL_STRING1 "%16lld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld %8ld %8ld%8ld%8ld%9ld%9ld%8ld%10ld%9ld%10ld\n"
+#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s%8s%9s%7s%10s\n"
+#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s\n"
 #define CONTROL_STRING4 "%16s%8s%8s%8s%8s%10s\n"
 #endif
 #else
-#define CONTROL_STRING1 "%16lld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%8ld%9ld%9ld\n"
-#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s\n"
-#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s%8s%8s%9s%9s%8s%9s\n"
+#define CONTROL_STRING1 "%16lld%8ld%8ld%8ld%8ld%8ld%8ld%8ld %8ld %8ld%8ld%8ld%8ld%9ld%9ld\n"
+#define CONTROL_STRING2 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s\n"
+#define CONTROL_STRING3 "%16s%8s%8s%8s%8s%10s%8s%8s%8s %8s %8s%9s%9s%8s%9s\n"
 #define CONTROL_STRING4 "%16s%8s%8s%8s%8s%10s\n"
 #endif
 #endif
@@ -939,6 +983,10 @@ int async_read_no_copy();
 size_t async_write_no_copy();
 void end_async();
 void async_init();
+#else
+size_t async_write();
+size_t async_write_no_copy();
+void async_release();
 #endif
 void do_float();
 int create_xls();
@@ -951,6 +999,9 @@ void srand(unsigned int);
 int get_client_info(void);
 void exit(int);
 void find_remote_shell(char *);
+void find_external_mon(char *,char *);
+void start_monitor(char *);
+void stop_monitor(char *);
 void takeoff_cache();
 void del_cache();
 void fill_area(long long *, long long *, long long);
@@ -1063,6 +1114,7 @@ void del_record_sizes();
 #define I_OPEN(x,y,z) 	open64(x,(int)(y),(int)(z))
 #define I_CREAT(x,y) 	creat64(x,(int)(y))
 #define I_FOPEN(x,y) 	fopen64(x,y)
+#define I_STAT(x,y) 	stat64(x,y)
 #ifdef HAVE_PREAD
 #define I_PREAD(a,b,c,d)	pread64(a,b,(size_t)(c),(off64_t)(d))
 #define I_PWRITE(a,b,c,d)	pwrite64(a,b,(size_t)(c),(off64_t)(d))
@@ -1073,6 +1125,7 @@ void del_record_sizes();
 #define I_OPEN(x,y,z) 	open(x,(int)(y),(int)(z))
 #define I_CREAT(x,y) 	creat(x,(int)(y))
 #define I_FOPEN(x,y) 	fopen(x,y)
+#define I_STAT(x,y) 	stat(x,y)
 #ifdef HAVE_PREAD
 #define I_PREAD(a,b,c,d)	pread(a,b,(size_t)(c),(off_t)(d))
 #define I_PWRITE(a,b,c,d)	pwrite(a,b,(size_t)(c),(off_t)(d))
@@ -1180,7 +1233,9 @@ char master_iozone, client_iozone,distributed;
 int bif_fd,s_count;
 int bif_row,bif_column;
 char aflag, Eflag, hflag, Rflag, rflag, sflag;
-char diag_v,sent_stop;
+char diag_v,sent_stop,dedup,dedup_interior,dedup_compress;
+char *dedup_ibuf;
+char *dedup_temp;
 char bif_flag;
 int rlocking;
 int share_file;
@@ -1191,6 +1246,8 @@ char *build_name = "Windows";
 #else
 char *build_name = NAME;
 #endif
+char imon_start[256],imon_stop[256]; 
+char imon_sync;
 char trflag; 
 char cpuutilflag;
 char seq_mix;
@@ -1237,7 +1294,7 @@ char dummyfile [MAXSTREAMS][MAXNAMESIZE];  /* name of dummy file     */
 char dummyfile1 [MAXNAMESIZE];             /* name of dummy file     */
 char *filearray[MAXSTREAMS];		   /* array of file names    */
 char tfile[] = "iozone";
-char *buffer, *mbuffer,*mainbuffer;
+char *buffer,*buffer1, *mbuffer,*mainbuffer;
 FILE *pi,*r_traj_fd,*w_traj_fd;
 VOLATILE char *pbuffer;
 char *default_filename="iozone.tmp"; /*default name of temporary file*/
@@ -1269,6 +1326,7 @@ char splash[80][80];
 int splash_line;
 char client_filename[256];
 char remote_shell[256];
+int client_error;
 
 /* 
  * Host ports used to listen, and handle errors.
@@ -1349,18 +1407,19 @@ struct sockaddr_in child_sync_sock, child_async_sock;
 /*
  * Change this whenever you change the message format of master or client.
  */
-int proto_version = 18;
+int proto_version = 21;
 
 /******************************************************************************/
 /* Tele-port zone. These variables are updated on the clients when one is     */
 /* using cluster mode. (-+m)                                                  */
 /* Do not touch these unless you have become one with the universe !!         */
 /******************************************************************************/
-char controlling_host_name[256];
+char controlling_host_name[100];
 struct child_ident {
 	char child_name[100];
-	char workdir[256];
-	char execute_path[256];
+	char workdir[200];
+	char execute_path[200];
+	char file_name[200];
 	int state;
 	int child_number;
 	int child_port;
@@ -1427,6 +1486,7 @@ void cleanup_comm();
 void master_send();
 int start_master_send();
 int start_master_listen();
+int check_filename();
 void master_listen();
 void stop_master_send();
 void stop_master_listen();
@@ -1491,7 +1551,7 @@ char **argv;
 	setvbuf( stderr, NULL, _IONBF, (size_t) NULL );
 	
 	/* Save the master's name */
-	gethostname(controlling_host_name,256);
+	gethostname(controlling_host_name,100);
 
 	/* Try to find the actual VM page size, if possible */
 #if defined (solaris) || defined (_HPUX_SOURCE) || defined (linux) || defined(IRIX) || defined (IRIX64)
@@ -1510,6 +1570,7 @@ char **argv;
 	myid=(long long)getpid(); 	/* save the master's PID */
 	get_resolution(); 		/* Get clock resolution */
 	time_run = time(0);		/* Start a timer */
+	(void)find_external_mon(imon_start, imon_stop);
 
 	/*
  	 * Save the splash screen for later display. When in distributed network
@@ -1521,9 +1582,9 @@ char **argv;
     	sprintf(splash[splash_line++],"\tContributors:William Norcott, Don Capps, Isom Crawford, Kirby Collins\n");
 	sprintf(splash[splash_line++],"\t             Al Slater, Scott Rhine, Mike Wisner, Ken Goss\n");
     	sprintf(splash[splash_line++],"\t             Steve Landherr, Brad Smith, Mark Kelly, Dr. Alain CYR,\n");
-    	sprintf(splash[splash_line++],"\t             Randy Dunlap, Mark Montague, Dan Million, \n");
-    	sprintf(splash[splash_line++],"\t             Jean-Marc Zucconi, Jeff Blomberg,\n");
-    	sprintf(splash[splash_line++],"\t             Erik Habbinga, Kris Strecker, Walter Wong.\n\n");
+    	sprintf(splash[splash_line++],"\t             Randy Dunlap, Mark Montague, Dan Million, Gavin Brebner,\n");
+    	sprintf(splash[splash_line++],"\t             Jean-Marc Zucconi, Jeff Blomberg, Benny Halevy,\n");
+    	sprintf(splash[splash_line++],"\t             Erik Habbinga, Kris Strecker, Walter Wong, Joshua Root.\n\n");
 	sprintf(splash[splash_line++],"\tRun began: %s\n",ctime(&time_run));
 	argcsave=argc;
 	argvsave=argv;
@@ -1550,6 +1611,42 @@ char **argv;
 		~((long)cache_size-1));
 #endif
 	mainbuffer = buffer;
+
+	/* de-dup input buf */
+     	buffer1 = (char *) alloc_mem((long long)(MAXBUFFERSIZE + (2 * cache_size)),(int)0);
+	if(buffer1 == 0) {
+        	perror("Memory allocation failed:");
+        	exit(1);
+        }
+
+#ifdef _64BIT_ARCH_
+     	buffer1 = (char *) ((long long )(buffer1 + cache_size ) & 
+		~(cache_size-1));
+#else
+     	buffer1 = (char *) ((long)(buffer1 + cache_size ) & 
+		~((long)cache_size-1));
+#endif
+	dedup_ibuf = buffer1;
+	touch_dedup(buffer1, MAXBUFFERSIZE);
+
+#ifdef FOOB
+	/* de-dup temp buf */
+     	buffer1 = (char *) alloc_mem((long long)(MAXBUFFERSIZE + (2 * cache_size)),(int)0);
+	if(buffer1 == 0) {
+        	perror("Memory allocation failed:");
+        	exit(1);
+        }
+
+#ifdef _64BIT_ARCH_
+     	buffer1 = (char *) ((long long )(buffer1 + cache_size ) & 
+		~(cache_size-1));
+#else
+     	buffer1 = (char *) ((long)(buffer1 + cache_size ) & 
+		~((long)cache_size-1));
+#endif
+#endif
+	dedup_temp = mainbuffer;
+
 	fetchon++;  /* By default, prefetch the CPU cache lines associated with the buffer */
   	strcpy(filename,default_filename); 	/* Init default filename */
   	sprintf(dummyfile[0],"%s.DUMMY",default_filename);
@@ -1612,14 +1709,14 @@ char **argv;
 #endif
 			async_flag++;
 			break;
-		case 'I':	/* Use VXFS direct advisory or O_DIRECT from Linux or AIX , or O_DIRECTIO for TRU64 */
+		case 'I':	/* Use VXFS direct advisory or O_DIRECT from Linux or AIX , or O_DIRECTIO for TRU64  or Solaris directio */
 #ifdef VXFS
 			direct_flag++;
 			sprintf(splash[splash_line++],"\tVxFS advanced feature SET_CACHE, VX_DIRECT enabled\n");
 			break;
 #endif
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined(__FreeBSD__) || defined(solaris)
 			direct_flag++;
 			sprintf(splash[splash_line++],"\tO_DIRECT feature enabled\n");
 			break;
@@ -1629,6 +1726,12 @@ char **argv;
 			sprintf(splash[splash_line++],"\tO_DIRECTIO feature enabled\n");
 			break;
 #endif
+#else
+			break;
+#endif
+#if defined(Windows)
+			sprintf(splash[splash_line++],"\tO_DIRECTIO feature not available in Windows version.\n");
+			break;
 #endif
 		case 'B':	/* Use mmap file for test file */
 			sprintf(splash[splash_line++],"\tUsing mmap files\n");
@@ -2071,6 +2174,8 @@ char **argv;
 			}
 			if(minimum_file_size < RECLEN_START/1024)
 				minimum_file_size=(off64_t)(RECLEN_START/1024);
+			if(minimum_file_size < page_size/1024)
+				minimum_file_size=(off64_t)(page_size/1024);
 #ifdef NO_PRINT_LLD
 			sprintf(splash[splash_line++],"\tUsing minimum file size of %ld kilobytes.\n",minimum_file_size);
 #else
@@ -2267,7 +2372,7 @@ char **argv;
 				case 't':  /* Speed code activated */
 					speed_code=1;
 					break;
-#if defined(_HPUX_SOURCE) || defined(linux)
+#if defined(_HPUX_SOURCE) || defined(linux) || defined(solaris)
 				case 'r':  /* Read sync too */
 					read_sync=1;
     					sprintf(splash[splash_line++],"\tRead & Write sync mode active.\n");
@@ -2368,6 +2473,51 @@ char **argv;
 						Kplus_readers = 1;
 					Kplus_flag=1;
 					sprintf(splash[splash_line++],"\tManual control of test 8. >>> Very Experimental. Sony special <<<\n");
+					break;
+				case 'w':  /* Argument is the percent of dedup */
+					   /* Sets size of dedup region across files */
+					subarg=argv[optind++];
+					if(subarg==(char *)0)
+					{
+					     printf("-+w takes an operand !!\n");
+					     exit(200);
+					}
+					dedup = atoi(subarg);
+					if(dedup <=0)
+						dedup = 0;
+					if(dedup >100)
+						dedup = 100;
+					sprintf(splash[splash_line++],"\tDedup activated %d percent.\n",dedup);
+					break;
+				case 'y':  /* Argument is the percent of interior dedup */
+					   /* Sets size of dedup region within and across files */
+					subarg=argv[optind++];
+					if(subarg==(char *)0)
+					{
+					     printf("-+y takes an operand !!\n");
+					     exit(200);
+					}
+					dedup_interior = atoi(subarg);
+					if(dedup_interior <0)
+						dedup_interior = 0;
+					if(dedup_interior >100)
+						dedup_interior = 100;
+					sprintf(splash[splash_line++],"\tDedupe within & across %d percent.\n",dedup_interior);
+					break;
+				case 'C':  /* Argument is the percent of dedupe within & !across */
+					   /* Sets size of dedup region within and !across files */
+					subarg=argv[optind++];
+					if(subarg==(char *)0)
+					{
+					     printf("-+C takes an operand !!\n");
+					     exit(200);
+					}
+					dedup_compress = atoi(subarg);
+					if(dedup_compress <0)
+						dedup_compress = 0;
+					if(dedup_compress >100)
+						dedup_compress = 100;
+					sprintf(splash[splash_line++],"\tDedupe within %d percent.\n",dedup_compress);
 					break;
 				default:
 					printf("Unsupported Plus option -> %s <-\n",optarg);
@@ -2624,6 +2774,11 @@ char **argv;
 		printf("\n\tCan not do both -H and -k\n");
 		exit(20);
 	}
+	if((dedup | dedup_interior) && diag_v)
+	{
+		printf("\n\tCan not do both -+d and -+w\n");
+		exit(20);
+	}
 		
 	if(!aflag && !rflag)
 		max_rec_size=min_rec_size;
@@ -2748,7 +2903,10 @@ out:
 	if(w_traj_flag)
 		fclose(w_traj_fd);
 	if (!no_unlink)
-	      	unlink(dummyfile[0]);	/* delete the file */
+	{
+		if(check_filename(dummyfile[0]))
+	      	   unlink(dummyfile[0]);	/* delete the file */
+	}
 	if(!silent) printf("\niozone test complete.\n");
 	if(res_prob)
 	{
@@ -2926,7 +3084,10 @@ long long reclength;
 	   }
 	}
 	if (!no_unlink)
-    		unlink(filename);	/* delete the file */
+	{
+		if(check_filename(filename))
+    		  unlink(filename);	/* delete the file */
+	}
 					/*stop timer*/
 	return ;
 }
@@ -2970,11 +3131,20 @@ void signal_handler()
     		if(!silent) printf("\niozone: interrupted\n\n");
 #ifndef VMS
 		if (!no_unlink)
+		{
+		   if(check_filename(filename))
     			unlink(filename);	/* delete the file */
+		}
 		for(i=1;i<num_child;i++)
+		{
+		   if(check_filename(dummyfile[i]))
     			unlink(dummyfile[i]);	/* delete the file */
+		}
 		if (!no_unlink)
+		{
+		   if(check_filename(dummyfile[0]))
     			unlink(dummyfile[0]);	/* delete the file */
+		}
 		
 #endif
 		if(Rflag && !trflag){
@@ -3254,6 +3424,8 @@ throughput_test()
 			goto next0;
 		}
 
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Write");
 	/* Hooks to start the distributed Iozone client/server code */
 	if(distributed)
 	{
@@ -3492,6 +3664,8 @@ waitout:
 			}
 		}
 	}
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Write");
 	/**********************************************************/
 	/*************** End of intitial writer *******************/
 	/**********************************************************/
@@ -3520,6 +3694,8 @@ waitout:
 		store_dvalue( (double)0);
 		goto next0;
 	}
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Rewrite");
 	/* Hooks to start the distributed Iozone client/server code */
 	if(distributed)
 	{
@@ -3554,6 +3730,16 @@ waitout:
 	else
 	{
 	   for(xx = 0; xx< num_child ; xx++){	/* Create the children */
+		if(!barray[xx])
+		{
+			barray[xx]=(char *) alloc_mem((long long)(MAXBUFFERSIZE+cache_size),(int)0);
+			if(barray[xx] == 0) {
+        		   perror("Memory allocation failed:");
+        		   exit(26);
+        		}
+     			barray[xx] =(char *)(((long)barray[xx] + cache_size ) & 
+			~(cache_size-1));
+		}
 #ifdef _64BIT_ARCH_
 		childids[xx] = mythread_create( thread_rwrite_test,xx);
 #else
@@ -3727,6 +3913,8 @@ jump3:
 		}
 	}
 	*stop_flag=0;
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Rewrite");
 	/**********************************************************/
 	/*************** End of rewrite throughput ****************/
 	/**********************************************************/
@@ -3746,6 +3934,8 @@ next0:
 	/**************************************************************/
 	/*** Reader throughput tests **********************************/
 	/**************************************************************/
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Read");
 	toutputindex++;
 	strcpy(&toutput[toutputindex][0],throughput_tests[2]);
 	walltime = 0.0;
@@ -3785,6 +3975,16 @@ next0:
 	else
 	{
 	   for(xx = 0; xx< num_child ; xx++){	/* Create the children */
+		if(!barray[xx])
+		{
+			barray[xx]=(char *) alloc_mem((long long)(MAXBUFFERSIZE+cache_size),(int)0);
+			if(barray[xx] == 0) {
+        		   perror("Memory allocation failed:");
+        		   exit(26);
+        		}
+     			barray[xx] =(char *)(((long)barray[xx] + cache_size ) & 
+			~(cache_size-1));
+		}
 #ifdef _64BIT_ARCH_
 		childids[xx] = mythread_create( thread_read_test,xx);
 #else
@@ -3943,6 +4143,8 @@ jumpend:
 			}
 		}
 	}
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Read");
 	/**********************************************************/
 	/*************** End of readers throughput ****************/
 	/**********************************************************/
@@ -3966,6 +4168,8 @@ jumpend:
 		store_dvalue( (double)0);
 		goto next1;
 	}
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Reread");
 	walltime = 0.0;
 	cputime = 0.0;
 	jstarttime=0;
@@ -4006,6 +4210,16 @@ jumpend:
 	{
 	   for(xx = 0; xx< num_child ; xx++){	/* Create the children */
 		chid=xx;
+		if(!barray[xx])
+		{
+			barray[xx]=(char *) alloc_mem((long long)(MAXBUFFERSIZE+cache_size),(int)0);
+			if(barray[xx] == 0) {
+        		   perror("Memory allocation failed:");
+        		   exit(26);
+        		}
+     			barray[xx] =(char *)(((long)barray[xx] + cache_size ) & 
+			~(cache_size-1));
+		}
 #ifdef _64BIT_ARCH_
 		childids[xx] = mythread_create( thread_rread_test,xx);
 #else
@@ -4167,6 +4381,8 @@ jumpend2:
 			}
 		}
 	}
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Reread");
 	/**********************************************************/
 	/*************** End of re-readers throughput ****************/
 	/**********************************************************/
@@ -4192,6 +4408,8 @@ next1:
 	/**************************************************************/
 	toutputindex++;
 	strcpy(&toutput[toutputindex][0],throughput_tests[4]);
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Revread");
 	walltime = 0.0;
 	cputime = 0.0;
 	jstarttime=0;
@@ -4232,6 +4450,16 @@ next1:
 	{
 	   for(xx = 0; xx< num_child ; xx++){	/* Create the children */
 		chid=xx;
+		if(!barray[xx])
+		{
+			barray[xx]=(char *) alloc_mem((long long)(MAXBUFFERSIZE+cache_size),(int)0);
+			if(barray[xx] == 0) {
+        		   perror("Memory allocation failed:");
+        		   exit(26);
+        		}
+     			barray[xx] =(char *)(((long)barray[xx] + cache_size ) & 
+			~(cache_size-1));
+		}
 #ifdef _64BIT_ARCH_
 		childids[xx] = mythread_create( thread_reverse_read_test,xx);
 #else
@@ -4392,6 +4620,8 @@ next1:
 			}
 		}
 	}
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Revread");
 	sync();
 	sleep(2);
 	if(restf)
@@ -4410,6 +4640,8 @@ next2:
 	/**************************************************************/
 	toutputindex++;
 	strcpy(&toutput[toutputindex][0],throughput_tests[5]);
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Strideread");
 	walltime = 0.0;
 	cputime = 0.0;
 	jstarttime=0;
@@ -4452,6 +4684,16 @@ next2:
 	{
 	   for(xx = 0; xx< num_child ; xx++){	/* Create the children */
 		chid=xx;
+		if(!barray[xx])
+		{
+			barray[xx]=(char *) alloc_mem((long long)(MAXBUFFERSIZE+cache_size),(int)0);
+			if(barray[xx] == 0) {
+        		   perror("Memory allocation failed:");
+        		   exit(26);
+        		}
+     			barray[xx] =(char *)(((long)barray[xx] + cache_size ) & 
+			~(cache_size-1));
+		}
 #ifdef _64BIT_ARCH_
 		childids[xx] = mythread_create( thread_stride_read_test,xx);
 #else
@@ -4612,6 +4854,8 @@ next2:
 			}
 		}
 	}
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Strideread");
 	sync();
 	sleep(2);
 	if(restf)
@@ -4631,6 +4875,8 @@ next3:
 	
 	toutputindex++;
 	strcpy(&toutput[toutputindex][0],throughput_tests[6]);
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Randread");
 	walltime = 0.0;
 	cputime = 0.0;
 	jstarttime=0;
@@ -4673,6 +4919,16 @@ next3:
 	{
 	   for(xx = 0; xx< num_child ; xx++){	/* Create the children */
 		chid=xx;
+		if(!barray[xx])
+		{
+			barray[xx]=(char *) alloc_mem((long long)(MAXBUFFERSIZE+cache_size),(int)0);
+			if(barray[xx] == 0) {
+        		   perror("Memory allocation failed:");
+        		   exit(26);
+        		}
+     			barray[xx] =(char *)(((long)barray[xx] + cache_size ) & 
+			~(cache_size-1));
+		}
 #ifdef _64BIT_ARCH_
 		childids[xx] = mythread_create( thread_ranread_test,xx);
 #else
@@ -4828,6 +5084,8 @@ next3:
 			}
 		}
 	}
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Randread");
 	sync();
 	sleep(2);
 	if(restf)
@@ -4847,6 +5105,8 @@ next4:
 	
 	toutputindex++;
 	strcpy(&toutput[toutputindex][0],throughput_tests[7]);
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Mixed");
 	walltime = 0.0;
 	cputime = 0.0;
 	jstarttime=0;
@@ -4889,6 +5149,16 @@ next4:
 	{
 	   for(xx = 0; xx< num_child ; xx++){	/* Create the children */
 		chid=xx;
+		if(!barray[xx])
+		{
+			barray[xx]=(char *) alloc_mem((long long)(MAXBUFFERSIZE+cache_size),(int)0);
+			if(barray[xx] == 0) {
+        		   perror("Memory allocation failed:");
+        		   exit(26);
+        		}
+     			barray[xx] =(char *)(((long)barray[xx] + cache_size ) & 
+			~(cache_size-1));
+		}
 #ifdef _64BIT_ARCH_
 		childids[xx] = mythread_create( thread_mix_test,xx);
 #else
@@ -5044,6 +5314,8 @@ next4:
 			}
 		}
 	}
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Mixed");
 	sync();
 	sleep(2);
 	if(restf)
@@ -5063,6 +5335,8 @@ next5:
 	
 	toutputindex++;
 	strcpy(&toutput[toutputindex][0],throughput_tests[8]);
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Randwrite");
 	walltime = 0.0;
 	cputime = 0.0;
 	jstarttime=0;
@@ -5105,6 +5379,16 @@ next5:
 	{
 	   for(xx = 0; xx< num_child ; xx++){	/* Create the children */
 		chid=xx;
+		if(!barray[xx])
+		{
+			barray[xx]=(char *) alloc_mem((long long)(MAXBUFFERSIZE+cache_size),(int)0);
+			if(barray[xx] == 0) {
+        		   perror("Memory allocation failed:");
+        		   exit(26);
+        		}
+     			barray[xx] =(char *)(((long)barray[xx] + cache_size ) & 
+			~(cache_size-1));
+		}
 #ifdef _64BIT_ARCH_
 		childids[xx] = mythread_create( thread_ranwrite_test,xx);
 #else
@@ -5260,6 +5544,8 @@ next5:
 			}
 		}
 	}
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Randwrite");
 	sync();
 	sleep(2);
 	if(restf)
@@ -5282,6 +5568,8 @@ next6:
 	
 	toutputindex++;
 	strcpy(&toutput[toutputindex][0],throughput_tests[9]);
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Pwrite");
 	walltime = 0.0;
 	cputime = 0.0;
 	jstarttime=0;
@@ -5324,6 +5612,16 @@ next6:
 	{
 	   for(xx = 0; xx< num_child ; xx++){	/* Create the children */
 		chid=xx;
+		if(!barray[xx])
+		{
+			barray[xx]=(char *) alloc_mem((long long)(MAXBUFFERSIZE+cache_size),(int)0);
+			if(barray[xx] == 0) {
+        		   perror("Memory allocation failed:");
+        		   exit(26);
+        		}
+     			barray[xx] =(char *)(((long)barray[xx] + cache_size ) & 
+			~(cache_size-1));
+		}
 #ifdef _64BIT_ARCH_
 		childids[xx] = mythread_create( thread_pwrite_test,xx);
 #else
@@ -5479,6 +5777,8 @@ next6:
 			}
 		}
 	}
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Pwrite");
 	sync();
 	sleep(2);
 	if(restf)
@@ -5503,6 +5803,8 @@ next7:
 	
 	toutputindex++;
 	strcpy(&toutput[toutputindex][0],throughput_tests[10]);
+	if((!distributed) || (distributed && master_iozone))
+		start_monitor("Pread");
 	walltime = 0.0;
 	cputime = 0.0;
 	jstarttime=0;
@@ -5545,6 +5847,16 @@ next7:
 	{
 	   for(xx = 0; xx< num_child ; xx++){	/* Create the children */
 		chid=xx;
+		if(!barray[xx])
+		{
+			barray[xx]=(char *) alloc_mem((long long)(MAXBUFFERSIZE+cache_size),(int)0);
+			if(barray[xx] == 0) {
+        		   perror("Memory allocation failed:");
+        		   exit(26);
+        		}
+     			barray[xx] =(char *)(((long)barray[xx] + cache_size ) & 
+			~(cache_size-1));
+		}
 #ifdef _64BIT_ARCH_
 		childids[xx] = mythread_create( thread_pread_test,xx);
 #else
@@ -5700,6 +6012,8 @@ next7:
 			}
 		}
 	}
+	if((!distributed) || (distributed && master_iozone))
+		stop_monitor("Pread");
 	sync();
 	sleep(2);
 	if(restf)
@@ -5940,6 +6254,7 @@ char sverify;
 {
 	volatile unsigned long long *where;
 	volatile unsigned long long dummy;
+	long *de_ibuf, *de_obuf;
 	long long j,k;
 	off64_t file_position=0;
 	off64_t i;
@@ -5954,6 +6269,8 @@ char sverify;
 	unsigned long long c= 0x01010101;
 	unsigned long long d = 0x01010101;
 	unsigned long long pattern_buf;
+	int lite = 1;	/* Only validate 1 long when running 
+			   de-deup validation */
 
 	value = (a<<32) | b;
 	value1 = (c<<32) | d;
@@ -5965,6 +6282,31 @@ char sverify;
 		xx2=(long long)0;
 	mpattern=patt;
 	pattern_buf=patt;
+	if(dedup)
+	{
+		gen_new_buf((char *)dedup_ibuf,(char *)dedup_temp, (long)recnum, (int)length,(int)dedup, (int) dedup_interior, dedup_compress, 0);
+		de_ibuf = (long *)buffer;
+		de_obuf = (long *)dedup_temp;
+		if(lite)	/* short touch to reduce intrusion */
+			length = (long) sizeof(long);
+		for(i=0;i<length/sizeof(long);i++)
+		{
+			if(de_ibuf[i]!= de_obuf[i])
+			{
+				if(!silent)
+#ifdef NO_PRINT_LLD
+				   printf("\nDedup mis-compare at %ld\n",
+					(long long)((recnum*recsize)+(i*sizeof(long))) );
+#else
+				   printf("\nDedup mis-compare at %lld\n",
+					(long long)((recnum*recsize)+(i*sizeof(long))) );
+				   printf("Found %.lx Expecting %.lx \n",de_ibuf[i], de_obuf[i]);
+#endif
+				return(1);
+			}
+		}
+		return(0);
+	}
 	if(diag_v)
 	{
 		if(no_unlink)
@@ -6103,6 +6445,11 @@ char sverify;
 	x=0;
 	mpattern=pattern;
 	/* printf("Fill: Sverify %d verify %d diag_v %d\n",sverify,verify,diag_v);*/
+	if(dedup)
+	{
+		gen_new_buf((char *)dedup_ibuf,(char *)buffer, (long)recnum, (int)length,(int)dedup, (int) dedup_interior, dedup_compress, 1);
+		return;
+	}
 	if(diag_v)
 	{
 		/*if(client_iozone)
@@ -6299,13 +6646,13 @@ long long *data2;
 	if(odsync)
 		file_flags |= O_DSYNC;
 #endif
-#if defined(_HPUX_SOURCE) || defined(linux)
+#if defined(_HPUX_SOURCE) || defined(linux) || defined(__FreeBSD__) || defined(__DragonFly__)
 	if(read_sync)
 		file_flags |=O_RSYNC|O_SYNC;
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		file_flags |=O_DIRECT;
 #endif
@@ -6337,14 +6684,18 @@ long long *data2;
                 perror("open");
                 exit(44);
         }
-        wval=ftruncate(fd,0);
-        if(wval < 0)
+	if(check_filename(filename))
         {
-                printf("Sanity check failed. Do not deploy this filesystem in a production environment !\n");
+          wval=ftruncate(fd,0);
+          if(wval < 0)
+          {
+                printf("\n\nSanity check failed. Do not deploy this filesystem in a production environment !\n");
                 exit(44);
-        }
-	close(fd);
-        unlink(filename);
+          }
+	  close(fd);
+	}
+	if(check_filename(filename))
+           unlink(filename);
 /* Sanity check */
 
 	if(noretest)
@@ -6437,6 +6788,19 @@ long long *data2;
 			}
 		}
 #endif
+#if defined(solaris)
+               if(direct_flag)
+               {
+                       test_foo = directio(fd, DIRECTIO_ON);
+                       if(test_foo != 0)
+                       {
+                               if(!client_iozone)
+                                 printf("\ndirectio not available.\n");
+                               exit(3);
+                       }
+               }
+#endif
+
 		if(file_lock)
 			if(mylockf((int) fd, (int) 1, (int)0)!=0)
 				printf("File lock for write failed. %d\n",errno);
@@ -6460,7 +6824,11 @@ long long *data2;
 			}
 			I_LSEEK(fd,0,SEEK_SET);
 		};
-		fsync(fd);
+		wval=fsync(fd);
+		if(wval==-1){
+			perror("fsync");
+			signal_handler();
+		}
 #ifdef ASYNC_IO
 		if(async_flag)
 			async_init(&gc,fd,direct_flag);
@@ -6468,7 +6836,7 @@ long long *data2;
 		pbuff=mainbuffer;
 		if(fetchon)
 			fetchit(pbuff,reclen);
-		if(verify)
+		if(verify || dedup || dedup_interior)
 			fill_buffer(pbuff,reclen,(long long)pattern,sverify,(long long)0);
 		starttime1 = time_so_far();
 #ifdef unix
@@ -6512,7 +6880,7 @@ long long *data2;
 				mylockr((int) fd, (int) 1, (int)0,
 				  lock_offset, reclen);
 			}
-			if(verify && diag_v)
+			if((verify && diag_v) || dedup || dedup_interior)
 				fill_buffer(pbuff,reclen,(long long)pattern,sverify,i);
 			if(compute_flag)
 				compute_val+=do_compute(compute_time);
@@ -6522,14 +6890,14 @@ long long *data2;
 				if(Index > (MAXBUFFERSIZE-reclen))
 					Index=0;
 				pbuff = mbuffer + Index;	
-				if(verify)
+				if(verify || dedup || dedup_interior)
 					fill_buffer(pbuff,reclen,(long long)pattern,sverify,(long long)0);
 			}
 			if(async_flag && no_copy_flag)
 			{
 				free_addr=nbuff=(char *)malloc((size_t)reclen+page_size);
 				nbuff=(char *)(((long)nbuff+(long)page_size) & (long)~(page_size-1));
-				if(verify)
+				if(verify || dedup || dedup_interior)
 					fill_buffer(nbuff,reclen,(long long)pattern,sverify,i);
 				if(purge)
 					purgeit(nbuff,reclen);
@@ -6640,10 +7008,17 @@ long long *data2;
 #endif
 		if(include_flush)
 		{
-			if(mmapflag)
+			if(mmapflag){
 				msync(maddr,(size_t)filebytes64,MS_SYNC);
+			}
 			else
-				fsync(fd);
+			{
+				wval=fsync(fd);
+				if(wval==-1){
+					perror("fsync");
+					signal_handler();
+				}
+			}
 		}
 		if(file_lock)
 			if(mylockf((int) fd,(int)0,(int)0))
@@ -6659,7 +7034,11 @@ long long *data2;
 				CloseHandle(hand);
 			else
 #endif
-			   close(fd);
+			   wval=close(fd);
+			   if(wval==-1){
+				perror("close");
+				signal_handler();
+			   }
 		}
 		writetime[j] = ((time_so_far() - starttime1)-time_res)
 			-compute_val;
@@ -6675,7 +7054,13 @@ long long *data2;
 			if(mmapflag)
 				msync(maddr,(size_t)filebytes64,MS_SYNC);/* Clean up before read starts */
 			else
-				fsync(fd);
+			{
+				wval=fsync(fd);
+				if(wval==-1){
+					perror("fsync");
+					signal_handler();
+				}
+			}
 			if(mmapflag)
 			{
 				mmap_end(maddr,(unsigned long long)filebytes64);
@@ -6685,7 +7070,11 @@ long long *data2;
 				CloseHandle(hand);
 			else
 #endif
-			close(fd);
+			wval=close(fd);
+			if(wval==-1){
+				perror("close");
+				signal_handler();
+			}
 		}
 		if(cpuutilflag)
 		{
@@ -6707,13 +7096,16 @@ long long *data2;
 		
         for(j=0;j<ltest;j++)
         {
-		writerate[j] = 
-		      (unsigned long long) ((double) filebytes64 / writetime[j]);
 		if(MS_flag)
 		{
-			writerate[j]=1000000.0*(1.0/writerate[j]);
+			writerate[j]=1000000.0*(writetime[j] / (double)filebytes64);
 			continue;
 		}
+              else
+            {
+                  writerate[j] = 
+                    (unsigned long long) ((double) filebytes64 / writetime[j]);
+            }
 		if(!(OPS_flag || MS_flag))
 		   writerate[j] >>= 10;
 	}
@@ -6769,6 +7161,7 @@ long long *data2;
 	off64_t filebytes64;
 	FILE *stream = NULL;
 	int fd;
+	int wval;
 	int ltest;
 	char *how;
 	char *stdio_buf;
@@ -6820,13 +7213,13 @@ long long *data2;
 			exit(49);
 		}
 #endif
-		fd=open(filename,O_RDONLY);
+		fd=fileno(stream);
 		fsync(fd);
 		setvbuf(stream,stdio_buf,_IOFBF,reclen);
 		buffer=mainbuffer;
 		if(fetchon)
 			fetchit(buffer,reclen);
-		if(verify)
+		if(verify || dedup || dedup_interior)
 			fill_buffer(buffer,reclen,(long long)pattern,sverify,(long long)0);
 		starttime1 = time_so_far();
 		compute_val=(double)0;
@@ -6840,7 +7233,7 @@ long long *data2;
 					Index=0;
 				buffer = mbuffer + Index;	
 			}
-			if(verify & diag_v)
+			if((verify & diag_v) || dedup || dedup_interior)
 				fill_buffer(buffer,reclen,(long long)pattern,sverify,i);
 			if(purge)
 				purgeit(buffer,reclen);
@@ -6861,11 +7254,19 @@ long long *data2;
 		if(include_flush)
 		{
 			fflush(stream);
-			fsync(fd);
+			wval=fsync(fd);
+			if(wval==-1){
+				perror("fsync");
+				signal_handler();
+			}
 		}
 		if(include_close)
 		{
-			fclose(stream);
+			wval=fclose(stream);
+			if(wval==-1){
+				perror("fclose");
+				signal_handler();
+			}
 		}
 		writetime[j] = ((time_so_far() - starttime1)-time_res)
 			-compute_val;
@@ -6878,11 +7279,22 @@ long long *data2;
 		}
 		if(!include_close)
 		{
-			fflush(stream);
-			fclose(stream);
+			wval=fflush(stream);
+			if(wval==-1){
+				perror("fflush");
+				signal_handler();
+			}
+			wval=fsync(fd);
+			if(wval==-1){
+				perror("fsync");
+				signal_handler();
+			}
+			wval=fclose(stream);
+			if(wval==-1){
+				perror("fclose");
+				signal_handler();
+			}
 		}
-		fsync(fd);
-		close(fd);
 
 		if(cpuutilflag)
 		{
@@ -6902,13 +7314,16 @@ long long *data2;
 	}
         for(j=0;j<ltest;j++)
         {
-		writerate[j] = 
-		      (unsigned long long) ((double) filebytes64 / writetime[j]);
 		if(MS_flag)
 		{
-			writerate[j]=1000000.0*(1.0/writerate[j]);
+			writerate[j]=1000000.0*(writetime[j] / (double)filebytes64);
 			continue;
 		}
+            else
+            {
+                  writerate[j] = 
+		      (unsigned long long) ((double) filebytes64 / writetime[j]);
+            }
 		if(!(OPS_flag || MS_flag))
 			writerate[j] >>= 10;
 	}
@@ -7006,7 +7421,7 @@ long long *data1,*data2;
 			exit(52);
 		}
 #endif
-		fd=open(filename,O_RDONLY);
+		fd=I_OPEN(filename,O_RDONLY,0);
 		fsync(fd);
 		close(fd);
 		setvbuf(stream,stdio_buf,_IOFBF,reclen);
@@ -7095,13 +7510,16 @@ long long *data1,*data2;
 	}
         for(j=0;j<ltest;j++)
         {
-	   	readrate[j] = 
-		     (unsigned long long) ((double) filebytes64 / readtime[j]);
 		if(MS_flag)
 		{
-			readrate[j]=1000000.0*(1.0/readrate[j]);
+			readrate[j]=1000000.0*(readtime[j] / (double)filebytes64);
 			continue;
 		}
+            else
+            {
+                  readrate[j] = 
+                  (unsigned long long) ((double) filebytes64 / readtime[j]);
+            }
 		if(!(OPS_flag || MS_flag))
 			readrate[j] >>= 10;
 	}
@@ -7194,7 +7612,7 @@ long long *data1,*data2;
 		open_flags |=O_RSYNC|O_SYNC;
 #endif
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		open_flags |=O_DIRECT;
 #endif
@@ -7264,7 +7682,7 @@ long long *data1,*data2;
 #endif
 		if((fd = I_OPEN(filename, open_flags,0))<0)
 		{
-			printf("\nCan not open temporary file for read\n");
+			printf("\nCan not open temporary file %s for read\n",filename);
 			perror("open");
 			exit(58);
 		}
@@ -7288,6 +7706,18 @@ long long *data1,*data2;
 				exit(3);
 			}
 		}
+#endif
+#if defined(solaris)
+               if(direct_flag)
+               {
+                       test_foo = directio(fd, DIRECTIO_ON);
+                       if(test_foo != 0)
+                       {
+                               if(!client_iozone)
+                                 printf("\ndirectio not available.\n");
+                               exit(3);
+                       }
+               }
 #endif
 		if(file_lock)
 			if(mylockf((int) fd, (int) 1, (int)1) != 0)
@@ -7582,13 +8012,16 @@ long long *data1,*data2;
 
         for(j=0;j<ltest;j++)
         {
-	   	readrate[j] = 
-		     (unsigned long long) ((double) filebytes64 / readtime[j]);
 		if(MS_flag)
 		{
-			readrate[j]=1000000.0*(1.0/readrate[j]);
+			readrate[j]=1000000.0*(readtime[j] / (double)filebytes64);
 			continue;
 		}
+            else
+            {
+                  readrate[j] = 
+                  (unsigned long long) ((double) filebytes64 / readtime[j]);
+            }
 		if(!(OPS_flag || MS_flag))
 			readrate[j] >>= 10;
 			
@@ -7641,9 +8074,9 @@ long long *data1, *data2;
 	double walltime[2], cputime[2];
 	double compute_val = (double)0;
 #if defined (bsd4_2) || defined(Windows)
-	long long big_rand;
 	long long rand1,rand2,rand3;
 #endif
+	long long big_rand;
 	long long j;
 	off64_t i,numrecs64;
 	long long Index=0;
@@ -7655,7 +8088,8 @@ long long *data1, *data2;
 	char *wmaddr,*nbuff;
 	char *maddr,*free_addr;
 	int fd,wval;
-#ifdef VXFS
+	long long *recnum= 0;
+#if defined(VXFS) || defined(solaris)
 	int test_foo=0;
 #endif
 #ifdef ASYNC_IO
@@ -7666,9 +8100,52 @@ long long *data1, *data2;
 
 	maddr=free_addr=0;
 	numrecs64 = (kilo64*1024)/reclen;
+#ifdef bsd4_2
+        srand(0);
+#else
+#ifdef Windows
+        srand(0);
+#else
+        srand48(0);
+#endif
+#endif
+        recnum = (long long *)malloc(sizeof(*recnum)*numrecs64);
+        if (recnum){
+             /* pre-compute random sequence based on 
+		Fischer-Yates (Knuth) card shuffle */
+            for(i = 0; i < numrecs64; i++){
+                recnum[i] = i;
+            }
+            for(i = 0; i < numrecs64; i++) {
+                long long tmp = recnum[i];
+#ifdef bsd4_2
+               rand1=(long long)rand();
+               rand2=(long long)rand();
+               rand3=(long long)rand();
+               big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+#else
+#ifdef Windows
+               rand1=(long long)rand();
+               rand2=(long long)rand();
+               rand3=(long long)rand();
+               big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+#else
+               big_rand = lrand48();
+#endif
+#endif
+               big_rand = big_rand%numrecs64;
+               tmp = recnum[i];
+               recnum[i] = recnum[big_rand];
+               recnum[big_rand] = tmp;
+            }
+        }
+	else
+	{
+		fprintf(stderr,"Random uniqueness fallback.\n");
+	}
 	flags = O_RDWR;
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -7724,6 +8201,18 @@ long long *data1, *data2;
 			}
 		}
 #endif
+#if defined(solaris)
+               if(direct_flag)
+               {
+                       test_foo = directio(fd, DIRECTIO_ON);
+                       if(test_foo != 0)
+                       {
+                               if(!client_iozone)
+                                 printf("\ndirectio not available.\n");
+                               exit(3);
+                       }
+               }
+#endif
 	     if(mmapflag)
 	     {
 			maddr=(char *)initfile(fd,filebytes64,0,PROT_READ|PROT_WRITE);
@@ -7755,23 +8244,30 @@ long long *data1, *data2;
                         }
 			if(purge)
 				purgeit(nbuff,reclen);
+                        if (recnum) {
+				offset64 = reclen * (long long)recnum[i];
+                        }
+			else
+			{
+
 #ifdef bsd4_2
-			rand1=(long long)rand();
-			rand2=(long long)rand();
-			rand3=(long long)rand();
-			big_rand=(rand1<<32)|(rand2<<16)|(rand3);
-                        offset64 = reclen * (big_rand%numrecs64);
+			   rand1=(long long)rand();
+			   rand2=(long long)rand();
+			   rand3=(long long)rand();
+			   big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+                           offset64 = reclen * (big_rand%numrecs64);
 #else
 #ifdef Windows
-			rand1=(long long)rand();
-			rand2=(long long)rand();
-			rand3=(long long)rand();
-			big_rand=(rand1<<32)|(rand2<<16)|(rand3);
-                        offset64 = reclen * (big_rand%numrecs64);
+			   rand1=(long long)rand();
+			   rand2=(long long)rand();
+			   rand3=(long long)rand();
+			   big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+                           offset64 = reclen * (big_rand%numrecs64);
 #else
-			offset64 = reclen * (lrand48()%numrecs64);
+			   offset64 = reclen * (lrand48()%numrecs64);
 #endif
 #endif
+			}
 
 			if( !(h_flag || k_flag || mmapflag))
 			{
@@ -7845,7 +8341,7 @@ long long *data1, *data2;
 	     }
 	     else
 	     {
-			if(verify)
+			if(verify || dedup || dedup_interior)
 				fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)0);
 			for(i=0; i<numrecs64; i++) 
 			{
@@ -7858,34 +8354,40 @@ long long *data1, *data2;
                                	         Index=0;
                                	    nbuff = mbuffer + Index;
                         	}
+                                if (recnum) {
+				  offset64 = reclen * (long long)recnum[i];
+                                }
+			        else
+			        {
 #ifdef bsd4_2
-				rand1=(long long)rand();
-				rand2=(long long)rand();
-				rand3=(long long)rand();
-				big_rand=(rand1<<32)|(rand2<<16)|(rand3);
-				offset64 = reclen * (big_rand%numrecs64);
+				  rand1=(long long)rand();
+				  rand2=(long long)rand();
+				  rand3=(long long)rand();
+				  big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+				  offset64 = reclen * (big_rand%numrecs64);
 #else
 #ifdef Windows
-				rand1=(long long)rand();
-				rand2=(long long)rand();
-				rand3=(long long)rand();
-				big_rand=(rand1<<32)|(rand2<<16)|(rand3);
-				offset64 = reclen * (big_rand%numrecs64);
+				  rand1=(long long)rand();
+				  rand2=(long long)rand();
+				  rand3=(long long)rand();
+				  big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+				  offset64 = reclen * (big_rand%numrecs64);
 #else
-				offset64 = reclen * (lrand48()%numrecs64);
+				  offset64 = reclen * (lrand48()%numrecs64);
 #endif
 #endif
+				}
 				if(async_flag && no_copy_flag)
 				{
 					free_addr=nbuff=(char *)malloc((size_t)reclen+page_size);
 					nbuff=(char *)(((long)nbuff+(long)page_size) & (long)~(page_size-1));
-					if(verify)
+					if(verify || dedup || dedup_interior)
 						fill_buffer(nbuff,reclen,(long long)pattern,sverify,offset64/reclen);
 				}
 				if(purge)
 					purgeit(nbuff,reclen);
 
-				if(verify & diag_v)
+				if((verify & diag_v) || dedup || dedup_interior)
 					fill_buffer(nbuff,reclen,(long long)pattern,sverify,offset64/reclen);
 
 				if (!(h_flag || k_flag || mmapflag))
@@ -7957,7 +8459,13 @@ long long *data1, *data2;
 		if(mmapflag)
 			msync(maddr,(size_t)filebytes64,MS_SYNC);/* Clean up before read starts running */
 		else
-	     		fsync(fd);
+		{
+	     		wval=fsync(fd);
+			if(wval==-1){
+				perror("fsync");
+				signal_handler();
+			}
+		}
 	     }
 	     if(include_close)
 	     {
@@ -7965,7 +8473,11 @@ long long *data1, *data2;
 		{
 			mmap_end(maddr,(unsigned long long)filebytes64);
 		}
-		close(fd);
+		wval=close(fd);
+		if(wval==-1){
+			perror("close");
+			signal_handler();
+		}
 	     }
 	     randreadtime[j] = ((time_so_far() - starttime2)-time_res)-
 			compute_val;
@@ -7983,10 +8495,20 @@ long long *data1, *data2;
 			msync(maddr,(size_t)filebytes64,MS_SYNC);/* Clean up before read starts running */
 		}
 		else
-	     		fsync(fd);
+		{
+	     		wval=fsync(fd);
+			if(wval==-1){
+				perror("fsync");
+				signal_handler();
+			}
+		}
 		if(mmapflag)
 			mmap_end(maddr,(unsigned long long)filebytes64);
-		close(fd);
+		wval=close(fd);
+		if(wval==-1){
+			perror("close");
+			signal_handler();
+		}
  	    }
             if(cpuutilflag)
 	    {
@@ -8005,13 +8527,16 @@ long long *data1, *data2;
 	}
         for(j=0;j<2;j++)
         {
-		randreadrate[j] = 
-		      (unsigned long long) ((double) filebytes64 / randreadtime[j]);
 		if(MS_flag)
 		{
-			randreadrate[j]=1000000.0*(1.0/randreadrate[j]);
+			randreadrate[j]=1000000.0*(randreadtime[j] / (double)filebytes64);
 			continue;
 		}
+            else
+            {
+                  randreadrate[j] = 
+		      (unsigned long long) ((double) filebytes64 / randreadtime[j]);
+            }
 		if(!(OPS_flag || MS_flag))
 			randreadrate[j] >>= 10;
 	}
@@ -8031,6 +8556,8 @@ long long *data1, *data2;
 	if(!silent) printf("%8lld",randreadrate[1]);
 	if(!silent) fflush(stdout);
 #endif
+	if(recnum)
+		free(recnum);
 }
 
 /************************************************************************/
@@ -8061,7 +8588,7 @@ long long *data1,*data2;
 	volatile char *buffer1;
 	int ltest;
 	char *nbuff;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo=0;
 #endif
 #ifdef ASYNC_IO
@@ -8073,7 +8600,7 @@ long long *data1,*data2;
 	maddr=wmaddr=0;
 	open_flags=O_RDONLY;
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		open_flags |=O_DIRECT;
 #endif
@@ -8127,6 +8654,18 @@ long long *data1,*data2;
 			}
 		}
 #endif
+#if defined(solaris)
+               if(direct_flag)
+               {
+                       test_foo = directio(fd, DIRECTIO_ON);
+                       if(test_foo != 0)
+                       {
+                               if(!client_iozone)
+                                 printf("\ndirectio not available.\n");
+                               exit(3);
+                       }
+               }
+#endif
 		if(mmapflag)
 		{
 			maddr=(char *)initfile(fd,filebytes64,0,PROT_READ);
@@ -8139,11 +8678,22 @@ long long *data1,*data2;
 		starttime2 = time_so_far();
 		if (!(h_flag || k_flag || mmapflag))
 		{
-		  if(I_LSEEK( fd, -reclen, SEEK_END )<0)
+		  if(check_filename(filename))
 		  {
-			perror("lseek");
-			exit(77);
-		  };
+		  	if(I_LSEEK( fd, -reclen, SEEK_END )<0)
+		  	{
+				perror("lseek");
+				exit(77);
+		  	};
+		  }
+		  else
+		  {
+		  	if(I_LSEEK( fd, filebytes64-reclen, SEEK_SET )<0)
+		  	{
+				perror("lseek");
+				exit(77);
+		  	};
+  		  }
 		}
 	        compute_val=(double)0;
 		for(i=0; i<numrecs64; i++) 
@@ -8278,13 +8828,16 @@ long long *data1,*data2;
 	   filebytes64=filebytes64/reclen;
 	}
 	for(j=0;j<ltest;j++){
-	    	revreadrate[j] = 
-		      (unsigned long long) ((double) filebytes64 / revreadtime[j]);
 		if(MS_flag)
 		{
-			revreadrate[j]=1000000.0*(1.0/revreadrate[j]);
+			revreadrate[j]=1000000.0*(revreadtime[j] / (double)filebytes64);
 			continue;
 		}
+            else
+            {
+                  revreadrate[j] = 
+		      (unsigned long long) ((double) filebytes64 / revreadtime[j]);
+            }
 		if(!(OPS_flag || MS_flag))
 			revreadrate[j] >>= 10;
 	}
@@ -8327,7 +8880,7 @@ long long *data1,*data2;
 	int fd,wval;
 	char *maddr;
 	char *wmaddr,*free_addr,*nbuff;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo=0;
 #endif
 #ifdef ASYNC_IO
@@ -8340,9 +8893,10 @@ long long *data1,*data2;
 	maddr=wmaddr=free_addr=nbuff=0;
 	numrecs64 = (kilo64*1024)/reclen;
 	filebytes64 = numrecs64*reclen;
-	flags = O_RDWR|O_CREAT|O_TRUNC;
+/*	flags = O_RDWR|O_CREAT|O_TRUNC;*/
+	flags = O_RDWR|O_CREAT;
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -8361,15 +8915,20 @@ long long *data1,*data2;
 	if(read_sync)
 		flags |=O_RSYNC|O_SYNC;
 #endif
+/*
 	if (!no_unlink)
-		unlink(dummyfile[0]);
+	{
+	   if(check_filename(filename))
+		unlink(filename);
+	}
+*/
 	if(Uflag) /* Unmount and re-mount the mountpoint */
 	{
 		purge_buffer_cache();
 	}
-        if((fd = I_OPEN(dummyfile[0], (int)flags,0640))<0)
+        if((fd = I_OPEN(filename, (int)flags,0640))<0)
         {
-                    printf("\nCan not open temporary file %s for write.\n",dummyfile[0]);
+                    printf("\nCan not open temporary file %s for write.\n",filename);
 		    perror("open");
                     exit(84);
         }
@@ -8386,6 +8945,18 @@ long long *data1,*data2;
 		}
 	}
 #endif
+#if defined(solaris)
+               if(direct_flag)
+               {
+                       test_foo = directio(fd, DIRECTIO_ON);
+                       if(test_foo != 0)
+                       {
+                               if(!client_iozone)
+                                 printf("\ndirectio not available.\n");
+                               exit(3);
+                       }
+               }
+#endif
 	if(mmapflag)
 	{
 		maddr=(char *)initfile(fd,filebytes64,1,PROT_READ|PROT_WRITE);
@@ -8394,7 +8965,11 @@ long long *data1,*data2;
 	if(async_flag)
 		async_init(&gc,fd,direct_flag);
 #endif
-	fsync(fd);
+	wval=fsync(fd);
+	if(wval==-1){
+		perror("fsync");
+		signal_handler();
+	}
 	nbuff=mainbuffer;
 	mbuffer=mainbuffer;
 	if(fetchon)
@@ -8413,7 +8988,7 @@ long long *data1,*data2;
 		signal_handler();
 	}
 	*/
-	if(verify)
+	if(verify || dedup || dedup_interior)
 		fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)0);
 	starttime1 = time_so_far();
 	if(cpuutilflag)
@@ -8441,16 +9016,16 @@ long long *data1,*data2;
 		{
 			free_addr=nbuff=(char *)malloc((size_t)reclen+page_size);
 			nbuff=(char *)(((long)nbuff+(long)page_size) & (long)~(page_size-1));
-			if(verify)
+			if(verify || dedup || dedup_interior)
 				fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)0);
 		}
-		if(verify & diag_v)
+		if((verify & diag_v) || dedup || dedup_interior)
 			fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)0);
 		if(purge)
 			purgeit(nbuff,reclen);
 		if(mmapflag)
 		{
-			wmaddr = &maddr[0];
+			wmaddr = &maddr[i*reclen];
 			fill_area((long long*)nbuff,(long long*)wmaddr,(long long)reclen);
 			if(!mmapnsflag)
 			{
@@ -8508,13 +9083,23 @@ long long *data1,*data2;
 		if(mmapflag)
 			msync(maddr,(size_t)filebytes64,MS_SYNC);/* Clean up before read starts running */
 		else
-			fsync(fd);
+		{
+			wval=fsync(fd);
+			if(wval==-1){
+				perror("fsync");
+				signal_handler();
+			}
+		}
 	}
 	if(include_close)
 	{
 		if(mmapflag)
 			mmap_end(maddr,(unsigned long long)filebytes64);
-		close(fd);
+		wval=close(fd);
+		if(wval==-1){
+			perror("close");
+			signal_handler();
+		}
 	}
 	writeintime = ((time_so_far() - starttime1)-time_res)-
 		compute_val;
@@ -8540,20 +9125,34 @@ long long *data1,*data2;
 		if(mmapflag)
 			msync(maddr,(size_t)filebytes64,MS_SYNC);/* Clean up before read starts running */
 		else
-			fsync(fd);
+		{
+			wval=fsync(fd);
+			if(wval==-1){
+				perror("fsync");
+				signal_handler();
+			}
+		}
 		if(mmapflag)
 			mmap_end(maddr,(unsigned long long)filebytes64);
-		close(fd);
+		wval=close(fd);
+		if(wval==-1){
+			perror("close");
+			signal_handler();
+		}
+
 	}
 
 	if(OPS_flag || MS_flag){
 	   filebytes64=filebytes64/reclen;
 	}
-    	writeinrate = (unsigned long long) ((double) filebytes64 / writeintime);
 	if(MS_flag)
 	{
-		writeinrate=1000000.0*(1.0/writeinrate);
+		writeinrate=1000000.0*(writeintime / (double)filebytes64);
 	}
+      else
+      {
+            writeinrate = (unsigned long long) ((double) filebytes64 / writeintime);
+      }
 	if(!(OPS_flag || MS_flag))
 		writeinrate >>= 10;
 	/* Must save walltime & cputime before calling store_value() for each/any cell.*/
@@ -8561,9 +9160,9 @@ long long *data1,*data2;
 		store_times(walltime, cputime);
 	store_value((off64_t)writeinrate);
 #ifdef NO_PRINT_LLD
-	if(!silent) printf("%8ld",writeinrate);
+	if(!silent) printf(" %8ld",writeinrate);
 #else
-	if(!silent) printf("%8lld",writeinrate);
+	if(!silent) printf(" %8lld",writeinrate);
 #endif
 	if(!silent) fflush(stdout);
 	if(restf)
@@ -8600,7 +9199,7 @@ long long *data1, *data2;
 	char *nbuff;
 	char *maddr;
 	char *wmaddr;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo=0;
 #endif
 #ifdef ASYNC_IO
@@ -8613,7 +9212,7 @@ long long *data1, *data2;
 	nbuff=maddr=wmaddr=0;
 	open_flags=O_RDONLY;
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		open_flags |=O_DIRECT;
 #endif
@@ -8656,6 +9255,18 @@ long long *data1, *data2;
 			exit(3);
 		}
 	}
+#endif
+#if defined(solaris)
+               if(direct_flag)
+               {
+                       test_foo = directio(fd, DIRECTIO_ON);
+                       if(test_foo != 0)
+                       {
+                               if(!client_iozone)
+                                 printf("\ndirectio not available.\n");
+                               exit(3);
+                       }
+               }
 #endif
 	if(mmapflag)
 	{
@@ -8854,11 +9465,14 @@ long long *data1, *data2;
 	if(OPS_flag || MS_flag){
 	   filebytes64=filebytes64/reclen;
 	}
-    	strideinrate = (unsigned long long) ((double) filebytes64 / strideintime);
 	if(MS_flag)
 	{
-		strideinrate=1000000.0*(1.0/strideinrate);
+		strideinrate=1000000.0*(strideintime / (double)filebytes64);
 	}
+      else
+      {
+            strideinrate = (unsigned long long) ((double) filebytes64 / strideintime);
+      }
 	if(!(OPS_flag || MS_flag))
 		strideinrate >>= 10;
 	/* Must save walltime & cputime before calling store_value() for each/any cell.*/
@@ -8866,9 +9480,9 @@ long long *data1, *data2;
 		store_times(walltime, cputime);
 	store_value((off64_t)strideinrate);
 #ifdef NO_PRINT_LLD
-	if(!silent) printf("%8ld",strideinrate);
+	if(!silent) printf(" %8ld",strideinrate);
 #else
-	if(!silent) printf("%8lld",strideinrate);
+	if(!silent) printf(" %8lld",strideinrate);
 #endif
 	if(!silent) fflush(stdout);
 	if(restf)
@@ -8898,11 +9512,11 @@ long long *data1,*data2;
 	unsigned long long pwriterate[2];
 	off64_t filebytes64;
 	long long flags_here = 0;
-	int fd,ltest;
+	int fd,ltest,wval;
 	off64_t numrecs64,traj_offset;
 	off64_t lock_offset=0;
 	long long traj_size;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo=0;
 #endif
 	char *nbuff;
@@ -8938,7 +9552,7 @@ long long *data1,*data2;
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags_here |=O_DIRECT;
 #endif
@@ -8947,7 +9561,8 @@ long long *data1,*data2;
 		flags_here |=O_DIRECTIO;
 #endif
 #endif
-	unlink(filename);
+	if(check_filename(filename))
+		unlink(filename);
 	if(noretest)
 		ltest=1;
 	else
@@ -8993,6 +9608,18 @@ long long *data1,*data2;
 				}
 			}
 #endif
+#if defined(solaris)
+               		if(direct_flag)
+               		{
+                       		test_foo = directio(fd, DIRECTIO_ON);
+                       		if(test_foo != 0)
+                       		{
+                               	   if(!client_iozone)
+                                      printf("\ndirectio not available.\n");
+                               	      exit(3);
+                       		}
+               		}
+#endif
 		}
 		else
 		{
@@ -9016,13 +9643,25 @@ long long *data1,*data2;
 				}
 			}
 #endif
+#if defined(solaris)
+               		if(direct_flag)
+               		{
+                       		test_foo = directio(fd, DIRECTIO_ON);
+                       		if(test_foo != 0)
+                       		{
+                               	   if(!client_iozone)
+                                 	printf("\ndirectio not available.\n");
+                               		exit(3);
+                       		}
+               		}
+#endif
 		}
 		fsync(fd);
 		nbuff=mainbuffer;
 		mbuffer=mainbuffer;
 		if(fetchon)
 			fetchit(nbuff,reclen);
-		if(verify)
+		if(verify || dedup || dedup_interior)
 			fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)0);
 		starttime1 = time_so_far();
 	        compute_val=(double)0;
@@ -9053,7 +9692,7 @@ long long *data1,*data2;
                                         Index=0;
                                 nbuff = mbuffer + Index;
                         }
-			if(verify && diag_v)
+			if((verify && diag_v) || dedup || dedup_interior)
 				fill_buffer(nbuff,reclen,(long long)pattern,sverify,i);
 			if(purge)
 				purgeit(nbuff,reclen);
@@ -9077,11 +9716,19 @@ long long *data1,*data2;
 		}
 		if(include_flush)
 		{
-			fsync(fd);
+			wval=fsync(fd);
+			if(wval==-1){
+				perror("fsync");
+				signal_handler();
+			}
 		}
 		if(include_close)
 		{
-			close(fd);
+			wval=close(fd);
+			if(wval==-1){
+				perror("close");
+				signal_handler();
+			}
 		}
 		pwritetime[j] = ((time_so_far() - starttime1)-time_res)
 			-compute_val;
@@ -9094,8 +9741,16 @@ long long *data1,*data2;
 		}
 		if(!include_close)
 		{
-			fsync(fd);
-			close(fd);
+			wval=fsync(fd);
+			if(wval==-1){
+				perror("fsync");
+				signal_handler();
+			}
+			wval=close(fd);
+			if(wval==-1){
+				perror("close");
+				signal_handler();
+			}
 		}
 
 		if(cpuutilflag)
@@ -9114,13 +9769,16 @@ long long *data1,*data2;
 	   filebytes64=filebytes64/reclen;
 	}
 	for(j=0;j<ltest;j++){
-		pwriterate[j] = 
-		      (unsigned long long) ((double) filebytes64 / pwritetime[j]);
 		if(MS_flag)
 		{
-			pwriterate[j]=1000000.0*(1.0/pwriterate[j]);
+			pwriterate[j]=1000000.0*(pwritetime[j] / (double)filebytes64);
 			continue;
 		}
+            else
+            {
+                  pwriterate[j] = 
+		      (unsigned long long) ((double) filebytes64 / pwritetime[j]);
+            }
 		if(!(OPS_flag || MS_flag))
 			pwriterate[j] >>= 10;
 	}
@@ -9180,7 +9838,7 @@ long long *data1, *data2;
 	int ltest;
 	off64_t traj_offset;
 	long long traj_size;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 	char *nbuff;
@@ -9189,7 +9847,7 @@ long long *data1, *data2;
 	nbuff=mainbuffer;
 	open_flags=O_RDONLY;
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		open_flags |=O_DIRECT;
 #endif
@@ -9198,7 +9856,7 @@ long long *data1, *data2;
 		open_flags |=O_DIRECTIO;
 #endif
 #endif
-#if defined(_HPUX_SOURCE) || defined(linux)
+#if defined(_HPUX_SOURCE) || defined(linux) || defined(__FreeBSD__) || defined(__DragonFly__)
 	if(read_sync)
 		open_flags |=O_RSYNC|O_SYNC;
 #endif
@@ -9231,7 +9889,7 @@ long long *data1, *data2;
 		}
 		if((fd = I_OPEN(filename, (int)open_flags,0))<0)
 		{
-			printf("\nCan not open temporary file for read\n");
+			printf("\nCan not open temporary file %s for read\n",filename);
 			perror("open");
 			exit(101);
 		}
@@ -9247,6 +9905,18 @@ long long *data1, *data2;
 				exit(3);
 			}
 		}
+#endif
+#if defined(solaris)
+               if(direct_flag)
+               {
+                       test_foo = directio(fd, DIRECTIO_ON);
+                       if(test_foo != 0)
+                       {
+                               if(!client_iozone)
+                                 printf("\ndirectio not available.\n");
+                               exit(3);
+                       }
+               }
 #endif
 		nbuff=mainbuffer;
 		mbuffer=mainbuffer;
@@ -9345,13 +10015,16 @@ long long *data1, *data2;
 	   filebytes64=filebytes64/reclen;
 	}
 	for(j=0;j<ltest;j++){
-		preadrate[j] = 
-			(unsigned long long) ((double) filebytes64 / preadtime[j]);
 		if(MS_flag)
 		{
-			preadrate[j]=1000000.0*(1.0/preadrate[j]);
+			preadrate[j]=1000000.0*(preadtime[j] / (double)filebytes64);
 			continue;
 		}
+            else
+            {
+                  preadrate[j] = 
+			(unsigned long long) ((double) filebytes64 / preadtime[j]);
+            }
 		if(!(OPS_flag || MS_flag))
 			preadrate[j] >>= 10;
 	}
@@ -9408,7 +10081,7 @@ long long *data1,*data2;
 	off64_t filebytes64,i;
 	off64_t numrecs64;
 	int fd,ltest;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 	long long flags_here;
@@ -9432,7 +10105,7 @@ long long *data1,*data2;
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags_here |=O_DIRECT;
 #endif
@@ -9487,6 +10160,18 @@ long long *data1,*data2;
 				}
 			}
 #endif
+#if defined(solaris)
+               		if(direct_flag)
+               		{
+                       		test_foo = directio(fd, DIRECTIO_ON);
+                       		if(test_foo != 0)
+                       		{
+                                   if(!client_iozone)
+                                     printf("\ndirectio not available.\n");
+                               	   exit(3);
+                       		}
+               		}
+#endif
 		}
 		else
 		{
@@ -9509,6 +10194,18 @@ long long *data1,*data2;
 					exit(3);
 				}
 			}
+#endif
+#if defined(solaris)
+               		if(direct_flag)
+               		{
+                       		test_foo = directio(fd, DIRECTIO_ON);
+                       		if(test_foo != 0)
+                       		{
+                               	   if(!client_iozone)
+                                 	printf("\ndirectio not available.\n");
+                               	   exit(3);
+                       		}
+               		}
 #endif
 		}
 		nbuff=mainbuffer;
@@ -9540,14 +10237,20 @@ long long *data1,*data2;
 			{
 				piov[xx].piov_base = 
 					(caddr_t)(nbuff+(xx * reclen));
-				if(verify)
+				if(verify || dedup || dedup_interior)
 					fill_buffer(piov[xx].piov_base,reclen,(long long)pattern,sverify,i);
 				piov[xx].piov_len = reclen;
+#ifdef PER_VECTOR_OFFSET
 				piov[xx].piov_offset = list_off[xx];
+#endif
 				if(purge)
 					purgeit(piov[xx].piov_base,reclen);
 			}
-			if(pwritev(fd, piov,numvecs) != (reclen*numvecs))
+			if(pwritev(fd, piov,numvecs
+#ifdef PER_VECTOR_OFFSET
+				, list_off[0]
+#endif
+				) != (reclen*numvecs))
 			{
 #ifdef NO_PRINT_LLD
 			    	printf("\nError pwriteving block %ld, fd= %d\n", i,
@@ -9562,9 +10265,21 @@ long long *data1,*data2;
 		}
 
 		if(include_flush)
-			fsync(fd);
+		{
+			wval=fsync(fd);
+			if(wval==-1){
+				perror("fsync");
+				signal_handler();
+			}
+		}
 		if(include_close)
-			close(fd);
+		{
+			wval=close(fd);
+			if(wval==-1){
+				perror("close");
+				signal_handler();
+			}
+		}
 		pwritevtime[j] = ((time_so_far() - starttime1)-time_res)
 			-compute_val;
 		if(pwritevtime[j] < (double).000001) 
@@ -9576,8 +10291,16 @@ long long *data1,*data2;
 		}
 		if(!include_close)
 		{
-			fsync(fd);
-			close(fd);
+			wval=fsync(fd);
+			if(wval==-1){
+				perror("fsync");
+				signal_handler();
+			}
+			wval=close(fd);
+			if(wval==-1){
+				perror("close");
+				signal_handler();
+			}
 		}
 
 		if(cpuutilflag)
@@ -9596,13 +10319,16 @@ long long *data1,*data2;
 	   filebytes64=filebytes64/reclen;
 	}
 	for(j=0;j<ltest;j++){
-	    	pwritevrate[j] = 
-		      (unsigned long long) ((double) filebytes64 / pwritevtime[j]);
 		if(MS_flag)
 		{
-			pwritevrate[j]=1000000.0*(1.0/pwritevrate[j]);
+			pwritevrate[j]=1000000.0*(pwritevtime[j] / (double)filebytes64);
 			continue;
 		}
+            else
+            {
+                  pwritevrate[j] = 
+		      (unsigned long long) ((double) filebytes64 / pwritevtime[j]);
+            }
 		if(!(OPS_flag || MS_flag))
 			pwritevrate[j] >>= 10;
 	}
@@ -9650,7 +10376,6 @@ long long reclen;
 off64_t numrecs64;
 #endif
 {
-	off64_t offset;
 	long long found,i,j;
 	long long numvecs;
 #if defined (bsd4_2) || defined(Windows)
@@ -9727,14 +10452,14 @@ long long *data1,*data2;
 	unsigned long long preadvrate[2];
 	off64_t filebytes64;
 	int fd,open_flags,ltest;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 	char *nbuff;
 
 	open_flags=O_RDONLY;
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		open_flags |=O_DIRECT;
 #endif
@@ -9787,6 +10512,18 @@ long long *data1,*data2;
 			}
 		}
 #endif
+#if defined(solaris)
+               if(direct_flag)
+               {
+                       test_foo = directio(fd, DIRECTIO_ON);
+                       if(test_foo != 0)
+                       {
+                               if(!client_iozone)
+                                 printf("\ndirectio not available.\n");
+                               exit(3);
+                       }
+               }
+#endif
 		nbuff=mainbuffer;
 		mbuffer=mainbuffer;
 		if(fetchon)
@@ -9818,11 +10555,17 @@ long long *data1,*data2;
 				piov[xx].piov_base = 
 					(caddr_t)(nbuff+(xx * reclen));
 				piov[xx].piov_len = reclen;
+#ifdef PER_VECTOR_OFFSET
 				piov[xx].piov_offset = list_off[xx];
+#endif
 				if(purge)
 				   purgeit(piov[xx].piov_base,reclen);
 			}
-			if(preadv(fd, piov, numvecs) != (numvecs * reclen))
+			if(preadv(fd, piov, numvecs
+#ifdef PERVECTOR_OFFSET
+				, list_off[0]
+#endif
+				) != (numvecs * reclen))
 			{
 #ifdef NO_PRINT_LLD
 				printf("\nError preadving block %ld \n", i);
@@ -9868,13 +10611,16 @@ long long *data1,*data2;
 	   filebytes64=filebytes64/reclen;
 	}
 	for(j=0;j<ltest;j++){
-	    	preadvrate[j] = 
-		      (unsigned long long) ((double) filebytes64 / preadvtime[j]);
 		if(MS_flag)
 		{
-			preadvrate[j]=1000000.0*(1.0/preadvrate[j]);
+			preadvrate[j]=1000000.0*(preadvtime[j] / (double)filebytes64);
 			continue;
 		}
+            else
+            {
+                  preadvrate[j] = 
+		      (unsigned long long) ((double) filebytes64 / preadvtime[j]);
+            }
 		if(!(OPS_flag || MS_flag))
 			preadvrate[j] >>= 10;
 	}
@@ -10632,9 +11378,9 @@ int shared_flag;
         {
                 printf("\nUnable to get shared memory segment(shmget)\n");
 #ifdef NO_PRINT_LLD
-                printf("shmid = %d, size = %ld, size1 = %ld, Error %d\n",shmid,size,(size_t)size1,errno);
+                printf("shmid = %d, size = %ld, size1 = %d, Error %d\n",shmid,size,(size_t)size1,errno);
 #else
-                printf("shmid = %d, size = %lld, size1 = %ld, Error %d\n",shmid,size,(size_t)size1,errno);
+                printf("shmid = %d, size = %lld, size1 = %d, Error %d\n",shmid,size,(size_t)size1,errno);
 #endif
                 exit(119);
         }
@@ -10662,7 +11408,7 @@ int shared_flag;
 
 	size1=l_max(size,page_size);
 	size1=(size1 +page_size) & ~(page_size-1);
-#ifdef bsd4_2
+#if defined(bsd4_2) && !defined(macosx)
 	if((tfd = creat("mmap.tmp", 0666))<0)
 	{
 		printf("Unable to create tmp file\n");
@@ -10826,9 +11572,19 @@ purge_buffer_cache()
 #endif
 {
 	char command[1024];
+	int ret,i;
 	strcpy(command,"umount ");
 	strcat(command, mountname);
-	system(command);
+        /*
+           umount might fail if the device is still busy, so
+           retry unmounting several times with increasing delays
+        */
+        for (i = 1; i < 10; ++i) {
+               ret = system(command);
+               if (ret == 0)
+                       break;
+               sleep(i); /* seconds */
+        }
 	strcpy(command,"mount ");
 	strcat(command, mountname);
 	system(command);
@@ -10855,6 +11611,7 @@ thread_write_test( x)
 	double thread_qtime_stop,thread_qtime_start;
 	off64_t traj_offset;
 	off64_t lock_offset=0;
+	off64_t save_offset=0;
 	long long flags,traj_size;
 	long long w_traj_bytes_completed;
 	long long w_traj_ops_completed;
@@ -10870,7 +11627,7 @@ thread_write_test( x)
 	char *wmaddr,*free_addr;
 	char now_string[30];
 	int anwser,bind_cpu,wval;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 	off64_t filebytes64;
@@ -10951,11 +11708,22 @@ thread_write_test( x)
 	xx2=xx;
 	if(share_file)
 		xx2=(long long)0;
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+		sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+#else
+		sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+#endif
+	}
 	/*****************/
 	/* Children only */
 	/*******************************************************************/
@@ -10976,6 +11744,9 @@ thread_write_test( x)
 #endif
 	  if((fd = I_CREAT(dummyfile[xx], 0640))<0)
 	  {
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		perror(dummyfile[xx]);
 		exit(123);
 	  }
@@ -11006,7 +11777,7 @@ thread_write_test( x)
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -11030,6 +11801,9 @@ thread_write_test( x)
 #endif
 	if((fd = I_OPEN(dummyfile[xx], (int)flags,0))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		printf("\nCan not open temp file: %s\n", 
 			filename);
 		perror("open");
@@ -11051,6 +11825,18 @@ thread_write_test( x)
 		}
 	}
 #endif
+#if defined(solaris)
+               if(direct_flag)
+               {
+                       test_foo = directio(fd, DIRECTIO_ON);
+                       if(test_foo != 0)
+                       {
+                               if(!client_iozone)
+                                 printf("\ndirectio not available.\n");
+                               exit(3);
+                       }
+               }
+#endif
 #ifdef ASYNC_IO
 	if(async_flag)
 		async_init(&gc,fd,direct_flag);
@@ -11066,7 +11852,7 @@ thread_write_test( x)
 	}
 	if(fetchon)			/* Prefetch into processor cache */
 		fetchit(nbuff,reclen);
-	if(verify && !no_copy_flag)
+	if((verify && !no_copy_flag) || dedup || dedup_interior)
 		fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)0);
 
 	if(w_traj_flag)
@@ -11112,6 +11898,9 @@ thread_write_test( x)
 		thread_wqfd=fopen(tmpname,"a");
 		if(thread_wqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -11123,6 +11912,9 @@ thread_write_test( x)
 		thread_Lwqfd=fopen(tmpname,"a");
 		if(thread_Lwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -11164,7 +11956,7 @@ thread_write_test( x)
 			mylockr((int) fd, (int) 1, (int)0,
 			  lock_offset, reclen);
 		}
-		if(verify && !no_copy_flag)
+		if((verify && !no_copy_flag) || dedup || dedup_interior)
 			fill_buffer(nbuff,reclen,(long long)pattern,sverify,i);
 		if(compute_flag)
 			compute_val+=do_compute(delay);
@@ -11176,8 +11968,28 @@ thread_write_test( x)
 				else
 					fsync(fd);
 			}
+			/* Close and re-open to get close in measurment */
+			if(include_close)
+			{
+			  save_offset=I_LSEEK(fd,0,SEEK_CUR);
+			  close(fd);
+			}
 			child_stat->throughput = 
 				(time_so_far() - starttime1)-time_res;
+			if(include_close)
+			{
+			  if((fd = I_OPEN(dummyfile[xx], (int)flags,0))<0)
+			  {
+				client_error=errno;
+				if(distributed && client_iozone)
+					send_stop();
+				printf("\nCan not open temp file: %s\n", 
+					filename);
+				perror("open");
+				exit(125);
+			  }
+			  I_LSEEK(fd,save_offset,SEEK_SET);
+			}
 			if(child_stat->throughput < (double).000001) 
 			{
 				child_stat->throughput = time_res;
@@ -11227,7 +12039,7 @@ again:
 			     {
 				free_addr=nbuff=(char *)malloc((size_t)reclen+page_size);
 				nbuff=(char *)(((long)nbuff+(long)page_size) & (long)~(page_size-1));
-				if(verify)
+				if(verify || dedup || dedup_interior)
 					fill_buffer(nbuff,reclen,(long long)pattern,sverify,i);
 			        async_write_no_copy(gc, (long long)fd, nbuff, reclen, (i*reclen), depth,free_addr);
 			     }
@@ -11299,7 +12111,10 @@ again:
 			if(wval==-1)
 				perror("write");
 			if (!no_unlink)
+			{
+			   if(check_filename(dummyfile[xx]))
 				unlink(dummyfile[xx]);
+			}
 			child_stat->flag = CHILD_STATE_HOLD;
 		    	exit(127);
 		      }
@@ -11502,7 +12317,7 @@ thread_pwrite_test( x)
 	char *wmaddr,*free_addr;
 	char now_string[30];
 	int anwser,bind_cpu,wval;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 	off64_t filebytes64;
@@ -11583,11 +12398,22 @@ thread_pwrite_test( x)
 	xx2=xx;
 	if(share_file)
 		xx2=(long long)0;
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+	   sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+	   sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+	   sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+#else
+	   sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+#endif
+	}
 	/*****************/
 	/* Children only */
 	/*******************************************************************/
@@ -11595,6 +12421,9 @@ thread_pwrite_test( x)
 	/*******************************************************************/
 	if((fd = I_CREAT(dummyfile[xx], 0640))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		perror(dummyfile[xx]);
 		exit(123);
 	}
@@ -11613,7 +12442,7 @@ thread_pwrite_test( x)
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -11624,6 +12453,9 @@ thread_pwrite_test( x)
 #endif
 	if((fd = I_OPEN(dummyfile[xx], (int)flags,0))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		printf("\nCan not open temp file: %s\n", 
 			filename);
 		perror("open");
@@ -11642,6 +12474,18 @@ thread_pwrite_test( x)
 		}
 	}
 #endif
+#if defined(solaris)
+        if(direct_flag)
+        {
+                test_foo = directio(fd, DIRECTIO_ON);
+                if(test_foo != 0)
+                {
+                        if(!client_iozone)
+                          printf("\ndirectio not available.\n");
+                        exit(3);
+                }
+        }
+#endif
 #ifdef ASYNC_IO
 	if(async_flag)
 		async_init(&gc,fd,direct_flag);
@@ -11657,7 +12501,7 @@ thread_pwrite_test( x)
 	}
 	if(fetchon)			/* Prefetch into processor cache */
 		fetchit(nbuff,reclen);
-	if(verify && !no_copy_flag)
+	if((verify && !no_copy_flag) || dedup || dedup_interior)
 		fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)0);
 
 	if(w_traj_flag)
@@ -11703,6 +12547,9 @@ thread_pwrite_test( x)
 		thread_wqfd=fopen(tmpname,"a");
 		if(thread_wqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -11714,6 +12561,9 @@ thread_pwrite_test( x)
 		thread_Lwqfd=fopen(tmpname,"a");
 		if(thread_Lwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -11741,7 +12591,7 @@ thread_pwrite_test( x)
 			mylockr((int) fd, (int) 1, (int)0,
 			  lock_offset, reclen);
 		}
-		if(verify && !no_copy_flag)
+		if((verify && !no_copy_flag) || dedup || dedup_interior)
 			fill_buffer(nbuff,reclen,(long long)pattern,sverify,i);
 		if(compute_flag)
 			compute_val+=do_compute(delay);
@@ -11804,7 +12654,7 @@ again:
 			     {
 				free_addr=nbuff=(char *)malloc((size_t)reclen+page_size);
 				nbuff=(char *)(((long)nbuff+(long)page_size) & (long)~(page_size-1));
-				if(verify)
+				if(verify || dedup || dedup_interior)
 					fill_buffer(nbuff,reclen,(long long)pattern,sverify,i);
 			        async_write_no_copy(gc, (long long)fd, nbuff, reclen, (traj_offset), depth,free_addr);
 			     }
@@ -11865,7 +12715,10 @@ again:
 			if(wval==-1)
 				perror("pwrite");
 			if (!no_unlink)
+			{
+			   if(check_filename(dummyfile[xx]))
 				unlink(dummyfile[xx]);
+			}
 			child_stat->flag = CHILD_STATE_HOLD;
 		    	exit(127);
 		      }
@@ -12062,7 +12915,7 @@ thread_rwrite_test(x)
 	int anwser,bind_cpu,wval;
 	FILE *thread_rwqfd,*thread_Lwqfd;
 	char tmpname[256];
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 #ifdef ASYNC_IO
@@ -12139,11 +12992,22 @@ thread_rwrite_test(x)
 	xx2=xx;
 	if(share_file)
 		xx2=(long long)0;
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+		sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+#else
+		sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+#endif
+	}
 	flags = O_RDWR;
 	if(oflag)
 		flags|= O_SYNC;
@@ -12157,7 +13021,7 @@ thread_rwrite_test(x)
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -12182,6 +13046,9 @@ thread_rwrite_test(x)
 #endif
 	if((fd = I_OPEN(dummyfile[xx], (int)flags,0))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 #ifdef NO_PRINT_LLD
 		printf("\nChild %ld\n",xx);
 #else
@@ -12207,6 +13074,18 @@ thread_rwrite_test(x)
 		}
 	}
 #endif
+#if defined(solaris)
+        if(direct_flag)
+        {
+                test_foo = directio(fd, DIRECTIO_ON);
+                if(test_foo != 0)
+                {
+                        if(!client_iozone)
+                          printf("\ndirectio not available.\n");
+                        exit(3);
+                }
+        }
+#endif
 #ifdef ASYNC_IO
 	if(async_flag)
 		async_init(&gc,fd,direct_flag);
@@ -12226,6 +13105,9 @@ thread_rwrite_test(x)
 		if(thread_rwqfd==0)
 		{
 			printf("Unable to open %s\n",tmpname);
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			exit(40);
 		}
 		fprintf(thread_rwqfd,"Offset in Kbytes   Latency in microseconds  Transfer size in bytes\n");
@@ -12236,6 +13118,9 @@ thread_rwrite_test(x)
 		thread_Lwqfd=fopen(tmpname,"a");
 		if(thread_Lwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -12274,7 +13159,7 @@ thread_rwrite_test(x)
 	}
 	if(w_traj_flag)
 		rewind(w_traj_fd);
-	if(verify && !no_copy_flag)
+	if((verify && !no_copy_flag) || dedup || dedup_interior)
 		fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)0);
 	for(i=0; i<numrecs64; i++){
 		traj_offset= i*reclen ;
@@ -12312,7 +13197,7 @@ thread_rwrite_test(x)
 				printf("\nStop_flag 1\n");
 			break;
 		}
-		if(verify && !no_copy_flag)
+		if((verify && !no_copy_flag) || dedup || dedup_interior)
 		{
 			fill_buffer(nbuff,reclen,(long long)pattern,sverify,i);
 		}
@@ -12344,7 +13229,7 @@ printf("Chid: %lld Rewriting offset %lld for length of %lld\n",chid, i*reclen,re
 			     {
 				free_addr=nbuff=(char *)malloc((size_t)reclen+page_size);
 				nbuff=(char *)(((long)nbuff+(long)page_size) & (long)~(page_size-1));
-				if(verify)
+				if(verify || dedup || dedup_interior)
 					fill_buffer(nbuff,reclen,(long long)pattern,sverify,i);
 			        async_write_no_copy(gc, (long long)fd, nbuff, reclen, (i*reclen), depth,free_addr);
 			     }
@@ -12379,7 +13264,10 @@ printf("Chid: %lld Rewriting offset %lld for length of %lld\n",chid, i*reclen,re
 				if(wval==-1)
 					perror("write");
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				signal_handler();
 			   }
@@ -12571,7 +13459,7 @@ thread_read_test(x)
 	char now_string[30];
 	int anwser,bind_cpu;
 	long wval;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 #ifdef ASYNC_IO
@@ -12628,11 +13516,22 @@ thread_read_test(x)
 	xx2=xx;
 	if(share_file)
 		xx2=(long long)0;
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+		sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+#else
+		sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+#endif
+	}
 	if(oflag)
 		flags=O_RDONLY|O_SYNC;
 	else
@@ -12643,7 +13542,7 @@ thread_read_test(x)
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -12668,6 +13567,9 @@ thread_read_test(x)
 #endif
 	if((fd = I_OPEN(dummyfile[xx], (int)flags,0))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		perror(dummyfile[xx]);
 		exit(130);
 	}
@@ -12690,6 +13592,18 @@ thread_read_test(x)
 			exit(3);
 		}
 	}
+#endif
+#if defined(solaris)
+        if(direct_flag)
+        {
+                test_foo = directio(fd, DIRECTIO_ON);
+                if(test_foo != 0)
+                {
+                        if(!client_iozone)
+                          printf("\ndirectio not available.\n");
+                        exit(3);
+                }
+        }
 #endif
 	if(mmapflag)
 	{
@@ -12723,6 +13637,9 @@ thread_read_test(x)
 		thread_rqfd=fopen(tmpname,"a");
 		if(thread_rqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -12734,6 +13651,9 @@ thread_read_test(x)
 		thread_Lwqfd=fopen(tmpname,"a");
 		if(thread_Lwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -12867,7 +13787,10 @@ thread_read_test(x)
 #endif
 				perror("read");
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 		    		exit(132);
 			      }
@@ -12878,7 +13801,10 @@ thread_read_test(x)
 		   {
 			   if(verify_buffer(buffer1,reclen,(off64_t)i,reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(133);
 			   }
@@ -12887,7 +13813,10 @@ thread_read_test(x)
 		   {
 			   if(verify_buffer(nbuff,reclen,(off64_t)i,reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(134);
 			   }
@@ -13079,7 +14008,7 @@ thread_pread_test(x)
 	char now_string[30];
 	volatile char *buffer1;
 	int anwser,bind_cpu;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 #ifdef ASYNC_IO
@@ -13136,11 +14065,22 @@ thread_pread_test(x)
 	xx2=xx;
 	if(share_file)
 		xx2=(long long)0;
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+		sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+#else
+		sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+#endif
+	}
 	if(oflag)
 		flags=O_RDONLY|O_SYNC;
 	else
@@ -13151,7 +14091,7 @@ thread_pread_test(x)
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -13162,6 +14102,9 @@ thread_pread_test(x)
 #endif
 	if((fd = I_OPEN(dummyfile[xx], (int)flags,0))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		perror(dummyfile[xx]);
 		exit(130);
 	}
@@ -13181,6 +14124,18 @@ thread_pread_test(x)
 			exit(3);
 		}
 	}
+#endif
+#if defined(solaris)
+        if(direct_flag)
+        {
+                test_foo = directio(fd, DIRECTIO_ON);
+                if(test_foo != 0)
+                {
+                        if(!client_iozone)
+                          printf("\ndirectio not available.\n");
+                        exit(3);
+                }
+        }
 #endif
 	if(mmapflag)
 	{
@@ -13214,6 +14169,9 @@ thread_pread_test(x)
 		thread_rqfd=fopen(tmpname,"a");
 		if(thread_rqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -13225,6 +14183,9 @@ thread_pread_test(x)
 		thread_Lwqfd=fopen(tmpname,"a");
 		if(thread_Lwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -13332,7 +14293,10 @@ thread_pread_test(x)
 #endif
 				perror("pread");
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 		    		exit(132);
 			      }
@@ -13343,7 +14307,10 @@ thread_pread_test(x)
 		   {
 			   if(verify_buffer(buffer1,reclen,(off64_t)i,reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(133);
 			   }
@@ -13352,7 +14319,10 @@ thread_pread_test(x)
 		   {
 			   if(verify_buffer(nbuff,reclen,(off64_t)i,reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(134);
 			   }
@@ -13537,7 +14507,7 @@ thread_rread_test(x)
 	int anwser,bind_cpu;
 	long wval;
 	char tmpname[256];
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 #ifdef ASYNC_IO
@@ -13611,11 +14581,22 @@ thread_rread_test(x)
 	xx2=xx;
 	if(share_file)
 		xx2=(long long)0;
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+		sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+#else
+		sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+#endif
+	}
 	if(oflag)
 		flags=O_RDONLY|O_SYNC;
 	else
@@ -13626,7 +14607,7 @@ thread_rread_test(x)
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -13652,6 +14633,9 @@ thread_rread_test(x)
 #endif
 	if((fd = I_OPEN(dummyfile[xx], ((int)flags),0))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		perror(dummyfile[xx]);
 		exit(135);
 	}
@@ -13675,6 +14659,18 @@ thread_rread_test(x)
 		}
 	}
 #endif
+#if defined(solaris)
+        if(direct_flag)
+        {
+                test_foo = directio(fd, DIRECTIO_ON);
+                if(test_foo != 0)
+                {
+                        if(!client_iozone)
+                          printf("\ndirectio not available.\n");
+                        exit(3);
+                }
+        }
+#endif
 	if(mmapflag)
 	{
 		maddr=(char *)initfile(fd,(filebytes64),0,PROT_READ);
@@ -13689,6 +14685,9 @@ thread_rread_test(x)
                 thread_rrqfd=fopen(tmpname,"a");
                 if(thread_rrqfd==0)
                 {
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
                         printf("Unable to open %s\n",tmpname);
                         exit(40);
                 }
@@ -13700,6 +14699,9 @@ thread_rread_test(x)
 		thread_Lwqfd=fopen(tmpname,"a");
 		if(thread_Lwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -13831,7 +14833,10 @@ thread_rread_test(x)
 #endif
 				perror("read");
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 		    		exit(137);
 			      }
@@ -13842,7 +14847,10 @@ thread_rread_test(x)
 		   {
 			if(verify_buffer(buffer1,reclen,(off64_t)i,reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(138);
 			}
@@ -13851,7 +14859,10 @@ thread_rread_test(x)
 		   {
 			if(verify_buffer(nbuff,reclen,(off64_t)i,reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(139);
 			}
@@ -14040,7 +15051,7 @@ thread_reverse_read_test(x)
 	char tmpname[256];
 	FILE *thread_revqfd=0;
 	FILE *thread_Lwqfd=0;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 #ifdef ASYNC_IO
@@ -14103,11 +15114,22 @@ thread_reverse_read_test(x)
 	xx2=xx;
 	if(share_file)
 		xx2=(long long)0;
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+		sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+#else
+		sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+#endif
+	}
 	if(oflag)
 		flags=O_RDONLY|O_SYNC;
 	else
@@ -14118,7 +15140,7 @@ thread_reverse_read_test(x)
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -14141,6 +15163,9 @@ thread_reverse_read_test(x)
 
 	if((fd = I_OPEN(dummyfile[xx], ((int)flags),0))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		perror(dummyfile[xx]);
 		exit(140);
 	}
@@ -14161,6 +15186,18 @@ thread_reverse_read_test(x)
 		}
 	}
 #endif
+#if defined(solaris)
+        if(direct_flag)
+        {
+                test_foo = directio(fd, DIRECTIO_ON);
+                if(test_foo != 0)
+                {
+                        if(!client_iozone)
+                          printf("\ndirectio not available.\n");
+                        exit(3);
+                }
+        }
+#endif
 	if(mmapflag)
 	{
 		maddr=(char *)initfile(fd,(numrecs64*reclen),0,PROT_READ);
@@ -14173,6 +15210,9 @@ thread_reverse_read_test(x)
                 thread_revqfd=fopen(tmpname,"a");
                 if(thread_revqfd==0)
                 {
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
                         printf("Unable to open %s\n",tmpname);
                         exit(40);
                 }
@@ -14184,6 +15224,9 @@ thread_reverse_read_test(x)
 		thread_Lwqfd=fopen(tmpname,"a");
 		if(thread_Lwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -14214,11 +15257,28 @@ thread_reverse_read_test(x)
 	t_offset = (off64_t)reclen;
 	if (!(h_flag || k_flag || mmapflag))
 	{
-	  if((I_LSEEK( fd, -t_offset, SEEK_END ))<0)
+	  if(check_filename(dummyfile[xx]))
 	  {
-		perror("lseek");
-		exit(142);
-	  };
+	  	if((I_LSEEK( fd, -t_offset, SEEK_END ))<0)
+	  	{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
+			perror("lseek");
+			exit(142);
+	  	}
+	  }
+	  else
+	  {
+		if(I_LSEEK( fd, (numrecs64*reclen)-t_offset, SEEK_SET )<0)
+		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
+			perror("lseek");
+			exit(77);
+		}
+	  }
 	}
 	current_position=(reclen*numrecs64)-reclen;
 	if(file_lock)
@@ -14287,7 +15347,10 @@ thread_reverse_read_test(x)
 #endif
 				perror("read");
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(144);
 			      }
@@ -14298,7 +15361,10 @@ thread_reverse_read_test(x)
 		   {
 			if(verify_buffer(buffer1,reclen,(off64_t)(current_position/reclen),reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(145);
 			}
@@ -14307,7 +15373,10 @@ thread_reverse_read_test(x)
 		   {
 			if(verify_buffer(nbuff,reclen,(off64_t)(current_position/reclen),reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(146);
 			}
@@ -14483,7 +15552,7 @@ thread_stride_read_test(x)
 	char now_string[30];
 	FILE *thread_strqfd=0;
 	FILE *thread_Lwqfd=0;
-#ifdef VXFS
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 #ifdef ASYNC_IO
@@ -14546,11 +15615,22 @@ thread_stride_read_test(x)
 	xx2=xx;
 	if(share_file)
 		xx2=(long long)0;
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+		sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+#else
+		sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+#endif
+	}
 	if(oflag)
 		flags=O_RDONLY|O_SYNC;
 	else
@@ -14560,7 +15640,7 @@ thread_stride_read_test(x)
 		flags |=O_RSYNC|O_SYNC;
 #endif
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -14583,6 +15663,9 @@ thread_stride_read_test(x)
 #endif
 	if((fd = I_OPEN(dummyfile[xx], ((int)flags),0))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		perror(dummyfile[xx]);
 		exit(147);
 	}
@@ -14603,6 +15686,18 @@ thread_stride_read_test(x)
 		}
 	}
 #endif
+#if defined(solaris)
+        if(direct_flag)
+        {
+                test_foo = directio(fd, DIRECTIO_ON);
+                if(test_foo != 0)
+                {
+                        if(!client_iozone)
+                          printf("\ndirectio not available.\n");
+                        exit(3);
+                }
+        }
+#endif
 
 	if(mmapflag)
 	{
@@ -14616,6 +15711,9 @@ thread_stride_read_test(x)
                 thread_strqfd=fopen(tmpname,"a");
                 if(thread_strqfd==0)
                 {
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
                         printf("Unable to open %s\n",tmpname);
                         exit(40);
                 }
@@ -14627,6 +15725,9 @@ thread_stride_read_test(x)
 		thread_Lwqfd=fopen(tmpname,"a");
 		if(thread_Lwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -14721,7 +15822,10 @@ thread_stride_read_test(x)
 #endif
 				perror("read");
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 		    		exit(149);
 			  }
@@ -14738,7 +15842,10 @@ thread_stride_read_test(x)
 		   {
 			if(verify_buffer(buffer1,reclen,(off64_t)savepos64,reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(150);
 			}
@@ -14747,7 +15854,10 @@ thread_stride_read_test(x)
 		   {
 			if(verify_buffer(nbuff,reclen,(off64_t)savepos64,reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(151);
 			}
@@ -14773,6 +15883,9 @@ thread_stride_read_test(x)
 			{
 			  if(I_LSEEK(fd,current_position,SEEK_SET)<0)
 			  {
+				client_error=errno;
+				if(distributed && client_iozone)
+					send_stop();
 				perror("lseek");
 				exit(152);
 			  }
@@ -14785,6 +15898,9 @@ thread_stride_read_test(x)
 			{
 			  if(I_LSEEK(fd,current_position,SEEK_SET)<0)
 			  {
+				client_error=errno;
+				if(distributed && client_iozone)
+					send_stop();
 				perror("lseek");
 				exit(154);
 			  };
@@ -15015,20 +16131,64 @@ thread_ranread_test(x)
 	char now_string[30];
 	FILE *thread_randrfd=0;
 	FILE *thread_Lwqfd=0;
-#ifdef VXFS
+	long long *recnum=0;
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 	long long save_pos;
 #if defined (bsd4_2) || defined(Windows)
 	long long rand1,rand2,rand3;
-	long long big_rand;
 #endif
+	long long big_rand;
 #ifdef ASYNC_IO
 	struct cache *gc=0;
 #else
 	long long *gc=0;
 #endif
 
+#ifdef bsd4_2
+        srand(0);
+#else
+#ifdef Windows
+        srand(0);
+#else
+        srand48(0);
+#endif
+#endif
+        recnum = (long long *)malloc(sizeof(*recnum)*numrecs64);
+        if (recnum){
+             /* pre-compute random sequence based on 
+		Fischer-Yates (Knuth) card shuffle */
+            for(i = 0; i < numrecs64; i++){
+                recnum[i] = i;
+            }
+            for(i = 0; i < numrecs64; i++) {
+                long long tmp = recnum[i];
+#ifdef bsd4_2
+               rand1=(long long)rand();
+               rand2=(long long)rand();
+               rand3=(long long)rand();
+               big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+#else
+#ifdef Windows
+               rand1=(long long)rand();
+               rand2=(long long)rand();
+               rand3=(long long)rand();
+               big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+#else
+               big_rand = lrand48();
+#endif
+#endif
+               big_rand = big_rand%numrecs64;
+               tmp = recnum[i];
+               recnum[i] = recnum[big_rand];
+               recnum[big_rand] = tmp;
+            }
+        }
+	else
+	{
+		fprintf(stderr,"Random uniqueness fallback.\n");
+	}
 	if(compute_flag)
 		delay=compute_time;
 	thread_qtime_stop=thread_qtime_start=0;
@@ -15065,11 +16225,22 @@ thread_ranread_test(x)
 	xx2=xx;
 	if(share_file)
 		xx2=(long long)0;
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+		sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+#else
+		sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+#endif
+	}
 	if(oflag)
 	{
 		flags=O_RDONLY|O_SYNC;
@@ -15082,7 +16253,7 @@ thread_ranread_test(x)
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -15105,6 +16276,9 @@ thread_ranread_test(x)
 #endif
 	if((fd = I_OPEN(dummyfile[xx], ((int)flags),0))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		perror(dummyfile[xx]);
 		exit(156);
 	}
@@ -15125,6 +16299,18 @@ thread_ranread_test(x)
 			exit(3);
 		}
 	}
+#endif
+#if defined(solaris)
+        if(direct_flag)
+        {
+                test_foo = directio(fd, DIRECTIO_ON);
+                if(test_foo != 0)
+                {
+                        if(!client_iozone)
+                          printf("\ndirectio not available.\n");
+                        exit(3);
+                }
+        }
 #endif
 
 	if(mmapflag)
@@ -15161,6 +16347,9 @@ thread_ranread_test(x)
                 thread_randrfd=fopen(tmpname,"a");
                 if(thread_randrfd==0)
                 {
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
                         printf("Unable to open %s\n",tmpname);
                         exit(40);
                 }
@@ -15172,6 +16361,9 @@ thread_ranread_test(x)
 		thread_Lwqfd=fopen(tmpname,"a");
 		if(thread_Lwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -15221,28 +16413,35 @@ thread_ranread_test(x)
 		}
 		if(purge)
 			purgeit(nbuff,reclen);
+		if (recnum) {
+			current_offset = reclen * (long long)recnum[i];
+                } else {
 #ifdef bsd4_2
-		rand1=(long long)rand();
-		rand2=(long long)rand();
-		rand3=(long long)rand();
-		big_rand=(rand1<<32)|(rand2<<16)|(rand3);
-		current_offset = (off64_t)reclen * (big_rand%numrecs64);
+		   rand1=(long long)rand();
+		   rand2=(long long)rand();
+		   rand3=(long long)rand();
+		   big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+		   current_offset = (off64_t)reclen * (big_rand%numrecs64);
 #else
 #ifdef Windows
-		rand1=(long long)rand();
-		rand2=(long long)rand();
-		rand3=(long long)rand();
-		big_rand=(rand1<<32)|(rand2<<16)|(rand3);
-		current_offset = (off64_t)reclen * (big_rand%numrecs64);
+		   rand1=(long long)rand();
+		   rand2=(long long)rand();
+		   rand3=(long long)rand();
+		   big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+		   current_offset = (off64_t)reclen * (big_rand%numrecs64);
 #else
-		current_offset = reclen * (lrand48()%numrecs64);
+		   current_offset = reclen * (lrand48()%numrecs64);
 #endif
 #endif
+		}
 
 		if (!(h_flag || k_flag || mmapflag))
 		{
 		  if(I_LSEEK( fd, current_offset, SEEK_SET )<0)
 		  {
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			perror("lseek");
 			exit(158);
 		  };
@@ -15293,7 +16492,10 @@ thread_ranread_test(x)
 #endif
 				perror("ranread");
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(160);
 	 		  }
@@ -15311,7 +16513,10 @@ thread_ranread_test(x)
 		   {
 			if(verify_buffer(buffer1,reclen,(off64_t)save_pos,reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(161);
 			}
@@ -15320,7 +16525,10 @@ thread_ranread_test(x)
 		   {
 			if(verify_buffer(nbuff,reclen,(off64_t)save_pos,reclen,(long long)pattern,sverify)){
 				if (!no_unlink)
+				{
+				   if(check_filename(dummyfile[xx]))
 					unlink(dummyfile[xx]);
+				}
 				child_stat->flag = CHILD_STATE_HOLD;
 				exit(162);
 			}
@@ -15436,6 +16644,8 @@ thread_ranread_test(x)
 		fprintf(thread_Lwqfd,"%-25s %s","Random read finished: ",now_string);
 		fclose(thread_Lwqfd);
 	}
+	if(recnum)
+		free(recnum);
 	if(distributed && client_iozone)
 		return(0);
 #ifdef NO_THREADS
@@ -15490,13 +16700,14 @@ thread_ranwrite_test( x)
 	char now_string[30];
 	FILE *thread_randwqfd=0;
 	FILE *thread_Lwqfd=0;
-#ifdef VXFS
+	long long *recnum = 0;
+#if defined(VXFS) || defined(solaris)
 	int test_foo = 0;
 #endif
 #if defined (bsd4_2) || defined(Windows)
 	long long rand1,rand2,rand3;
-	long long big_rand;
 #endif
+	long long big_rand;
 
 #ifdef ASYNC_IO
 	struct cache *gc=0;
@@ -15514,6 +16725,49 @@ thread_ranwrite_test( x)
 	written_so_far=read_so_far=re_written_so_far=re_read_so_far=0;
 	w_traj_bytes_completed=w_traj_ops_completed=0;
 	recs_per_buffer = cache_size/reclen ;
+#ifdef bsd4_2
+        srand(0);
+#else
+#ifdef Windows
+        srand(0);
+#else
+        srand48(0);
+#endif
+#endif
+        recnum = (long long *) malloc(sizeof(*recnum)*numrecs64);
+        if (recnum){
+             /* pre-compute random sequence based on 
+		Fischer-Yates (Knuth) card shuffle */
+            for(i = 0; i < numrecs64; i++){
+                recnum[i] = i;
+            }
+            for(i = 0; i < numrecs64; i++) {
+                long long tmp = recnum[i];
+#ifdef bsd4_2
+               rand1=(long long)rand();
+               rand2=(long long)rand();
+               rand3=(long long)rand();
+               big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+#else
+#ifdef Windows
+               rand1=(long long)rand();
+               rand2=(long long)rand();
+               rand3=(long long)rand();
+               big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+#else
+               big_rand = lrand48();
+#endif
+#endif
+               big_rand = big_rand%numrecs64;
+               tmp = recnum[i];
+               recnum[i] = recnum[big_rand];
+               recnum[big_rand] = tmp;
+            }
+        }
+	else
+	{
+		fprintf(stderr,"Random uniqueness fallback.\n");
+	}
 #ifdef NO_THREADS
 	xx=chid;
 #else
@@ -15561,11 +16815,22 @@ thread_ranwrite_test( x)
 	xx2=xx;
 	if(share_file)
 		xx2=(long long)0;
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+		sprintf(dummyfile[xx],"%s",filearray[xx2]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+		sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx2],xx2);
+#else
+		sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx2],xx2);
+#endif
+	}
 	/*****************/
 	/* Children only */
 	/*******************************************************************/
@@ -15574,6 +16839,9 @@ thread_ranwrite_test( x)
 #ifdef foobar
 	if((fd = I_CREAT(dummyfile[xx], 0640))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		perror(dummyfile[xx]);
 		exit(123);
 	}
@@ -15593,7 +16861,7 @@ thread_ranwrite_test( x)
 #endif
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 	if(direct_flag)
 		flags |=O_DIRECT;
 #endif
@@ -15615,6 +16883,9 @@ thread_ranwrite_test( x)
 #endif
 	if((fd = I_OPEN(dummyfile[xx], ((int)flags),0))<0)
 	{
+		client_error=errno;
+		if(distributed && client_iozone)
+			send_stop();
 		printf("\nCan not open temp file: %s\n", 
 			filename);
 		perror("open");
@@ -15632,6 +16903,18 @@ thread_ranwrite_test( x)
 			exit(3);
 		}
 	}
+#endif
+#if defined(solaris)
+        if(direct_flag)
+        {
+                test_foo = directio(fd, DIRECTIO_ON);
+                if(test_foo != 0)
+                {
+                        if(!client_iozone)
+                          printf("\ndirectio not available.\n");
+                        exit(3);
+                }
+        }
 #endif
 #ifdef ASYNC_IO
 	if(async_flag)
@@ -15677,6 +16960,9 @@ thread_ranwrite_test( x)
 		thread_randwqfd=fopen(tmpname,"a");
 		if(thread_randwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -15688,6 +16974,9 @@ thread_ranwrite_test( x)
 		thread_Lwqfd=fopen(tmpname,"a");
 		if(thread_Lwqfd==0)
 		{
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			printf("Unable to open %s\n",tmpname);
 			exit(40);
 		}
@@ -15695,7 +16984,7 @@ thread_ranwrite_test( x)
 		fprintf(thread_Lwqfd,"%-25s %s","Random write start: ",
 			now_string);
 	}
-	if(verify && !no_copy_flag)
+	if((verify && !no_copy_flag) || dedup || dedup_interior)
 		fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)0);
 	starttime1 = time_so_far();
 	if(cpuutilflag)
@@ -15706,28 +16995,35 @@ thread_ranwrite_test( x)
 	for(i=0; i<numrecs64; i++){
 		if(compute_flag)
 			compute_val+=do_compute(delay);
+		if (recnum) {
+			current_offset = reclen * (long long)recnum[i];
+                } else {
 #ifdef bsd4_2
-		rand1=rand();
-		rand2=rand();
-		rand3=rand();
-		big_rand=(rand1<<32)|(rand2<<16)|(rand3);
-		current_offset = (off64_t)reclen * (big_rand%numrecs64);
+		   rand1=rand();
+		   rand2=rand();
+		   rand3=rand();
+		   big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+		   current_offset = (off64_t)reclen * (big_rand%numrecs64);
 #else
 #ifdef Windows
-		rand1=rand();
-		rand2=rand();
-		rand3=rand();
-		big_rand=(rand1<<32)|(rand2<<16)|(rand3);
-		current_offset = (off64_t)reclen * (big_rand%numrecs64);
+		   rand1=rand();
+		   rand2=rand();
+		   rand3=rand();
+		   big_rand=(rand1<<32)|(rand2<<16)|(rand3);
+		   current_offset = (off64_t)reclen * (big_rand%numrecs64);
 #else
-		current_offset = reclen * (lrand48()%numrecs64);
+		   current_offset = reclen * (lrand48()%numrecs64);
 #endif
 #endif
+		}
 
 		if (!(h_flag || k_flag || mmapflag))
 		{
 		  if(I_LSEEK( fd, current_offset, SEEK_SET )<0)
 		  {
+			client_error=errno;
+			if(distributed && client_iozone)
+				send_stop();
 			perror("lseek");
 			exit(158);
 		  };
@@ -15743,7 +17039,7 @@ thread_ranwrite_test( x)
 			mylockr((int) fd, (int) 1, (int)0,
 			  lock_offset, reclen);
 		}
-		if(verify && !no_copy_flag)
+		if((verify && !no_copy_flag) || dedup || dedup_interior)
 			fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)(current_offset/reclen));
 		if(*stop_flag && !stopped){
 			if(include_flush)
@@ -15803,7 +17099,7 @@ again:
 			     {
 				free_addr=nbuff=(char *)malloc((size_t)reclen+page_size);
 				nbuff=(char *)(((long)nbuff+(long)page_size) & (long)~(page_size-1));
-				if(verify)
+				if(verify || dedup || dedup_interior)
 					fill_buffer(nbuff,reclen,(long long)pattern,sverify,(long long)(current_offset/reclen));
 			        async_write_no_copy(gc, (long long)fd, nbuff, reclen, (current_offset), depth,free_addr);
 			     }
@@ -15864,7 +17160,10 @@ again:
 			if(wval==-1)
 				perror("write");
 			if (!no_unlink)
+			{
+		            if(check_filename(dummyfile[xx]))
 				unlink(dummyfile[xx]);
+			}
 			child_stat->flag = CHILD_STATE_HOLD;
 		    	exit(127);
 		      }
@@ -15997,6 +17296,8 @@ again:
 			now_string);
 		fclose(thread_Lwqfd);
 	}
+	if(recnum)
+		free(recnum);
 	if(distributed && client_iozone)
 		return(0);
 #ifdef NO_THREADS
@@ -16040,13 +17341,27 @@ thread_cleanup_test(x)
 	}
 #endif
 	dummyfile[xx]=(char *)malloc((size_t)MAXNAMESIZE);
+	if(mfflag)
+	{
 #ifdef NO_PRINT_LLD
-	sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx],xx);
+		sprintf(dummyfile[xx],"%s",filearray[xx]);
 #else
-	sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx],xx);
+		sprintf(dummyfile[xx],"%s",filearray[xx]);
 #endif
+	}
+	else
+	{
+#ifdef NO_PRINT_LLD
+		sprintf(dummyfile[xx],"%s.DUMMY.%ld",filearray[xx],xx);
+#else
+		sprintf(dummyfile[xx],"%s.DUMMY.%lld",filearray[xx],xx);
+#endif
+	}
 	if(!no_unlink)
+	{
+	    if(check_filename(dummyfile[xx]))
 		unlink(dummyfile[xx]);
+	}
 
 	child_stat = (struct child_stats *)&shmaddr[xx];
 	/*****************/
@@ -16151,6 +17466,7 @@ void *x;
 #endif
 {
 	printf("This version does not support threads\n");
+	return(-1);
 }
 #endif
 
@@ -16179,6 +17495,7 @@ thread_exit()
 #endif
 {
 	printf("This version does not support threads\n");
+	return(-1);
 }
 #endif
 
@@ -16208,6 +17525,7 @@ mythread_self()
 #endif
 {
 	printf("This version does not support threads\n");
+	return(-1);
 }
 #endif
 
@@ -16247,6 +17565,7 @@ void *status;
 #endif
 {
 	printf("This version does not support threads\n");
+	return((void *)-1);
 }
 #endif
 
@@ -16487,7 +17806,7 @@ int flag, prot;
 	 	file_flags=fcntl(fd,F_GETFL);
 
 #if ! defined(DONT_HAVE_O_DIRECT)
-#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64)
+#if defined(linux) || defined(__AIX__) || defined(IRIX) || defined(IRIX64) || defined(Windows) || defined (__FreeBSD__)
 		dflag = O_DIRECT;
 #endif
 #if defined(TRU64)
@@ -16543,7 +17862,7 @@ int flag, prot;
 #endif
 #endif
 
-#ifdef bsd4_2
+#if defined(bsd4_2) && !defined(macosx)
 	 pa = (char *)mmap( 0,&filebytes, (int)prot, 
 	 		(int)mflags, (int)fd, 0);
 #else
@@ -16659,26 +17978,37 @@ long long length;
 }
 
 #ifndef ASYNC_IO
+int
 async_read()
 {
 	printf("Your system does not support async I/O\n");
 	exit(169);
 }
+size_t
 async_write_no_copy()
 {
 	printf("Your system does not support async I/O\n");
 	exit(170);
 }
+size_t
 async_write()
 {
 	printf("Your system does not support async I/O\n");
 	exit(171);
 }
+void
+async_init()
+{
+	printf("Your system does not support async I/O\n");
+	exit(172);
+}
+int
 async_read_no_copy()
 {
 	printf("Your system does not support async I/O\n");
 	exit(172);
 }
+void
 async_release()
 {
 	printf("Your system does not support async I/O\n");
@@ -17973,6 +19303,7 @@ int send_size;
 	strcpy(outbuf.m_host_name,send_buffer->m_host_name);
 	strcpy(outbuf.m_client_name,send_buffer->m_client_name);
 	sprintf(outbuf.m_client_number,"%d",send_buffer->m_client_number);
+	sprintf(outbuf.m_client_error,"%d",send_buffer->m_client_error);
 	sprintf(outbuf.m_child_port,"%d",send_buffer->m_child_port);
 	sprintf(outbuf.m_child_async_port,"%d",send_buffer->m_child_async_port);
 	sprintf(outbuf.m_command,"%d",send_buffer->m_command);
@@ -18033,11 +19364,13 @@ int send_size;
 	strcpy(outbuf.c_host_name,send_buffer->c_host_name);
 	strcpy(outbuf.c_client_name,send_buffer->c_client_name);
 	strcpy(outbuf.c_working_dir,send_buffer->c_working_dir);
+	strcpy(outbuf.c_file_name,send_buffer->c_file_name);
 	strcpy(outbuf.c_path_dir,send_buffer->c_path_dir);
 	strcpy(outbuf.c_execute_name,send_buffer->c_execute_name);
 	strcpy(outbuf.c_write_traj_filename,send_buffer->c_write_traj_filename);
 	strcpy(outbuf.c_read_traj_filename,send_buffer->c_read_traj_filename);
 	sprintf(outbuf.c_oflag,"%d",send_buffer->c_oflag);
+	sprintf(outbuf.c_mfflag,"%d",send_buffer->c_mfflag);
 	sprintf(outbuf.c_unbuffered,"%d",send_buffer->c_unbuffered);
 	sprintf(outbuf.c_noretest,"%d",send_buffer->c_noretest);
 	sprintf(outbuf.c_read_sync,"%d",send_buffer->c_read_sync);
@@ -18053,6 +19386,8 @@ int send_size;
 	sprintf(outbuf.c_sverify,"%d",send_buffer->c_sverify);
 	sprintf(outbuf.c_odsync,"%d",send_buffer->c_odsync);
 	sprintf(outbuf.c_diag_v,"%d",send_buffer->c_diag_v);
+	sprintf(outbuf.c_dedup,"%d",send_buffer->c_dedup);
+	sprintf(outbuf.c_dedup_interior,"%d",send_buffer->c_dedup_interior);
 	sprintf(outbuf.c_Q_flag,"%d",send_buffer->c_Q_flag);
 	sprintf(outbuf.c_L_flag,"%d",send_buffer->c_L_flag);
 	sprintf(outbuf.c_include_flush,"%d",send_buffer->c_include_flush);
@@ -18360,7 +19695,8 @@ child_attach(s, flag)
 int s,flag;
 #endif
 {
-	int me,ns;
+	unsigned int me;
+	int ns;
 	struct sockaddr_in *addr;
 	if(flag)
 	{
@@ -18897,6 +20233,7 @@ long long numrecs64, reclen;
 	strcpy(cc.c_host_name ,controlling_host_name);
 	strcpy(cc.c_client_name ,child_idents[x-1].child_name);
 	strcpy(cc.c_working_dir ,child_idents[x-1].workdir);
+	strcpy(cc.c_file_name ,child_idents[x-1].file_name);
 	strcpy(cc.c_write_traj_filename ,write_traj_filename);
 	strcpy(cc.c_read_traj_filename ,read_traj_filename);
 	cc.c_command = R_JOIN_ACK;
@@ -18905,6 +20242,7 @@ long long numrecs64, reclen;
 	cc.c_numrecs64 = numrecs64;
 	cc.c_reclen = reclen;
 	cc.c_oflag = oflag;
+	cc.c_mfflag = mfflag;
 	cc.c_unbuffered = unbuffered;
 	cc.c_noretest = noretest;
 	cc.c_read_sync = read_sync;
@@ -18923,6 +20261,8 @@ long long numrecs64, reclen;
 	cc.c_sverify = sverify;
 	cc.c_odsync = odsync;
 	cc.c_diag_v = diag_v;
+	cc.c_dedup = dedup;
+	cc.c_dedup_interior = dedup_interior;
 	cc.c_file_lock = file_lock;
 	cc.c_rec_lock = rlocking;
 	cc.c_Kplus_readers = Kplus_readers;
@@ -19023,7 +20363,7 @@ become_client()
 	struct master_command mc;
 	struct client_command cc;
 	struct client_neutral_command *cnc;
-	char client_name[256];
+	char client_name[100];
 	char *workdir;
 
 	bzero(&mc,sizeof(struct master_command));
@@ -19033,7 +20373,7 @@ become_client()
 	/*
  	 * I am the child 
 	 */
-	(void)gethostname(client_name,256);
+	(void)gethostname(client_name,100);
 
 	fflush(stdout);
 	fflush(stderr);
@@ -19148,6 +20488,7 @@ become_client()
 	sscanf(cnc->c_testnum,"%d",&cc.c_testnum);
 	sscanf(cnc->c_client_number,"%d",&cc.c_client_number);
 	sscanf(cnc->c_working_dir,"%s",cc.c_working_dir);
+	sscanf(cnc->c_file_name,"%s",cc.c_file_name);
 	sscanf(cnc->c_write_traj_filename,"%s",cc.c_write_traj_filename);
 	sscanf(cnc->c_read_traj_filename,"%s",cc.c_read_traj_filename);
 	sscanf(cnc->c_noretest,"%d",&cc.c_noretest);
@@ -19166,6 +20507,8 @@ become_client()
 	sscanf(cnc->c_sverify,"%d",&cc.c_sverify);
 	sscanf(cnc->c_odsync,"%d",&cc.c_odsync);
 	sscanf(cnc->c_diag_v,"%d",&cc.c_diag_v);
+	sscanf(cnc->c_dedup,"%d",&cc.c_dedup);
+	sscanf(cnc->c_dedup_interior,"%d",&cc.c_dedup_interior);
 	sscanf(cnc->c_file_lock,"%d",&cc.c_file_lock);
 	sscanf(cnc->c_rec_lock,"%d",&cc.c_rec_lock);
 	sscanf(cnc->c_Kplus_readers,"%d",&cc.c_Kplus_readers);
@@ -19180,6 +20523,7 @@ become_client()
 	sscanf(cnc->c_advise_flag,"%d",&cc.c_advise_flag);
 	sscanf(cnc->c_restf,"%d",&cc.c_restf);
 	sscanf(cnc->c_oflag,"%d",&cc.c_oflag);
+	sscanf(cnc->c_mfflag,"%d",&cc.c_mfflag);
 	sscanf(cnc->c_unbuffered,"%d",&cc.c_unbuffered);
 	sscanf(cnc->c_Q_flag,"%d",&cc.c_Q_flag);
 	sscanf(cnc->c_L_flag,"%d",&cc.c_L_flag);
@@ -19210,6 +20554,12 @@ become_client()
 	chid = cc.c_client_number;
 	workdir=cc.c_working_dir;
 	oflag = cc.c_oflag;
+	/* Child's absolute filename to use is provided */
+	mfflag = cc.c_mfflag;
+	if(mfflag)
+		strcpy(filearray[chid],cc.c_file_name);
+	if(cdebug)
+		printf("File name given %s\n",cc.c_file_name);
 	unbuffered = cc.c_unbuffered;
 	noretest = cc.c_noretest;
 	read_sync = cc.c_read_sync;
@@ -19226,6 +20576,8 @@ become_client()
 	fetchon = cc.c_fetchon;
 	verify = cc.c_verify;
 	diag_v = cc.c_diag_v;
+	dedup = cc.c_dedup;
+	dedup_interior = cc.c_dedup_interior;
 	if(diag_v)
 		sverify = 0;
 	else
@@ -19279,7 +20631,8 @@ become_client()
 
 	/* 6. Change to the working directory */
 
-	chdir(workdir);
+	if(chdir(workdir)<0)
+		client_error=errno;
 	start_child_listen_loop(); /* The async channel listener */
 
 	/* Need to start this after getting into the correct directory */
@@ -19440,6 +20793,7 @@ long long child_flag;
 	struct master_command mc;
 	bzero(&mc,sizeof(struct master_command));
 	mc.m_client_number = (int) chid;
+	mc.m_client_error = (int) client_error;
 	mc.m_throughput= throughput;
 	mc.m_testnum = testnum;
 	mc.m_actual = actual;
@@ -19500,6 +20854,7 @@ long long chid;
 	mc.m_version = proto_version;
 	mc.m_child_flag = CHILD_STATE_READY; 
 	mc.m_client_number = (int)chid; 
+	mc.m_client_error = client_error;
 	child_send(s_sock, controlling_host_name,(struct master_command *)&mc, sizeof(struct master_command));
 }
 
@@ -19576,11 +20931,17 @@ int num;
 		 */
 		sscanf(mnc->m_command,"%d",&mc.m_command);
 		sscanf(mnc->m_client_number,"%d",&mc.m_client_number);
+		sscanf(mnc->m_client_error,"%d",&mc.m_client_error);
 		sscanf(mnc->m_version,"%d",&mc.m_version);
 		if(mc.m_version != proto_version)
 		{
 			printf("Client # %d is not running the same version of Iozone !\n",
 				mc.m_client_number);
+		}		
+		if(mc.m_client_error != 0)
+		{
+			printf("\nClient # %d reporting an error %s !\n",
+				mc.m_client_number,strerror(mc.m_client_error));
 		}		
 #ifdef NO_PRINT_LLD
 		sscanf(mnc->m_child_flag,"%ld",&mc.m_child_flag);
@@ -19785,6 +21146,11 @@ get_client_info()
 	}
 	while(1)
 	{
+          	if (count >= MAXSTREAMS) {                                                                           
+            	  printf("Too many lines in client file - max of %d supported\n",
+			MAXSTREAMS);
+            	  exit(7);
+          	}
 		ret1=fgets(buffer,200,fd);
 		if(ret1== (char *)NULL)
 			break;
@@ -19821,11 +21187,12 @@ int line_num;
 
 	if(buffer[0]=='#')
 		return(0);
-	num=sscanf(buffer,"%s %s %s\n",
+	num=sscanf(buffer,"%s %s %s %s\n",
 		child_idents[line_num].child_name,
 		child_idents[line_num].workdir,
-		child_idents[line_num].execute_path);
-	if((num > 0) && (num !=3))
+		child_idents[line_num].execute_path,
+		child_idents[line_num].file_name);
+	if((num > 0) && (num !=3) && (num !=4))
 	{
 		printf("Bad Client Identity at entry %d\n",line_num);
 		printf("Client: -> %s  Workdir: -> %s  Execute_path: -> %s \n",
@@ -19834,6 +21201,8 @@ int line_num;
 		child_idents[line_num].execute_path);
 		exit(203);
 	}
+	if(num == 4)
+		mfflag++;
 
 	return(1);
 }
@@ -19854,12 +21223,20 @@ int i;
 
 	char *dummyfile[MAXSTREAMS];           /* name of dummy file     */
 	dummyfile[i]=(char *)malloc((size_t)MAXNAMESIZE);
-	sprintf(dummyfile[i],"%s.DUMMY.%d",filearray[i],i);
+	if(mfflag)
+	{
+		sprintf(dummyfile[i],"%s",filearray[i]);
+	}
+	else
+	{
+		sprintf(dummyfile[i],"%s.DUMMY.%d",filearray[i],i);
+	}
 	if(cdebug)
 	{
 		printf("Child %d remove: %s \n",(int)chid, dummyfile[i]);
 	}
-	unlink(dummyfile[i]);
+	if(check_filename(dummyfile[i]))
+		unlink(dummyfile[i]);
 }
 
 	
@@ -19950,12 +21327,14 @@ send_stop()
 	mc.m_command = R_STOP_FLAG;
 	mc.m_version = proto_version;
 	mc.m_client_number = chid;
+	mc.m_client_error = client_error;
 	if(cdebug)
 	{
 		printf("Child %d sending stop flag to master\n",(int)chid);
 		fflush(stdout);
 	}
         child_send(s_sock, controlling_host_name,(struct master_command *)&mc, sizeof(struct master_command));
+	client_error=0;  /* clear error, it has been delivered */
 }
 
 /*
@@ -20053,6 +21432,36 @@ char *shell;
 #else
 	strcpy(shell,"rsh");
 #endif
+	return;
+}	
+#ifdef HAVE_ANSIC_C
+void
+find_external_mon(char * imon_start, char * imon_stop)
+#else
+void
+find_external_mon(imon_start,imon_stop)
+char *imon_start,*imon_stop;
+#endif
+{
+	char *start,*stop,*sync;
+	imon_start[0]=(char)0;
+	imon_stop[0]=(char)0;
+	start=(char *)getenv("IMON_START");
+	if(start)
+	{
+		strcpy(imon_start,start);
+	}
+	stop=(char *)getenv("IMON_STOP");
+	if(stop)
+	{
+		strcpy(imon_stop,stop);
+	}
+	sync=(char *)getenv("IMON_SYNC");
+	if(sync)
+	{
+		imon_sync=1;
+	}
+
 	return;
 }	
 
@@ -20376,7 +21785,8 @@ int size_of_message;
 #endif
 {
 	int tsize;
-	int s,ns,me;
+	int s,ns;
+	unsigned int me;
 	int rc;
 	int xx;
 	int tmp_port;
@@ -20597,7 +22007,8 @@ int sp_master_listen_port;
 #endif
 {
 	int tsize;
-	int s,ns,me;
+	int s,ns;
+	unsigned int me;
 	int rc;
 	int xx;
 	int tmp_port;
@@ -20789,13 +22200,18 @@ int client_flag;
 	}
 }
 
+#ifdef HAVE_ANSIC_C
 void
 get_date(char *where)
+#else
+get_date(where)
+char *where;
+#endif
 {
 	time_t t;
 	char *value;
 	t=time(0);
-	value=ctime(&t);
+	value=(char *)ctime(&t);
 	strcpy(where,value);
 }
 
@@ -20812,8 +22228,12 @@ get_date(char *where)
  * See: http://lists.samba.org/archive/samba-technical/2005-April/040541.html
  */
 
+#ifdef HAVE_ANSIC_C
 int
 get_pattern(void)
+#else
+get_pattern(void)
+#endif
 {
         int i,x,y;
         char cp[100],*ptr;
@@ -20844,8 +22264,12 @@ get_pattern(void)
 /* 
  * Allocate the buffer for purge. 
 */
+#ifdef HAVE_ANSIC_C
 void
 alloc_pbuf(void)
+#else
+alloc_pbuf(void)
+#endif
 {
 	pbuffer = (char *) alloc_mem((long long)(3 * cache_size),(int)0);
 	if(pbuffer == 0) {
@@ -20861,4 +22285,182 @@ alloc_pbuf(void)
 		(((long)pbuffer + (long)cache_size ) 
 		& ~((long)cache_size-1));
 #endif
+}
+
+/* 
+ * Check to see if the file descriptor points at a file
+ * or a device.
+ */
+#ifdef HAVE_ANSIC_C
+int
+check_filename(char *name)
+#else
+check_filename(name)
+char *name;
+#endif
+{
+#ifdef _LARGEFILE64_SOURCE
+	struct stat64 mystat;
+#else
+	struct stat mystat;
+#endif
+	int x;
+	if(strlen(name)==0)
+		return(0);
+	/* Lets try stat first.. may get an error if file is too big */
+	x=I_STAT(name,&mystat);
+	if(x<0)
+	{
+		return(0);
+		/* printf("Stat failed %d\n",x); */
+	}
+	if(mystat.st_mode & S_IFREG)
+	{
+		/*printf("Is a regular file\n");*/
+		return(1);
+	}
+	return(0);
+}
+
+#ifdef HAVE_ANSIC_C
+void
+start_monitor(char *test)
+#else
+start_monitor(test)
+char *test;
+#endif
+{
+	char command_line[256];
+	if(strlen(imon_start)!=0)
+	{
+		if(imon_sync)
+		   sprintf(command_line,"%s %s",imon_start,test);
+		else
+		   sprintf(command_line,"%s %s&",imon_start,test);
+		system(command_line);
+	}
+}
+#ifdef HAVE_ANSIC_C
+void
+stop_monitor(char *test)
+#else
+stop_monitor(test)
+char *test;
+#endif
+{
+	char command_line[256];
+	if(strlen(imon_stop)!=0)
+	{
+		if(imon_sync)
+		   sprintf(command_line,"%s %s",imon_stop,test);
+		else
+		   sprintf(command_line,"%s %s &",imon_stop,test);
+		system(command_line);
+	}
+}
+
+/* 
+ * As quickly as possible, generate a new buffer that
+ * can not be easily compressed, or de-duped. Also
+ * permit specified percentage of buffer to be updated.
+ *
+ * ibuf ... input buffer
+ * obuf ... output buffer
+ * seed ... Seed to use for srand, rand -> xor ops
+ *          Seed composed from: blocknumber
+		(do not include childnum as you want duplicates)
+ * size ... size of buffers. (in bytes)
+ * percent. Percent of buffer to modify.
+ * percent_interior. Percent of buffer that is dedupable within 
+ *                   and across files 
+ * percent_compress. Percent of buffer that is dedupable within 
+ *                   but not across files 
+ *
+ * Returns 0 (zero) for success, and -1 (minus one) for failure.
+ */
+int
+gen_new_buf(char *ibuf, char *obuf, long seed, int size, int percent,
+	int percent_interior, int percent_compress, int all)
+{
+	register long *ip, *op; /* Register for speed 	*/
+	register long iseed; 	/* Register for speed 	*/
+	register long isize; 	/* Register for speed 	*/
+	register long cseed;	/* seed for dedupable for within & ! across */
+	register int x,w; 	/* Register for speed 	*/
+	register int value; 	/* Register for speed 	*/
+	register int interior_size; 	/* size of interior dedup region */
+	register int compress_size; 	/* size of compression dedup region */
+	if(ibuf == NULL)	/* no input buf 	*/
+		return(-1);
+	if(obuf == NULL)	/* no output buf 	*/
+		return(-1);
+	if((percent > 100) || (percent < 0)) /* percent check */
+		return(-1);
+	if(size == 0)		/* size check 		*/
+		return(-1);
+	srand(seed+1);            /* set randdom seed 	*/
+	iseed = rand();		/* generate random value */
+	isize = (size * percent)/100; /* percent that is dedupable */
+	interior_size = ((isize * percent_interior)/100);/* /sizeof(long) */
+	compress_size =((interior_size * percent_compress)/100);
+	ip = (long *)ibuf;	/* pointer to input buf */
+	op = (long *)obuf;	/* pointer to output buf */
+	if(all == 0)		/* Special case for verify only */
+		isize = sizeof(long);
+	/* interior_size = dedup_within + dedup_across */
+	for(w=0;w<interior_size;w+=sizeof(long))	
+	{
+		*op=0xdeadbeef;
+		*ip=0xdeadbeef;
+		op++;
+		ip++;
+	}	
+	/* Prepare for dedup within but not across */
+	w=interior_size - compress_size;
+	op=(long *)&obuf[w];
+	ip=(long *)&ibuf[w];
+	srand(chid+1);            /* set randdom seed 	*/
+	cseed = rand();		/* generate random value */
+	for(w=(interior_size-compress_size);w<interior_size;w+=sizeof(long))	
+	{
+		*op=*ip ^ cseed; /* do the xor op */
+		op++;
+		ip++;
+	}	
+ 	/* isize = dedup across only */
+	for(x=interior_size;x<isize;x+=sizeof(long))	/* tight loop for transformation */
+	{
+		*op=*ip ^ iseed; /* do the xor op */
+		op++;
+		ip++;
+	}	
+	if(all == 0)		/* Special case for verify only */
+		return(0);
+	/* make the rest of the buffer non-dedupable */
+	if(100-percent > 0)
+	{
+		srand(chid+1+seed+(chid*(int)numrecs64));
+		value=rand();
+/* printf("Non-dedup value %x seed %x\n",value,seed);*/
+		for( ; x<size;x+=sizeof(long))
+			*op++=(*ip++)^value; /* randomize the remainder */
+	}
+	return(0);
+}
+/* 
+ * Used to touch all of the buffers so that the CPU data
+ * cache is hot, and not part of the measurement.
+ */
+void
+touch_dedup(char *i, int size)
+{
+	register int x;
+	register long *ip;
+	ip = (long *)i;
+	srand(DEDUPSEED);
+	for(x=0;x<size/sizeof(long);x++)
+	{
+		*ip=rand(); /* fill initial buffer */
+		ip++;
+	}
 }
