@@ -437,7 +437,7 @@ endef
 
 define download-url
 	@file=`basename $1`; url=`dirname $1`; \
-	for path in $$url http://cbench.org/common/tarballs https://cbench.sandia.gov/common/tarballs http://synapse.sandia.gov/static/tarballs; do \
+	for path in $$url http://cbench.sourceforge.net/common/tarballs http://synapse.sandia.gov/static/tarballs; do \
 	   [ -f $$file ] && break; \
 	   wget --connect-timeout=10 --tries=2 --no-check-certificate $$path/$$file; \
 	done
