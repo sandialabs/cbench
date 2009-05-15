@@ -1,8 +1,14 @@
 #!/usr/bin/perl
-#
+
+use warnings;
+use strict;
+
 # arguments: one of more report files
 #
 # Christian Mautner <christian * mautner . ca>, 2005-10-31
+# Marc Schoechlin <ms * 256bit.org>, 2007-12-02
+#
+# This script is just a hack :-)
 #
 # This script is based loosely on the Generate_Graph set
 # of scripts that come with iozone, but is a complete re-write
@@ -15,6 +21,7 @@
 # to deserve a copyright.
 #
 # Simply run iozone like, for example, ./iozone -a -g 4G > config1.out (if your machine has 4GB)
+#
 # and then run perl report.pl config1.out
 # or get another report from another box into config2.out and run
 # perl report.pl config1.out config2.out
@@ -24,18 +31,59 @@
 # terminal you want. Note I've also noticed that gnuplot switched the set terminal png syntax
 # a while back, you might need "set terminal png small size 900,700"
 #
+use Getopt::Long;
+
+my $column;
+my %columns;
+my $datafile;
+my @datafiles;
+my $outdir;
+my $report;
+my $nooffset=0;
+my @Reports;
+my @split;
+my $size3d; my $size2d;
+
+# evaluate options
+GetOptions(
+    '3d=s'     => \$size3d,
+    '2d=s'     => \$size2d,
+    'nooffset' => \$nooffset
+);
+
+$size3d = "900,700" unless defined $size3d;
+$size2d = "800,500" unless defined $size2d;
+
+
+my $xoffset = "offset -7";
+my $yoffset = "offset -3";
+
+if ($nooffset == 1){
+   $xoffset = ""; $yoffset = "";      
+}
+
+print "\niozone_visualizer.pl : this script is distributed as public domain\n";
+print "Christian Mautner <christian * mautner . ca>, 2005-10-31\n";
+print "Marc Schoechlin <ms * 256bit.org>, 2007-12-02\n";
 
 
 @Reports=@ARGV;
 
-die "usage: $0 <iozone.out> [<iozone2.out>...]\n" if not @Reports or grep (m|^-|, @Reports);
+die "usage: $0 --3d=x,y -2d=x,y <iozone.out> [<iozone2.out>...]\n" if not @Reports or grep (m|^-|, @Reports);
 
 die "report files must be in current directory" if grep (m|/|, @Reports);
 
+print "Configured xtics-offset '$xoffset', configured ytics-offfset '$yoffset' (disable with --nooffset)\n";
+print "Size 3d graphs : ".$size3d." (modify with '--3d=x,y')\n";
+print "Size 2d graphs : ".$size2d." (modify with '--2d=x,y')\n";
+
+#KB reclen write rewrite read reread read write read rewrite read fwrite frewrite fread freread
 %columns=(
+         'KB'        =>1,
+         'reclen'    =>2,
          'write'     =>3,
-         'read'      =>5,
          'rewrite'   =>4,
+         'read'      =>5,
          'reread'    =>6,
          'randread'  =>7,
          'randwrite' =>8,
@@ -75,6 +123,11 @@ foreach $report (@Reports)
     push @datafiles, $datafile;
     open(O, ">$outdir/$datafile") or die "cannot open $outdir/$datafile for writing";
     open(O2, ">$outdir/2d-$datafile") or die "cannot open $outdir/$datafile for writing";
+
+    my @sorted = sort { $columns{$a} <=> $columns{$b} } keys %columns;
+    print O "# ".join(" ",@sorted)."\n";
+    print O2 "# ".join(" ",@sorted)."\n";
+
     while(<I>)
     {
         next unless ( /^[\s\d]+$/ );
@@ -83,36 +136,79 @@ foreach $report (@Reports)
         print O;
         print O2 if $split[1] == 16384 or $split[0] == $split[1];
     }
-    close I, O, O2;
+    close(I);
+    close(O);
+    close(O2);
 }
 
 print STDERR "done.\nGenerating graphs:";
 
+
+open(HTML, ">$outdir/index.html") or die "cannot open $outdir/index.html for writing";
+
+print HTML qq{<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>IOZone Statistics</title>
+ <STYLE type="text/css">
+.headline \{ font-family: Arial, Helvetica, sans-serif; font-size: 18px; color: 003300 ; font-weight: bold; text-decoration: none\}
+ </STYLE>
+</head>
+<body>
+<a name="top"></a>
+<h1>IOZone Statistics</h1>
+<table width="100%" summary="iozone stats">
+<tr>
+<td>
+};
+
+# Generate Menu
+print HTML "<u><b>## Overview</b></u>\n<ul>\n";
+foreach $column (keys %columns){
+    print HTML '<li><b>'.uc($column).'</b> : '.
+                   '<a href="#'.$column."\">3d</a>\n".
+                   '<a href="#s2d-'.$column."\">2d</a></li>\n";
+}
+print HTML "</ul></td></tr>\n";
+# Genereate 3d plots
 foreach $column (keys %columns)
 {
     print STDERR " $column";
     
     open(G, ">$outdir/$column.do") or die "cannot open $outdir/$column.do for writing";
+
+
+
     print G qq{
 set title "Iozone performance: $column"
 set grid lt 2 lw 1
 set surface
 set parametric
-set xtics
-set ytics
+set xtics $xoffset
+set ytics $yoffset
 set logscale x 2
 set logscale y 2
 set autoscale z
 set xrange [2.**5:2.**24]
-set xlabel "File size in KBytes"
-set ylabel "Record size in Kbytes"
-set zlabel "Kbytes/sec"
+set xlabel "File size in KBytes" -2
+set ylabel "Record size in Kbytes" 2
+set zlabel "Kbytes/sec" 4,8 
 set data style lines
 set dgrid3d 80,80,3
 #set terminal png small picsize 900 700
-set terminal png small size 900 700
+set terminal png small size $size3d nocrop
 set output "$column.png"
 };
+
+    print HTML qq{
+      <tr>
+       <td align="center">
+         <h2><a name="$column"></a>3d-$column</h2><a href="#top">[top]</a><BR/>
+         <img src="$column.png" alt="3d-$column"/><BR/>
+       </td>
+      </tr>
+    };
 
     print G "splot ". join(", ", map{qq{"$_" using 1:2:$columns{$column} title "$_"}}(@datafiles));
 
@@ -124,12 +220,23 @@ set output "$column.png"
     print G qq{
 set title "Iozone performance: $column"
 #set terminal png small picsize 450 350
-set terminal png small size 450 350
+set terminal png medium size $size2d nocrop
 set logscale x
 set xlabel "File size in KBytes"
 set ylabel "Kbytes/sec"
 set output "2d-$column.png"
 };
+
+    print HTML qq{
+      <tr>
+       <td align="center">
+         <h2><a name="s2d-$column"></a>2d-$column</h2><a href="#top">[top]</a><BR/>
+         <img src="2d-$column.png" alt="2d-$column"/><BR/>
+       </td>
+      </tr>
+    };
+
+
 
     print G "plot ". join(", ", map{qq{"2d-$_" using 1:$columns{$column} title "$_" with lines}}(@datafiles));
 
@@ -147,5 +254,10 @@ set output "2d-$column.png"
     }
 }
 
+print HTML qq{
+</table>
+</body>
+</html>
+};
 print STDERR "done.\n";
 

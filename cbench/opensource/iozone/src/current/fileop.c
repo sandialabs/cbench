@@ -1,29 +1,38 @@
 /*
  * Author: Don Capps
  * 3/13/2006
- * Copyright:  (2006)
- *   You are free to distribute and use this benchmark, for free.
- * You are not permitted to distribute modified versions, or
- * borrow code from this project to create proprietary products
- * or competitive benchmarks. Any product that contains any
- * of this code will be considered a derivative work and will
- * be the sole property of me.
  *
-  fileop [-f X ]|[-l # -u #] [-s Y] [-t] [-v] [-e] [-b] [-w]
-       -f # Force factor. X^3 files will be created and removed.
-       -l # Lower limit on the value of the Force factor.
-       -u # Upper limit on the value of the Force factor.
-       -s # Optional. Sets filesize for the create/write.
-       -t # Verbose output option.
-       -v # Version information.
-       -e # Excel importable format.
-       -b Output best case
-       -w Output worst case
+ *       Author: Don Capps (capps@iozone.org)
+ *               7417 Crenshaw
+ *               Plano, TX 75025
+ *
+ *  Copyright 2006, 2007, 2008, 2009   Don Capps.
+ *
+ *  License to freely use and distribute this software is hereby granted 
+ *  by the author, subject to the condition that this copyright notice 
+ *  remains intact.  The author retains the exclusive right to publish 
+ *  derivative works based on this work, including, but not limited to,
+ *  revised versions of this work",
+ *
+ *
+  fileop [-f X ]|[-l # -u #] [-s Y] [-e] [-b] [-w] [-d <dir>] [-t] [-v] [-h]
+       -f #      Force factor. X^3 files will be created and removed.
+       -l #      Lower limit on the value of the Force factor.
+       -u #      Upper limit on the value of the Force factor.
+       -s #      Optional. Sets filesize for the create/write. May use suffix 'K' or 'M'.
+       -e        Excel importable format.
+       -b        Output best case.
+       -w        Output worst case.
+       -d <dir>  Specify starting directory.
+       -U <dir>  Mount point to remount between tests.
+       -t        Verbose output option.
+       -v        Version information.
+       -h        Help text.
  *
  * X is a force factor. The total number of files will
  *   be X * X * X   ( X ^ 3 )
  *   The structure of the file tree is:
- *   X number of Level 1 directorys, with X number of
+ *   X number of Level 1 directories, with X number of
  *   level 2 directories, with X number of files in each
  *   of the level 2 directories.
  *
@@ -49,8 +58,14 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <string.h>
+
+#include <limits.h>
+
 #if defined(Windows)
 #include <Windows.h>
+#endif
+#if !defined(PATH_MAX)
+#define PATH_MAX 255
 #endif
 
 int x,excel;
@@ -70,7 +85,9 @@ char *mbuffer;
 #define _STAT_DIR_CREATE 10
 #define _STAT_DIR_DELETE 11
 #define _STAT_READ 12
-#define _NUM_STATS 14
+#define _STAT_OPEN 13
+#define _STAT_DIR_TRAVERSE 14
+#define _NUM_STATS 15
 struct stat_struct {
 	double starttime;
 	double endtime;
@@ -86,6 +103,7 @@ struct stat_struct {
 
 static double time_so_far(void);
 void dir_create(int);
+void dir_traverse(int);
 void dir_delete(int);
 void file_create(int);
 void file_stat(int);
@@ -100,16 +118,52 @@ void splash(void);
 void usage(void);
 void bzero();
 void clear_stats();
+int validate(char *, int , char );
 
-#define THISVERSION "        $Revision: 1.37 $"
+#define THISVERSION "        $Revision: 1.53 $"
 /*#define NULL 0*/
 
 char version[]=THISVERSION;
+char thedir[PATH_MAX]="."; /* Default is to use the current directory */
+const char *mountname=NULL; /* Default is not to unmount anything between the tests */
 
 int cret;
 int lower, upper,range;
 int i;
 int best, worst;
+int dirlen;
+
+/************************************************************************/
+/* Routine to purge the buffer cache by unmounting drive.		*/
+/************************************************************************/
+void purge_buffer_cache()
+{
+	if (!mountname)
+		return;
+
+	char cwd[PATH_MAX];
+	char command[1024];
+	int ret,i;
+
+	getcwd(cwd, sizeof(cwd));
+	chdir("/");
+	strcpy(command,"umount ");
+	strcat(command, mountname);
+        /*
+           umount might fail if the device is still busy, so
+           retry unmounting several times with increasing delays
+        */
+        for (i = 1; i < 10; ++i) {
+               ret = system(command);
+               if (ret == 0)
+                       break;
+               sleep(i); // seconds
+        }
+	strcpy(command,"mount ");
+	strcat(command, mountname);
+	system(command);
+	chdir(cwd);
+}
 
 int main(int argc, char **argv)
 {
@@ -118,8 +172,22 @@ int main(int argc, char **argv)
 		usage();
 		exit(1);
 	}
-	while((cret = getopt(argc,argv,"bwetvf:s:l:u: ")) != EOF){
+	while((cret = getopt(argc,argv,"hbwetvf:s:l:u:d:U: ")) != EOF){
 		switch(cret){
+                case 'h':
+                        usage();
+                        exit(0);
+                        break;
+                case 'd' :
+                        dirlen=strlen(optarg);
+                        if (optarg[dirlen-1]=='/')
+                          --dirlen;
+                        strncpy(thedir, optarg, dirlen);
+			thedir[dirlen] = 0;
+                        break;
+		case 'U':
+			mountname = optarg;
+			break;
 		case 'f':	/* Force factor */
 			x=atoi(optarg);
 			if(x < 0)
@@ -171,21 +239,22 @@ int main(int argc, char **argv)
 	mbuffer=(char *)malloc(sz);
 	memset(mbuffer,'a',sz);
 	if(!excel)
-	  printf("\nFileop:  File size is %d,  Output is in Ops/sec. (A=Avg, B=Best, W=Worst)\n",sz);
+	  printf("\nFileop:  Working in %s, File size is %d,  Output is in Ops/sec. (A=Avg, B=Best, W=Worst)\n", thedir, sz);
 	if(!verbose)
 	{
 #ifdef Windows
-	   	printf(" .     %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %12s\n",
-       	   	"mkdir","rmdir","create","read","write","close","stat",
+	   	printf(" .     %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %10s\n",
+       	   	"mkdir","chdir","rmdir","create","open","read","write","close","stat",
 		"access","chmod","readdir","delete"," Total_files");
 #else
 
-	   	printf(" .     %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %12s\n",
-       	   	"mkdir","rmdir","create","read","write","close","stat",
+	   	printf(" .     %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %10s\n",
+       	   	"mkdir","chdir","rmdir","create","open", "read","write","close","stat",
 		"access","chmod","readdir","link  ","unlink","delete",
 		" Total_files");
 #endif
 	}
+	chdir(thedir); /* change starting point */
 	if(x==0)
 		x=1;
 	if(range==0)
@@ -197,6 +266,7 @@ int main(int argc, char **argv)
 	   /*
 	    * Dir Create test 
 	    */
+	   purge_buffer_cache();
 	   dir_create(x);
 
 	   if(verbose)
@@ -209,9 +279,28 @@ int main(int argc, char **argv)
 	      printf("         Best mkdir(s)/sec    = %12.2f (%12.9f seconds/op)\n",1/stats[_STAT_DIR_CREATE].best,stats[_STAT_DIR_CREATE].best);
 	      printf("         Worst mkdir(s)/sec   = %12.2f (%12.9f seconds/op)\n\n",1/stats[_STAT_DIR_CREATE].worst,stats[_STAT_DIR_CREATE].worst);
 	   }
+
+	   /*
+	    * Dir Traverse test
+	    */
+	   purge_buffer_cache();
+	   dir_traverse(x);
+
+	   if(verbose)
+	   {
+	      printf("chdir:   Dirs = %9lld ",stats[_STAT_DIR_TRAVERSE].counter);
+	      printf("Total Time = %12.9f seconds\n", stats[_STAT_DIR_TRAVERSE].total_time);
+	      printf("         Avg chdir(s)/sec     = %12.2f (%12.9f seconds/op)\n",
+			stats[_STAT_DIR_TRAVERSE].counter/stats[_STAT_DIR_TRAVERSE].total_time,
+			stats[_STAT_DIR_TRAVERSE].total_time/stats[_STAT_DIR_TRAVERSE].counter);
+	      printf("         Best chdir(s)/sec    = %12.2f (%12.9f seconds/op)\n",1/stats[_STAT_DIR_TRAVERSE].best,stats[_STAT_DIR_TRAVERSE].best);
+	      printf("         Worst chdir(s)/sec   = %12.2f (%12.9f seconds/op)\n\n",1/stats[_STAT_DIR_TRAVERSE].worst,stats[_STAT_DIR_TRAVERSE].worst);
+	   }
+
 	   /*
 	    * Dir delete test
 	    */
+	   purge_buffer_cache();
 	   dir_delete(x);
 
 	   if(verbose)
@@ -228,6 +317,7 @@ int main(int argc, char **argv)
 	   /*
 	    * Create test 
 	    */
+	   purge_buffer_cache();
 	   file_create(x);
 	   if(verbose)
 	   {
@@ -263,6 +353,7 @@ int main(int argc, char **argv)
 	   /*
 	    * Stat test 
 	    */
+	   purge_buffer_cache();
 	   file_stat(x);
 
 	   if(verbose)
@@ -280,10 +371,21 @@ int main(int argc, char **argv)
 	   /*
 	    * Read test 
 	    */
+	   purge_buffer_cache();
 	   file_read(x);
 
 	   if(verbose)
 	   {
+	      printf("open:    Files = %9lld ",stats[_STAT_OPEN].counter);
+	      printf("Total Time = %12.9f seconds\n", stats[_STAT_OPEN].total_time);
+	      printf("         Avg open(s)/sec      = %12.2f (%12.9f seconds/op)\n",
+			stats[_STAT_OPEN].counter/stats[_STAT_OPEN].total_time,
+			stats[_STAT_OPEN].total_time/stats[_STAT_OPEN].counter);
+	      printf("         Best open(s)/sec     = %12.2f (%12.9f seconds/op)\n",
+			1/stats[_STAT_OPEN].best,stats[_STAT_OPEN].best);
+	      printf("         Worst open(s)/sec    = %12.2f (%12.9f seconds/op)\n\n",
+			1/stats[_STAT_OPEN].worst,stats[_STAT_OPEN].worst);
+
 	      printf("read:    Files = %9lld ",stats[_STAT_READ].counter);
 	      printf("Total Time = %12.9f seconds\n", stats[_STAT_READ].total_time);
 	      printf("         Avg read(s)/sec      = %12.2f (%12.9f seconds/op)\n",
@@ -298,6 +400,7 @@ int main(int argc, char **argv)
 	   /*
 	    * Access test 
 	    */
+	   purge_buffer_cache();
 	   file_access(x);
 	   if(verbose)
 	   {
@@ -314,6 +417,7 @@ int main(int argc, char **argv)
 	   /*
 	    * Chmod test 
 	    */
+	   purge_buffer_cache();
 	   file_chmod(x);
 
 	   if(verbose)
@@ -331,6 +435,7 @@ int main(int argc, char **argv)
 	   /*
 	    * readdir test 
 	    */
+	   purge_buffer_cache();
 	   file_readdir(x);
 
 	   if(verbose)
@@ -349,6 +454,7 @@ int main(int argc, char **argv)
 	   /*
 	    * link test 
 	    */
+	   purge_buffer_cache();
 	   file_link(x);
 	   if(verbose)
 	   {
@@ -365,6 +471,7 @@ int main(int argc, char **argv)
 	   /*
 	    * unlink test 
 	    */
+	   purge_buffer_cache();
 	   file_unlink(x);
 	   if(verbose)
 	   {
@@ -382,6 +489,7 @@ int main(int argc, char **argv)
 	   /*
 	    * Delete test 
 	    */
+	   purge_buffer_cache();
 	   file_delete(x);
 	   if(verbose)
 	   {
@@ -397,64 +505,70 @@ int main(int argc, char **argv)
 	   }
 	   if(!verbose)
 	   {
-	         printf("%c %4d %6.0f ",'A',x,stats[_STAT_DIR_CREATE].counter/stats[_STAT_DIR_CREATE].total_time);
-	         printf("%6.0f ",stats[_STAT_DIR_DELETE].counter/stats[_STAT_DIR_DELETE].total_time);
-	         printf("%6.0f ",stats[_STAT_CREATE].counter/stats[_STAT_CREATE].total_time);
-	         printf("%6.0f ",stats[_STAT_READ].counter/stats[_STAT_READ].total_time);
-	         printf("%6.0f ",stats[_STAT_WRITE].counter/stats[_STAT_WRITE].total_time);
-	         printf("%6.0f ",stats[_STAT_CLOSE].counter/stats[_STAT_CLOSE].total_time);
-	         printf("%6.0f ",stats[_STAT_STAT].counter/stats[_STAT_STAT].total_time);
-	         printf("%6.0f ",stats[_STAT_ACCESS].counter/stats[_STAT_ACCESS].total_time);
-	         printf("%6.0f ",stats[_STAT_CHMOD].counter/stats[_STAT_CHMOD].total_time);
-	         printf("%6.0f ",stats[_STAT_READDIR].counter/stats[_STAT_READDIR].total_time);
+	         printf("%c %4d %7.0f ",'A',x,stats[_STAT_DIR_CREATE].counter/stats[_STAT_DIR_CREATE].total_time);
+	         printf("%7.0f ",stats[_STAT_DIR_TRAVERSE].counter/stats[_STAT_DIR_TRAVERSE].total_time);
+	         printf("%7.0f ",stats[_STAT_DIR_DELETE].counter/stats[_STAT_DIR_DELETE].total_time);
+	         printf("%7.0f ",stats[_STAT_CREATE].counter/stats[_STAT_CREATE].total_time);
+	         printf("%7.0f ",stats[_STAT_OPEN].counter/stats[_STAT_OPEN].total_time);
+	         printf("%7.0f ",stats[_STAT_READ].counter/stats[_STAT_READ].total_time);
+	         printf("%7.0f ",stats[_STAT_WRITE].counter/stats[_STAT_WRITE].total_time);
+	         printf("%7.0f ",stats[_STAT_CLOSE].counter/stats[_STAT_CLOSE].total_time);
+	         printf("%7.0f ",stats[_STAT_STAT].counter/stats[_STAT_STAT].total_time);
+	         printf("%7.0f ",stats[_STAT_ACCESS].counter/stats[_STAT_ACCESS].total_time);
+	         printf("%7.0f ",stats[_STAT_CHMOD].counter/stats[_STAT_CHMOD].total_time);
+	         printf("%7.0f ",stats[_STAT_READDIR].counter/stats[_STAT_READDIR].total_time);
 #ifndef Windows
-	         printf("%6.0f ",stats[_STAT_LINK].counter/stats[_STAT_LINK].total_time);
-	         printf("%6.0f ",stats[_STAT_UNLINK].counter/stats[_STAT_UNLINK].total_time);
+	         printf("%7.0f ",stats[_STAT_LINK].counter/stats[_STAT_LINK].total_time);
+	         printf("%7.0f ",stats[_STAT_UNLINK].counter/stats[_STAT_UNLINK].total_time);
 #endif
-	         printf("%6.0f ",stats[_STAT_DELETE].counter/stats[_STAT_DELETE].total_time);
-	         printf("%12d ",x*x*x);
+	         printf("%7.0f ",stats[_STAT_DELETE].counter/stats[_STAT_DELETE].total_time);
+	         printf("%10d ",x*x*x);
 	         printf("\n");
   	   	 fflush(stdout);
 
 		if(best)
 		{
-	         printf("%c %4d %6.0f ",'B',x, 1/stats[_STAT_DIR_CREATE].best);
-	         printf("%6.0f ",1/stats[_STAT_DIR_DELETE].best);
-	         printf("%6.0f ",1/stats[_STAT_CREATE].best);
-	         printf("%6.0f ",1/stats[_STAT_READ].best);
-	         printf("%6.0f ",1/stats[_STAT_WRITE].best);
-	         printf("%6.0f ",1/stats[_STAT_CLOSE].best);
-	         printf("%6.0f ",1/stats[_STAT_STAT].best);
-	         printf("%6.0f ",1/stats[_STAT_ACCESS].best);
-	         printf("%6.0f ",1/stats[_STAT_CHMOD].best);
-	         printf("%6.0f ",1/stats[_STAT_READDIR].best);
+	         printf("%c %4d %7.0f ",'B',x, 1/stats[_STAT_DIR_CREATE].best);
+	         printf("%7.0f ",1/stats[_STAT_DIR_TRAVERSE].best);
+	         printf("%7.0f ",1/stats[_STAT_DIR_DELETE].best);
+	         printf("%7.0f ",1/stats[_STAT_CREATE].best);
+	         printf("%7.0f ",1/stats[_STAT_OPEN].best);
+	         printf("%7.0f ",1/stats[_STAT_READ].best);
+	         printf("%7.0f ",1/stats[_STAT_WRITE].best);
+	         printf("%7.0f ",1/stats[_STAT_CLOSE].best);
+	         printf("%7.0f ",1/stats[_STAT_STAT].best);
+	         printf("%7.0f ",1/stats[_STAT_ACCESS].best);
+	         printf("%7.0f ",1/stats[_STAT_CHMOD].best);
+	         printf("%7.0f ",1/stats[_STAT_READDIR].best);
 #ifndef Windows
-	         printf("%6.0f ",1/stats[_STAT_LINK].best);
-	         printf("%6.0f ",1/stats[_STAT_UNLINK].best);
+	         printf("%7.0f ",1/stats[_STAT_LINK].best);
+	         printf("%7.0f ",1/stats[_STAT_UNLINK].best);
 #endif
-	         printf("%6.0f ",1/stats[_STAT_DELETE].best);
-	         printf("%12d ",x*x*x);
+	         printf("%7.0f ",1/stats[_STAT_DELETE].best);
+	         printf("%10d ",x*x*x);
 		 printf("\n");
   	   	 fflush(stdout);
 		}
 		if(worst)
 		{
-	         printf("%c %4d %6.0f ",'W',x, 1/stats[_STAT_DIR_CREATE].worst);
-	         printf("%6.0f ",1/stats[_STAT_DIR_DELETE].worst);
-	         printf("%6.0f ",1/stats[_STAT_CREATE].worst);
-	         printf("%6.0f ",1/stats[_STAT_READ].worst);
-	         printf("%6.0f ",1/stats[_STAT_WRITE].worst);
-	         printf("%6.0f ",1/stats[_STAT_CLOSE].worst);
-	         printf("%6.0f ",1/stats[_STAT_STAT].worst);
-	         printf("%6.0f ",1/stats[_STAT_ACCESS].worst);
-	         printf("%6.0f ",1/stats[_STAT_CHMOD].worst);
-	         printf("%6.0f ",1/stats[_STAT_READDIR].worst);
+	         printf("%c %4d %7.0f ",'W',x, 1/stats[_STAT_DIR_CREATE].worst);
+	         printf("%7.0f ",1/stats[_STAT_DIR_TRAVERSE].worst);
+	         printf("%7.0f ",1/stats[_STAT_DIR_DELETE].worst);
+	         printf("%7.0f ",1/stats[_STAT_CREATE].worst);
+	         printf("%7.0f ",1/stats[_STAT_OPEN].worst);
+	         printf("%7.0f ",1/stats[_STAT_READ].worst);
+	         printf("%7.0f ",1/stats[_STAT_WRITE].worst);
+	         printf("%7.0f ",1/stats[_STAT_CLOSE].worst);
+	         printf("%7.0f ",1/stats[_STAT_STAT].worst);
+	         printf("%7.0f ",1/stats[_STAT_ACCESS].worst);
+	         printf("%7.0f ",1/stats[_STAT_CHMOD].worst);
+	         printf("%7.0f ",1/stats[_STAT_READDIR].worst);
 #ifndef Windows
-	         printf("%6.0f ",1/stats[_STAT_LINK].worst);
-	         printf("%6.0f ",1/stats[_STAT_UNLINK].worst);
+	         printf("%7.0f ",1/stats[_STAT_LINK].worst);
+	         printf("%7.0f ",1/stats[_STAT_UNLINK].worst);
 #endif
-	         printf("%6.0f ",1/stats[_STAT_DELETE].worst);
-	         printf("%12d ",x*x*x);
+	         printf("%7.0f ",1/stats[_STAT_DELETE].worst);
+	         printf("%10d ",x*x*x);
 		 printf("\n");
   	   	 fflush(stdout);
 		}
@@ -466,14 +580,14 @@ int main(int argc, char **argv)
 void 
 dir_create(int x)
 {
-	int i,j;
+	int i,j,k;
 	int ret;
 	char buf[100];
 	stats[_STAT_DIR_CREATE].best=(double)99999.9;
 	stats[_STAT_DIR_CREATE].worst=(double)0.00000000;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  stats[_STAT_DIR_CREATE].starttime=time_so_far();
 	  ret=mkdir(buf,0777);
 	  if(ret < 0)
@@ -494,7 +608,7 @@ dir_create(int x)
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    stats[_STAT_DIR_CREATE].starttime=time_so_far();
 	    ret=mkdir(buf,0777);
 	    if(ret < 0)
@@ -513,9 +627,99 @@ dir_create(int x)
 	    if(stats[_STAT_DIR_CREATE].speed > stats[_STAT_DIR_CREATE].worst)
 		 stats[_STAT_DIR_CREATE].worst=stats[_STAT_DIR_CREATE].speed;
 	    chdir(buf);
+	    for(k=0;k<x;k++)
+	    {
+	      sprintf(buf,"fileop_dir_%d_%d_%d",i,j,k);
+	      stats[_STAT_DIR_CREATE].starttime=time_so_far();
+	      ret=mkdir(buf,0777);
+	      if(ret < 0)
+	      {
+	        printf("Mkdir failed\n");
+	        exit(1);
+	      }
+	      stats[_STAT_DIR_CREATE].endtime=time_so_far();
+	      stats[_STAT_DIR_CREATE].speed=stats[_STAT_DIR_CREATE].endtime-stats[_STAT_DIR_CREATE].starttime;
+	      if(stats[_STAT_DIR_CREATE].speed < (double)0.0)
+		stats[_STAT_DIR_CREATE].speed=(double) 0.0;
+	      stats[_STAT_DIR_CREATE].total_time+=stats[_STAT_DIR_CREATE].speed;
+	      stats[_STAT_DIR_CREATE].counter++;
+	      if(stats[_STAT_DIR_CREATE].speed < stats[_STAT_DIR_CREATE].best)
+		 stats[_STAT_DIR_CREATE].best=stats[_STAT_DIR_CREATE].speed;
+	      if(stats[_STAT_DIR_CREATE].speed > stats[_STAT_DIR_CREATE].worst)
+		 stats[_STAT_DIR_CREATE].worst=stats[_STAT_DIR_CREATE].speed;
+	      chdir(buf);
+	      chdir("..");
+	    }
 	    chdir("..");
 	  }
 	  chdir("..");
+	}
+}
+
+void
+dir_traverse(int x)
+{
+	int i,j,k;
+	char buf[100];
+	double time1, time2;
+	stats[_STAT_DIR_TRAVERSE].best=(double)99999.9;
+	stats[_STAT_DIR_TRAVERSE].worst=(double)0.00000000;
+	for(i=0;i<x;i++)
+	{
+	  sprintf(buf,"fileop_L1_%d",i);
+	  stats[_STAT_DIR_TRAVERSE].starttime=time_so_far();
+	  chdir(buf);
+	  stats[_STAT_DIR_TRAVERSE].endtime=time_so_far();
+	  time1=stats[_STAT_DIR_TRAVERSE].endtime-stats[_STAT_DIR_TRAVERSE].starttime;
+	  for(j=0;j<x;j++)
+	  {
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
+	    stats[_STAT_DIR_TRAVERSE].starttime=time_so_far();
+	    chdir(buf);
+	    stats[_STAT_DIR_TRAVERSE].endtime=time_so_far();
+	    time2=stats[_STAT_DIR_TRAVERSE].endtime-stats[_STAT_DIR_TRAVERSE].starttime;
+	    for(k=0;k<x;k++)
+	    {
+	      sprintf(buf,"fileop_dir_%d_%d_%d",i,j,k);
+	      stats[_STAT_DIR_TRAVERSE].starttime=time_so_far();
+	      chdir(buf);
+	      chdir("..");
+	      stats[_STAT_DIR_TRAVERSE].endtime=time_so_far();
+	      stats[_STAT_DIR_TRAVERSE].speed=stats[_STAT_DIR_TRAVERSE].endtime-stats[_STAT_DIR_TRAVERSE].starttime;
+	      if(stats[_STAT_DIR_TRAVERSE].speed < (double)0.0)
+		stats[_STAT_DIR_TRAVERSE].speed=(double) 0.0;
+	      stats[_STAT_DIR_TRAVERSE].total_time+=stats[_STAT_DIR_TRAVERSE].speed;
+	      stats[_STAT_DIR_TRAVERSE].counter++;
+	      if(stats[_STAT_DIR_TRAVERSE].speed < stats[_STAT_DIR_TRAVERSE].best)
+		 stats[_STAT_DIR_TRAVERSE].best=stats[_STAT_DIR_TRAVERSE].speed;
+	      if(stats[_STAT_DIR_TRAVERSE].speed > stats[_STAT_DIR_TRAVERSE].worst)
+		 stats[_STAT_DIR_TRAVERSE].worst=stats[_STAT_DIR_TRAVERSE].speed;
+	    }
+	    stats[_STAT_DIR_TRAVERSE].starttime=time_so_far();
+	    chdir("..");
+	    stats[_STAT_DIR_TRAVERSE].endtime=time_so_far();
+	    stats[_STAT_DIR_TRAVERSE].speed=time2+stats[_STAT_DIR_TRAVERSE].endtime-stats[_STAT_DIR_TRAVERSE].starttime;
+	    if(stats[_STAT_DIR_TRAVERSE].speed < (double)0.0)
+		stats[_STAT_DIR_TRAVERSE].speed=(double) 0.0;
+	    stats[_STAT_DIR_TRAVERSE].total_time+=stats[_STAT_DIR_TRAVERSE].speed;
+	    stats[_STAT_DIR_TRAVERSE].counter++;
+	    if(stats[_STAT_DIR_TRAVERSE].speed < stats[_STAT_DIR_TRAVERSE].best)
+		 stats[_STAT_DIR_TRAVERSE].best=stats[_STAT_DIR_TRAVERSE].speed;
+	    if(stats[_STAT_DIR_TRAVERSE].speed > stats[_STAT_DIR_TRAVERSE].worst)
+		 stats[_STAT_DIR_TRAVERSE].worst=stats[_STAT_DIR_TRAVERSE].speed;
+	  }
+	  stats[_STAT_DIR_TRAVERSE].starttime=time_so_far();
+	  chdir("..");
+	  stats[_STAT_DIR_TRAVERSE].endtime=time_so_far();
+	  stats[_STAT_DIR_TRAVERSE].speed=time1+stats[_STAT_DIR_TRAVERSE].endtime-stats[_STAT_DIR_TRAVERSE].starttime;
+	  if(stats[_STAT_DIR_TRAVERSE].speed < (double)0.0)
+		stats[_STAT_DIR_TRAVERSE].speed=(double)0.0;
+	  stats[_STAT_DIR_TRAVERSE].total_time+=stats[_STAT_DIR_TRAVERSE].speed;
+	  stats[_STAT_DIR_TRAVERSE].counter++;
+	  if(stats[_STAT_DIR_TRAVERSE].speed < stats[_STAT_DIR_TRAVERSE].best)
+	 	stats[_STAT_DIR_TRAVERSE].best=stats[_STAT_DIR_TRAVERSE].speed;
+	  if(stats[_STAT_DIR_TRAVERSE].speed > stats[_STAT_DIR_TRAVERSE].worst)
+		 stats[_STAT_DIR_TRAVERSE].worst=stats[_STAT_DIR_TRAVERSE].speed;
 	}
 }
 
@@ -526,6 +730,7 @@ file_create(int x)
 	int fd;
 	int ret;
 	char buf[100];
+	char value;
 	stats[_STAT_CREATE].best=(double)999999.9;
 	stats[_STAT_CREATE].worst=(double)0.0;
 	stats[_STAT_WRITE].best=(double)999999.9;
@@ -534,7 +739,7 @@ file_create(int x)
 	stats[_STAT_CLOSE].worst=(double)0.0;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  ret=mkdir(buf,0777);
 	  if(ret < 0)
 	  {
@@ -544,7 +749,7 @@ file_create(int x)
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    ret=mkdir(buf,0777);
 	    if(ret < 0)
 	    {
@@ -554,7 +759,9 @@ file_create(int x)
 	    chdir(buf);
 	    for(k=0;k<x;k++)
 	    {
-	      sprintf(buf,"iozone_file_%d_%d_%d",i,j,k);
+	      sprintf(buf,"fileop_file_%d_%d_%d",i,j,k);
+	      value=(char) ((i^j^k) & 0xff);
+	      memset(mbuffer,value,sz);
 	      stats[_STAT_CREATE].starttime=time_so_far();
 	      fd=creat(buf,O_RDWR|0600);
 	      if(fd < 0)
@@ -616,15 +823,15 @@ file_stat(int x)
 	stats[_STAT_STAT].worst=(double)0.00000000;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    chdir(buf);
 	    for(k=0;k<x;k++)
 	    {
-	      sprintf(buf,"iozone_file_%d_%d_%d",i,j,k);
+	      sprintf(buf,"fileop_file_%d_%d_%d",i,j,k);
 	      stats[_STAT_STAT].starttime=time_so_far();
 	      y=stat(buf,&mystat);
 	      if(y < 0)
@@ -658,15 +865,15 @@ file_access(int x)
 	stats[_STAT_ACCESS].worst=(double)0.0;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    chdir(buf);
 	    for(k=0;k<x;k++)
 	    {
-	      sprintf(buf,"iozone_file_%d_%d_%d",i,j,k);
+	      sprintf(buf,"fileop_file_%d_%d_%d",i,j,k);
 	      stats[_STAT_ACCESS].starttime=time_so_far();
 	      y=access(buf,W_OK|F_OK);
 	      if(y < 0)
@@ -701,15 +908,15 @@ file_chmod(int x)
 	stats[_STAT_CHMOD].worst=(double)0.0;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    chdir(buf);
 	    for(k=0;k<x;k++)
 	    {
-	      sprintf(buf,"iozone_file_%d_%d_%d",i,j,k);
+	      sprintf(buf,"fileop_file_%d_%d_%d",i,j,k);
 	      stats[_STAT_CHMOD].starttime=time_so_far();
 	      y=chmod(buf,0666);
 	      if(y < 0)
@@ -746,11 +953,11 @@ file_readdir(int x)
 	stats[_STAT_READDIR].worst=(double)0.0;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    chdir(buf);
 	    dirbuf=opendir(".");
 	    if(dirbuf==0)
@@ -797,16 +1004,16 @@ file_link(int x)
 	stats[_STAT_LINK].worst=(double)0.0;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    chdir(buf);
 	    for(k=0;k<x;k++)
 	    {
-	      sprintf(buf,"iozone_file_%d_%d_%d",i,j,k);
-	      sprintf(bufn,"iozone_file_%d_%d_%dL",i,j,k);
+	      sprintf(buf,"fileop_file_%d_%d_%d",i,j,k);
+	      sprintf(bufn,"fileop_file_%d_%d_%dL",i,j,k);
 	      stats[_STAT_LINK].starttime=time_so_far();
 	      y=link(buf,bufn);
 	      if(y < 0)
@@ -841,16 +1048,16 @@ file_unlink(int x)
 	stats[_STAT_UNLINK].worst=(double)0.0;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    chdir(buf);
 	    for(k=0;k<x;k++)
 	    {
-	      sprintf(buf,"iozone_file_%d_%d_%d",i,j,k);
-	      sprintf(bufn,"iozone_file_%d_%d_%dL",i,j,k);
+	      sprintf(buf,"fileop_file_%d_%d_%d",i,j,k);
+	      sprintf(bufn,"fileop_file_%d_%d_%dL",i,j,k);
 	      stats[_STAT_UNLINK].starttime=time_so_far();
 	      y=unlink(bufn);
 	      if(y < 0)
@@ -878,20 +1085,38 @@ file_unlink(int x)
 void
 dir_delete(int x)
 {
-	int i,j;
+	int i,j,k;
 	char buf[100];
 	stats[_STAT_DIR_DELETE].best=(double)99999.9;
 	stats[_STAT_DIR_DELETE].worst=(double)0.00000000;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    chdir(buf);
+	    for(k=0;k<x;k++)
+	    {
+	      sprintf(buf,"fileop_dir_%d_%d_%d",i,j,k);
+	      chdir(buf);
+	      chdir("..");
+	      stats[_STAT_DIR_DELETE].starttime=time_so_far();
+	      rmdir(buf);
+	      stats[_STAT_DIR_DELETE].endtime=time_so_far();
+	      stats[_STAT_DIR_DELETE].speed=stats[_STAT_DIR_DELETE].endtime-stats[_STAT_DIR_DELETE].starttime;
+	      if(stats[_STAT_DIR_DELETE].speed < (double)0.0)
+		stats[_STAT_DIR_DELETE].speed=(double)0.0;
+	      stats[_STAT_DIR_DELETE].total_time+=stats[_STAT_DIR_DELETE].speed;
+	      stats[_STAT_DIR_DELETE].counter++;
+	      if(stats[_STAT_DIR_DELETE].speed < stats[_STAT_DIR_DELETE].best)
+		 stats[_STAT_DIR_DELETE].best=stats[_STAT_DIR_DELETE].speed;
+	      if(stats[_STAT_DIR_DELETE].speed > stats[_STAT_DIR_DELETE].worst)
+		 stats[_STAT_DIR_DELETE].worst=stats[_STAT_DIR_DELETE].speed;
+	    }
 	    chdir("..");
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    stats[_STAT_DIR_DELETE].starttime=time_so_far();
 	    rmdir(buf);
 	    stats[_STAT_DIR_DELETE].endtime=time_so_far();
@@ -906,7 +1131,7 @@ dir_delete(int x)
 		 stats[_STAT_DIR_DELETE].worst=stats[_STAT_DIR_DELETE].speed;
 	  }
 	  chdir("..");
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  stats[_STAT_DIR_DELETE].starttime=time_so_far();
 	  rmdir(buf);
 	  stats[_STAT_DIR_DELETE].endtime=time_so_far();
@@ -931,15 +1156,15 @@ file_delete(int x)
 	stats[_STAT_DELETE].worst=(double)0.0;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    chdir(buf);
 	    for(k=0;k<x;k++)
 	    {
-	      sprintf(buf,"iozone_file_%d_%d_%d",i,j,k);
+	      sprintf(buf,"fileop_file_%d_%d_%d",i,j,k);
 	      stats[_STAT_DELETE].starttime=time_so_far();
 	      unlink(buf);
 	      stats[_STAT_DELETE].endtime=time_so_far();
@@ -954,11 +1179,11 @@ file_delete(int x)
 		 stats[_STAT_DELETE].worst=stats[_STAT_DELETE].speed;
 	    }
 	    chdir("..");
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    rmdir(buf);
 	  }
 	  chdir("..");
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  rmdir(buf);
 	}
 }
@@ -967,25 +1192,41 @@ file_read(int x)
 {
 	int i,j,k,y,fd;
 	char buf[100];
+	char value;
 	stats[_STAT_READ].best=(double)99999.9;
 	stats[_STAT_READ].worst=(double)0.00000000;
+	stats[_STAT_OPEN].best=(double)99999.9;
+	stats[_STAT_OPEN].worst=(double)0.00000000;
 	for(i=0;i<x;i++)
 	{
-	  sprintf(buf,"iozone_L1_%d",i);
+	  sprintf(buf,"fileop_L1_%d",i);
 	  chdir(buf);
 	  for(j=0;j<x;j++)
 	  {
-	    sprintf(buf,"iozone_L1_%d_L2_%d",i,j);
+	    sprintf(buf,"fileop_L1_%d_L2_%d",i,j);
 	    chdir(buf);
 	    for(k=0;k<x;k++)
 	    {
-	      sprintf(buf,"iozone_file_%d_%d_%d",i,j,k);
+	      sprintf(buf,"fileop_file_%d_%d_%d",i,j,k);
+	      value=(char)((i^j^k) &0xff);
+	      stats[_STAT_OPEN].starttime=time_so_far();
 	      fd=open(buf,O_RDONLY);
 	      if(fd < 0)
 	      {
 	        printf("Open failed\n");
 	        exit(1);
 	      }
+	      stats[_STAT_OPEN].endtime=time_so_far();
+	      stats[_STAT_OPEN].speed=stats[_STAT_OPEN].endtime-stats[_STAT_OPEN].starttime;
+	      if(stats[_STAT_OPEN].speed < (double)0.0)
+		stats[_STAT_OPEN].speed=(double)0.0;
+	      stats[_STAT_OPEN].total_time+=stats[_STAT_OPEN].speed;
+	      stats[_STAT_OPEN].counter++;
+	      if(stats[_STAT_OPEN].speed < stats[_STAT_OPEN].best)
+		 stats[_STAT_OPEN].best=stats[_STAT_OPEN].speed;
+	      if(stats[_STAT_OPEN].speed > stats[_STAT_OPEN].worst)
+		 stats[_STAT_OPEN].worst=stats[_STAT_OPEN].speed;
+
 	      stats[_STAT_READ].starttime=time_so_far();
 	      y=read(fd,mbuffer,sz);
 	      if(y < 0)
@@ -993,6 +1234,8 @@ file_read(int x)
 	        printf("Read failed\n");
 	        exit(1);
 	      }
+	      if(validate(mbuffer,sz, value) !=0)
+		printf("Error: Data Mis-compare\n");;
 	      stats[_STAT_READ].endtime=time_so_far();
 	      close(fd);
 	      stats[_STAT_READ].speed=stats[_STAT_READ].endtime-stats[_STAT_READ].starttime;
@@ -1074,20 +1317,23 @@ void
 usage(void)
 {
   splash();
-  printf("     fileop [-f X ]|[-l # -u #] [-s Y] [-t] [-v] [-e] [-b] -[w]\n");
+  printf("     fileop [-f X ]|[-l # -u #] [-s Y] [-e] [-b] [-w] [-d <dir>] [-t] [-v] [-h]\n");
   printf("\n");
-  printf("     -f # Force factor. X^3 files will be created and removed.\n");
-  printf("     -l # Lower limit on the value of the Force factor.\n");
-  printf("     -u # Upper limit on the value of the Force factor.\n");
-  printf("     -s # Optional. Sets filesize for the create/write.\n");
-  printf("     -t # Verbose output option.\n");
-  printf("     -v # Version information.\n");
-  printf("     -e # Excel importable format.\n");
-  printf("     -b Output best case results\n");
-  printf("     -w Output worst case results\n");
+  printf("     -f #      Force factor. X^3 files will be created and removed.\n");
+  printf("     -l #      Lower limit on the value of the Force factor.\n");
+  printf("     -u #      Upper limit on the value of the Force factor.\n");
+  printf("     -s #      Optional. Sets filesize for the create/write. May use suffix 'K' or 'M'.\n");
+  printf("     -e        Excel importable format.\n");
+  printf("     -b        Output best case results.\n");
+  printf("     -w        Output worst case results.\n");
+  printf("     -d <dir>  Specify starting directory.\n");
+  printf("     -U <dir>  Mount point to remount between tests.\n");
+  printf("     -t        Verbose output option.\n");
+  printf("     -v        Version information.\n");
+  printf("     -h        Help text.\n");
   printf("\n");
   printf("     The structure of the file tree is:\n");
-  printf("     X number of Level 1 directorys, with X number of\n");
+  printf("     X number of Level 1 directories, with X number of\n");
   printf("     level 2 directories, with X number of files in each\n");
   printf("     of the level 2 directories.\n");
   printf("\n");
@@ -1109,3 +1355,21 @@ clear_stats()
 	for(i=0;i<_NUM_STATS;i++)
 		bzero((char *)&stats[i],sizeof(struct stat_struct));
 }
+int
+validate(char *buffer, int size, char value)
+{
+	register int i;
+	register char *cp;
+	register int size1;
+	register char v1;
+	v1=value;
+	cp = buffer;
+	size1=size;
+	for(i=0;i<size;i++)
+	{
+		if(*cp++ != v1)
+			return(1);
+	}
+	return(0);
+}
+
