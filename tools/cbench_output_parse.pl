@@ -1122,7 +1122,7 @@ sub parse_output_file {
 				}
 				elsif ($status eq 'RUNNING') {
 					$jobpassed = 1;
-					print "-------------------------------------------------------------\n";
+					(defined $diagnose) and print "-------------------------------------------------------------\n";
 				}
 
 				$success_data{$np}{'TOTAL'}++;
