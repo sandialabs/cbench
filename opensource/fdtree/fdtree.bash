@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 ################################################################################
 #                                                                              #
 #        Copyright (c) 2004, The Regents of the University of California       #
