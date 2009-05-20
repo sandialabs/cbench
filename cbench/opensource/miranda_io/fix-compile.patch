@@ -1,5 +1,5 @@
---- miranda_io-1.0.1/miranda_io.f90.orig     2007-02-06 15:03:05.000000000 -0700
-+++ miranda_io-1.0.1/miranda_io.f90      2009-05-20 12:39:25.000000000 -0600
+--- src/miranda_io.f90.orig     2007-02-06 15:03:05.000000000 -0700
++++ src/miranda_io.f90      2009-05-20 12:39:25.000000000 -0600
 @@ -69,12 +69,13 @@
 
  !     check environment for file name, then broadcast from root task
