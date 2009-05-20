@@ -17,6 +17,7 @@ $(SRC): $(TAR)
 	-[ ! -d $(SRC) ] && tar zxf $(TAR)
 	-[ ! -s src ] && ln -sf $(SRC) src
 	patch -p0 < fix-compile.patch
+	patch -p0 < swl.patch
 	@touch $(SRC) src
 
 $(TAR) download:
