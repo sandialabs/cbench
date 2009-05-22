@@ -87,7 +87,7 @@ ifeq ($(COMPILER),gcc)
   PLAINF77 = gfortran
   PLAINF90 = gfortran
   PLAINCC = gcc
-  PLAINCXX = gcc
+  PLAINCXX = g++
   NOOPT_FLAGS = -O0
   # some newer gccs have openmp support
   OPENMP_ENABLE = -fopenmp
@@ -106,7 +106,7 @@ ifeq ($(COMPILER),gcc3)
   PLAINF77 = g77
   PLAINF90 = NO_FORTRAN90_WITH_GCC3
   PLAINCC = gcc
-  PLAINCXX = gcc
+  PLAINCXX = g++
   NOOPT_FLAGS = -O0
   NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
   # no openmp support in gcc 3.X land
@@ -136,6 +136,91 @@ ifeq ($(COMPILER),pathscale)
   NOUNROLL_FLAGS = -LNO:full_unroll=0 -LNO:full_unroll_outer=0
   OPENMP_ENABLE = -openmp
 endif
+ifeq ($(COMPILER),tau-gcc)
+  ifndef TAU_MAKEFILE
+      $(error "Error: Must define TAU_MAKEFILE to use the tau compiler scripts")
+  endif
+  ifndef TAU_PATH
+      $(error "Error: Must define TAU_PATH to be the path to tau binaries (e.g. /opt/tau_2.18/x86_64/bin)")
+  endif
+  CC = $(TAU_PATH)/tau_cc.sh
+  CCC = $(TAU_PATH)/tau_cc.sh
+  CXX = $(TAU_PATH)/tau_cxx.sh
+  F77 = $(TAU_PATH)/tau_f90.sh
+  F90 = $(TAU_PATH)/tau_f90.sh
+  # FC is the default gnu make fortran compiler
+  FC = $(F90)
+
+  # these are the same as for the gcc section above
+  FORT = gfortran
+  PLAINF77 = gfortran
+  PLAINF90 = gfortran
+  PLAINCC = gcc
+  PLAINCXX = g++
+  NOOPT_FLAGS = -O0
+  # some newer gccs have openmp support
+  OPENMP_ENABLE = -fopenmp
+  # NPB uses the next two variables
+  # FIXME: need to check this out on 32-bit systems..
+  ifeq ($(ARCH),x86_64)
+  FMPI_LIB = /usr/lib64/libg2c.so.0
+  else
+  FMPI_LIB = /usr/lib/libg2c.so.0
+  endif
+  F_LIB = $(FMPI_LIB)
+endif
+ifeq ($(COMPILER),tau-intel)
+  ifndef TAU_MAKEFILE
+      $(error "Error: Must define TAU_MAKEFILE to use the tau compiler scripts")
+  endif
+  ifndef TAU_PATH
+      $(error "Error: Must define TAU_PATH to be the path to tau binaries (e.g. /opt/tau_2.18/x86_64/bin)")
+  endif
+  CC = $(TAU_PATH)/tau_cc.sh
+  CCC = $(TAU_PATH)/tau_cc.sh
+  CXX = $(TAU_PATH)/tau_cxx.sh
+  F77 = $(TAU_PATH)/tau_f90.sh
+  F90 = $(TAU_PATH)/tau_f90.sh
+  # FC is the default gnu make fortran compiler
+  FC = $(F90)
+
+  # these are the same as for the intel section above
+  FORT = ifort
+  PLAINF77 = ifort
+  PLAINF90 = ifort
+  PLAINCC = icc
+  PLAINCXX = icpc
+  NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
+  NOMAIN_FLAG = -nofor-main
+  OPENMP_ENABLE = -openmp
+endif
+ifeq ($(COMPILER),tau-pgi)
+  ifndef TAU_MAKEFILE
+      $(error "Error: Must define TAU_MAKEFILE to use the tau compiler scripts")
+  endif
+  ifndef TAU_PATH
+      $(error "Error: Must define TAU_PATH to be the path to tau binaries (e.g. /opt/tau_2.18/x86_64/bin)")
+  endif
+  CC = $(TAU_PATH)/tau_cc.sh
+  CCC = $(TAU_PATH)/tau_cc.sh
+  CXX = $(TAU_PATH)/tau_cxx.sh
+  F77 = $(TAU_PATH)/tau_f90.sh
+  F90 = $(TAU_PATH)/tau_f90.sh
+  # FC is the default gnu make fortran compiler
+  FC = $(F90)
+
+  # these are the same as for the pgi section above
+  FORT = pgf90
+  PLAINF77 = pgf77
+  PLAINF90 = pgf90
+  PLAINCC = pgcc
+  PLAINCXX = pgCC
+  NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -Mnounroll
+  OPENMP_ENABLE = -mp
+endif
+
 
 # we should know our compilers now
 ifndef FORT
@@ -241,6 +326,12 @@ ifeq ($(ARCH),x86_64)
   MPILIB = 
   endif
 
+  ifeq ($(COMPILER),tau-intel)
+  COMMON_FLAGS =
+  OPTFLAGS = -O3 -axP -xW -mcmodel=medium
+  MPILIB = 
+  endif
+
   ifeq ($(COMPILER),pgi)
   COMMON_FLAGS = 
   CFLAGS = -B
@@ -256,7 +347,29 @@ ifeq ($(ARCH),x86_64)
   MPILIB =
   endif
 
+  ifeq ($(COMPILER),tau-pgi)
+  COMMON_FLAGS = 
+  CFLAGS = -B
+  #OPTFLAGS = -O3 -fastsse
+  #OPTFLAGS = -O3 -fastsse
+  #OPTFLAGS = -O3 -fast -Mnovect -Mautoinline=levels:3 -mcmodel=medium -Msmartalloc
+  #OPTFLAGS = -O2
+  OPTFLAGS = -O3 -mcmodel=medium -tp barcelona-64
+  #OPTFLAGS = -O2 -tp barcelona-64
+  #OPTFLAGS = -O1 -mcmodel=medium
+  #OPTFLAGS = -g -mcmodel=medium
+  #OPTFLAGS = -g
+  MPILIB =
+  endif
+
   ifeq ($(COMPILER),gcc)
+  COMMON_FLAGS = 
+  FFLAGS += -fno-second-underscore
+  OPTFLAGS = -O3 -mtune=amdfam10
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),tau-gcc)
   COMMON_FLAGS = 
   FFLAGS += -fno-second-underscore
   OPTFLAGS = -O3 -mtune=amdfam10
