@@ -108,6 +108,13 @@ our %parse_filters = (
 
 	'There are not enough nodes in your allocation' =>
 		'OMPI says not enough nodes to run as requested',
+
+	# A daemon (pid unknown) died unexpectedly with status 0 while attempting to launch so we are aborting.
+	'A daemon \(.+\) died unexpectedly with status (\d+) while attempting' =>
+		'OMPI says a daemon died (status $1)',
+
+	'Error name:\s+(\S+)' =>
+		'OMPI saw error name $1',
 );
 
 1;
