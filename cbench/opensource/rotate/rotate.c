@@ -83,8 +83,8 @@ char **argv;
 	}
 
     /* The rate printed by this program is the rate in the presense of contention */
-    if (rank == 0) 
-	/* printf( "Kind (np=%d)\tn\ttime (sec)\tRate (MB/sec)\n", size  );*/
+    /*if (rank == 0) 
+	printf( "Kind (np=%d)\tn\ttime (sec)\tRate (MB/sec)\n", size  );*/
 
     source = rank;
     dest   = (rank + (size/2)) % size;
