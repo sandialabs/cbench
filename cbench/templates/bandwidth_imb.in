@@ -6,7 +6,7 @@
 
 cbench_check_for_bin CBENCHTEST_BIN_HERE/IMB-MPI1
 
-CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/IMB-MPI1 -npmin NUM_PROCS_HERE sendrecv"
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/IMB-MPI1 -npmin NUM_PROCS_HERE sendrecv pingping pingpong exchange"
 
 cbench_run_cmd $CMD
 
