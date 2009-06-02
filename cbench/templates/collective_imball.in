@@ -1,6 +1,6 @@
 # collective_imb job template
-# Intel MPI Benchmarks for some collective ops that often don't
-# work at scale
+# full set of Intel MPI Benchmarks
+# 
 # NOTE: bash syntax is used here
 #
 # Cbench job binary: CBENCHTEST_BIN_HERE/IMB-MPI1
@@ -42,7 +42,7 @@ fi
 #
 # FIXME: for now we limit memory to 2.0GB, we need to parameterize
 #        this from cluster.def
-CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/IMB-MPI1 -msglen ./lengths -mem 2.0 -iter 5 -time 5.0 -npmin NUM_PROCS_HERE allgather allgatherv alltoall alltoallv gather gatherv scatter scatterv"
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/IMB-MPI1 -msglen ./lengths -mem 2.0 -iter 5 -time 5.0 -npmin NUM_PROCS_HERE"
 
 cbench_run_cmd $CMD
 

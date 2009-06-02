@@ -1,5 +1,5 @@
 # collective_imb job template
-# Intel MPI Benchmarks for some choice collective ops
+# Intel MPI Benchmarks for some specificly chosen collective ops
 # NOTE: bash syntax is used here
 #
 # Cbench job binary: CBENCHTEST_BIN_HERE/IMB-MPI1
