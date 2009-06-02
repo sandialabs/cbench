@@ -40,6 +40,7 @@ use File::Find;
 use Getopt::Long;
 use Statistics::Descriptive;
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 use Time::localtime;
 use File::stat;
 use Date::Manip;
@@ -48,7 +49,7 @@ use Term::ANSIColor qw(:constants color);
 $Term::ANSIColor::AUTORESET = 1;
 
 my $num_data_columns = 2;
-my $testset = find_testset_identity($0);
+our $testset = find_testset_identity($0);
 my $xaxis_ppn = 0;
 my $xaxis_ppn_nodeview = 0;
 my $follow_symlinks = 0;
