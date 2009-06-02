@@ -132,8 +132,7 @@ sub parse {
         	$parse_state = 101;
             $skipblankline = 1;
             
-            (defined $main::DEBUG and $main::DEBUG > 2) and print
-				"DEBUG:imb: parse_state=$parse_state\n";
+            main::debug_print(3,"DEBUG:imb: parse_state=$parse_state\n");
         }
         elsif ($parse_state == 101) {
         	# skip the first blank line after the title line
@@ -144,11 +143,9 @@ sub parse {
             elsif ($l !~ /\#/) {
             	$parse_state = 0;
                 
-                if (defined $main::DEBUG and $main::DEBUG > 2) {
-                	foreach my $k (keys %tests) {
-                    	print "DEBUG:imb:testtorun $k\n";
-                    }
-                }
+				foreach my $k (keys %tests) {
+					main::debug_print(3,"DEBUG:imb:testtorun $k, parse_state=$parse_state\n");
+				}
             }
             elsif ($l =~ /\# (\S+)$/) {
             	$tests{$1} = 0;
@@ -183,10 +180,11 @@ sub parse {
 				$parse_state = 0;
 			}
 
-			(defined $main::DEBUG and $main::DEBUG > 2) and print
-				"DEBUG:imb: parse_state=$parse_state\n";
+			main::debug_print(3,"DEBUG:imb: parse_state=$parse_state\n");
 		}
 		elsif ($parse_state == 2) {
+			#  state 2 - reading PingPong or PingPing table
+
 			# ignore the #bytes #repetitions lines
 			($l =~ /\#bytes\s+\#repetitions/) and next;
 
@@ -195,11 +193,14 @@ sub parse {
 
 			# otherwise parse valid lines
 			if ($l =~ /\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/) {
-				$multidata{$testname}{$1} = $3;
+				$multidata{"$testname"."Latency"}{$1} = $3;
+				$multidata{"$testname"."BW"}{$1} = $4;
 				$status = 'FOUNDDATA';	
 			}
 		}
 		elsif ($parse_state == 3) {
+			#  state 3 - reading SendRecv table
+
 			# ignore the #bytes #repetitions lines
 			($l =~ /\#bytes\s+\#repetitions/) and next;
 
@@ -213,6 +214,8 @@ sub parse {
 			}
 		}
 		elsif ($parse_state == 4) {
+			#  state 4 - reading collective test tables (not Barrier)
+
 			# ignore the #bytes #repetitions lines
 			($l =~ /\#bytes\s+\#repetitions/) and next;
 			# ignore this too
@@ -228,6 +231,8 @@ sub parse {
 			}
 		}
 		elsif ($parse_state == 5) {
+			#  state 5 - reading Barrier table
+
 			# ignore the #bytes #repetitions lines
 			($l =~ /\#repetitions/) and next;
 
@@ -236,7 +241,7 @@ sub parse {
 
 			# otherwise parse valid lines
 			if ($l =~ /\s+(\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/) {
-				$multidata{$testname}{$1} = $4;
+				$multidata{$testname}{'0'} = $4;
 				$status = 'FOUNDDATA';	
 			}
 		}
@@ -281,20 +286,28 @@ sub parse {
 	# structure
 	foreach my $k (keys %multidata) {
 		my $multidata_key = "MULTIDATA:$k\_msgsize:latency:bytes:usec";
-		($k =~ /SendRecv|Exchange/) and $multidata_key = "MULTIDATA:$k\_msgsize:bandwidth:bytes:MB/s";
+		($k =~ /Sendrecv|Exchange|ngBW/) and $multidata_key = "MULTIDATA:$k\_msgsize:bandwidth:bytes:MB/s";
 
 		# innermost loop temp variables for max/min stuff
 		my $lastbytes = 0;
 		my $lastval = 0;
 
 		foreach my $bytes (sort {$a <=> $b} keys %{$multidata{$k}}) {
-			if ($k =~ /Ping/) {
-				# PingPong and PingPing 
+			if (($k =~ /PingPongLatency|PingPingLatency/) and ($main::testset !~ /bandwidth/)) {
+				# PingPongLatency and PingPingLatency
 				# we want 0 byte timing data
 				($bytes == 0) and ($data{"ave_$k"} = $lastval = $multidata{$k}{$bytes});
 
 				#save the MULTIDATA stuff going back to the core parser
-				$data{$multidata_key}{$1} = $multidata{$k}{$bytes};
+				$data{$multidata_key}{$bytes} = $multidata{$k}{$bytes};
+			}
+			elsif (($k =~ /PingPongBW|PingPingBW/) and ($main::testset !~ /latency/)) {
+				# PingPongBW and PingPingBW
+				$lastbytes = $bytes;
+				$lastval = main::max($lastval,$multidata{$k}{$bytes});
+
+				#save the MULTIDATA stuff going back to the core parser
+				$data{$multidata_key}{$bytes} = $multidata{$k}{$bytes};
 			}
 			elsif ($k =~ /Sendrecv|Exchange/) {
 				# SendRecv, Exchange
@@ -303,7 +316,7 @@ sub parse {
 				$lastval = main::max($lastval,$multidata{$k}{$bytes});
 
 				#save the MULTIDATA stuff going back to the core parser
-				$data{$multidata_key}{$1} = $multidata{$k}{$bytes};
+				$data{$multidata_key}{$bytes} = $multidata{$k}{$bytes};
 			}
 			elsif ($k =~ /Barrier/) {
 				# Barrier
@@ -311,10 +324,14 @@ sub parse {
 				$data{"ave_$k"} = $lastval = $multidata{$k}{$bytes};
 
 				#save the MULTIDATA stuff going back to the core parser
-				$data{$multidata_key}{$1} = $multidata{$k}{$bytes};
+				$data{$multidata_key}{$bytes} = $multidata{$k}{$bytes};
 			}
-			elsif ($k =~ /Allreduce|Reduce|Reduce_scatter|Allgather|Alltoall|Bcast/) {
+			elsif ($k =~ /Allreduce|Reduce|Reduce_scatter|Allgather|Alltoall|Gather|Scatter|Bcast/) {
 				# all the collective tests
+
+				#save the MULTIDATA stuff going back to the core parser
+				$data{$multidata_key}{$bytes} = $multidata{$k}{$bytes};
+
 				# we would like latencies of 8K messages (arbitrary choice), but
 				# we at least want a value if one exists
 				($bytes > 8192) and next;
@@ -323,6 +340,17 @@ sub parse {
 			}
 		}
 		$data{"ave_$k"} = $lastval;
+	}
+
+	# For the 'bandwidth' testset, don't return latency data and vice-versa.  Any
+	# other testset, just return whatever
+	if ($main::testset =~ /bandwidth/) {
+		delete $data{"ave_PingPongLatency"};	
+		delete $data{"ave_PingPingLatency"};	
+	}
+	elsif ($main::testset =~ /latency/) {
+		delete $data{"ave_PingPongBW"};	
+		delete $data{"ave_PingPingBW"};	
 	}
 
 	return \%data;
@@ -413,8 +441,10 @@ sub _init {
 	# this is a KEY array... see the metric_units method above for
 	# more info
 	%{$self->{METRIC_UNITS}} = (
-		'ave_PingPong' => 'us',
-		'ave_PingPing' => 'us',
+		'ave_PingPongLatency' => 'us',
+		'ave_PingPingLatency' => 'us',
+		'ave_PingPongBW' => 'MB/s',
+		'ave_PingPingBW' => 'MB/s',
 		'ave_Sendrecv' => 'MB/s',
 		'ave_Exchange' => 'MB/s',
 		'ave_Allreduce' => 'us',
@@ -424,6 +454,10 @@ sub _init {
 		'ave_Allgatherv' => 'us',
 		'ave_Alltoall' => 'us',
 		'ave_Alltoallv' => 'us',
+		'ave_Gather' => 'us',
+		'ave_Gatherv' => 'us',
+		'ave_Scatter' => 'us',
+		'ave_Scatterv' => 'us',
 		'ave_Bcast' => 'us',
 		'ave_Barrier' => 'us',
 	);
