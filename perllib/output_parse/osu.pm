@@ -116,9 +116,12 @@ sub parse {
 			my $test = $1;
 			($test =~ /Bidirectional/) and $metric = 'bidir_bw';
 			($test =~ /Latency/) and $metric = 'latency';
-			($test =~ /Message Rate/) and $metric = 'message_rate';
+			$multidata_key = "MULTIDATA:msgsize:$metric:bytes:MB/s";
+			if ($test =~ /Message Rate/) {
+				$metric = 'message_rate';
+				$multidata_key = "MULTIDATA:msgsize:$metric:bytes:messages/s";
+			}
 			$status = 'STARTED';
-			$multidata_key = "MULTIDATA:msgsize:$metric:MB:MB/s";
 		}
 		
     	if ($l =~ /^\s*(\d+)\s+(\d+\.\d+)\s*$/) {
