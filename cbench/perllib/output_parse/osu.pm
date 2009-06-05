@@ -132,7 +132,7 @@ sub parse {
     	}
 
 		# message rate benchmark format
-    	if ($l =~ /^\s*(\d+)\s+(\S+)\s+(\S+)/) {
+    	if ($l =~ /^\s*(\d+)\s+(\S+)\s+(\d+\.\d+)/) {
 			$max = main::max($max,$3);
 			$status = 'FOUNDDATA';
 			($1 == 4194304) and $status = 'COMPLETED';
@@ -157,6 +157,9 @@ sub parse {
 	else {
 		$data{'STATUS'} = "ERROR($status)";
         defined $main::diagnose and main::print_job_err($fileid,'ERROR',$status);
+
+		# remove multidata on error
+		delete $data{$multidata_key};
 	}
 
 	return \%data;
