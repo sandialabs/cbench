@@ -1,5 +1,5 @@
 # lammps_chain job template
-# Uses LAMMPS benchmark code Rhodopsin
+# Uses LAMMPS benchmark code Chain
 # NOTE: bash syntax is used here
 #
 # Cbench job binary: CBENCHTEST_BIN_HERE/lmp_cbench
