@@ -217,7 +217,7 @@ This routine is optional.
 sub alias_spec {
     my $self = shift;
 
-    return "rhodo|lj|chain|eam";
+    return "rhodo|lj|chain|eam|chute";
 }
 
 =item B<metric_units()> - Return a hash with a mapping of the

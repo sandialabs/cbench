@@ -889,8 +889,8 @@ sub lammps_gen_joblist {
 
 	# scaled in the lammps testset means weakly scaled, otherwise jobs are
 	# strongly scaled
-    my @scaled_joblist = qw(rhodo.scaled chain.scaled lj.scaled eam.scaled);
-    my @normal_joblist = qw(rhodo chain lj eam rhodo.scaled rhodolong.scaled chain.scaled lj.scaled eam.scaled); #this is only a temporary list; LAMMPS has many more codes to use 
+    my @scaled_joblist = qw(rhodo.scaled chain.scaled lj.scaled eam.scaled chute.scaled);
+    my @normal_joblist = qw(rhodo chain lj eam chute rhodo.scaled rhodolong.scaled chain.scaled lj.scaled eam.scaled chute.scaled); #this is only a temporary list; LAMMPS has many more codes to use 
     debug_print(3, "DEBUG: entering lammps_gen_joblist($ppn,$numprocs)\n");
 
     my @tmplist =();
