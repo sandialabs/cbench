@@ -69,7 +69,8 @@ our %parse_filters = (
 		'OMPI says \'Failed to find or execute the executable',
 
 	# orterun noticed that job rank 0 with PID 4696 on node slot1 exited on signal 4 (Illegal instruction).
-	'orterun noticed that job rank (\d+) with PID (\d+) on node (\S+) exited on\s+(.*)$' =>
+	# orterun noticed that process rank 0 with PID 6075 on node n253 exited on signal 6 (Aborted).
+	'orterun noticed that \S+ rank (\d+) with PID (\d+) on node (\S+) exited on\s+(.*)$' =>
 		'OMPI says orterun noticed rank $1 on node $3 exited with $4',
 
 	#orterun: killing job...
