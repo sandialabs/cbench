@@ -284,13 +284,13 @@ foreach my $set (@testset_list) {
 		if (exists $special_testset_files{$set}{rsync}) {
 			foreach my $file (keys %{$special_testset_files{$set}{rsync}}) {
 				rsync_to_cbenchtest("$CBENCHOME/$file",
-					"$CBENCHOME/$file $bench_test/$special_testset_files{$set}{rsync}{$file}");
+					"$bench_test/$special_testset_files{$set}{rsync}{$file}");
 			}
 		}
 		if (exists $special_testset_files{$set}{rsyncaddon}) {
 			foreach my $file (keys %{$special_testset_files{$set}{rsyncaddon}}) {
 				rsync_to_cbenchtest("$addon/$file",
-					"$CBENCHOME/$file $bench_test/$special_testset_files{$set}{rsyncaddon}{$file}");
+					"$bench_test/$special_testset_files{$set}{rsyncaddon}{$file}");
 			}
 		}
 	}
