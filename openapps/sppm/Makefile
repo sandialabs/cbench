@@ -6,21 +6,21 @@ TAR=sppm1.1.tar
 URL=https://asc.llnl.gov/computing_resources/purple/archive/benchmarks/sppm/$(TAR)
 
 
-EXECS = $(SRC)/sppm
+EXECS = $(SRC)/run/sppm
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
-all:
-
-HIDDENall: $(SRC)
-	make CC=$(CC) -C $(SRC) -f Makefile.cbench
-	#$(MAKE) CC=$(CC) -C $(SRC)
+all: $(SRC)
+	make -C $(SRC) -f Makefile.cbench
 
 $(SRC) src: $(TAR)
 	[ ! -d $(SRC) ] && tar xf $(TAR)
 	ln -sf $(SRC) src
-	cd $(SRC); /bin/rm -f Makefile.cbench
+	cd $(SRC); mv iq.h b_iq.h
+	cd $(SRC); mv sync.h b_sync.h
 	cd $(SRC); ln -sf ../Makefile.cbench .
+	cd $(SRC); ln -sf ../iq.cbench.h ./iq.h
+	cd $(SRC); ln -sf ../sync.cbench.h ./sync.h
 	touch $(SRC)
 
 $(TAR) download:
@@ -28,7 +28,7 @@ $(TAR) download:
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
-	@echo make CC=$(CC) -C $(SRC) veryclean
+	make -C $(SRC) clean
 
 distclean:
 	/bin/rm -rf $(TAR) $(SRC) src
