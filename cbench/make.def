@@ -70,6 +70,7 @@ ifeq ($(COMPILER),intel)
   NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
   NOMAIN_FLAG = -nofor-main
   OPENMP_ENABLE = -openmp
+  DOUBLE_PRECISION = -real-size 64
 endif
 ifeq ($(COMPILER),intel32)
   FORT = ifort
@@ -80,6 +81,7 @@ ifeq ($(COMPILER),intel32)
   NOOPT_FLAGS = -O0
   NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
   OPENMP_ENABLE = -openmp
+  DOUBLE_PRECISION = -real-size 64
 endif
 # default gcc assumes gcc4 + gfortran
 ifeq ($(COMPILER),gcc)
@@ -99,6 +101,7 @@ ifeq ($(COMPILER),gcc)
   FMPI_LIB = /usr/lib/libg2c.so.0
   endif
   F_LIB = $(FMPI_LIB)
+  DOUBLE_PRECISION = -fdefault-real-8 -fdefault-double-8
 endif
 # for the gcc3 type systems w/o gcc4 capabilities
 ifeq ($(COMPILER),gcc3)
@@ -111,6 +114,7 @@ ifeq ($(COMPILER),gcc3)
   NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
   # no openmp support in gcc 3.X land
   OPENMP_ENABLE =
+  DOUBLE_PRECISION =
   # NPB uses the next two variables
   # FIXME: need to check this out on 32-bit systems..
 #  FMPI_LIB = -L/usr/lib64 -L/usr/lib -lg2c
@@ -125,6 +129,7 @@ ifeq ($(COMPILER),pgi)
   NOOPT_FLAGS = -O0
   NOUNROLL_FLAGS = -Mnounroll
   OPENMP_ENABLE = -mp
+  DOUBLE_PRECISION = -r8
 endif
 ifeq ($(COMPILER),pathscale)
   FORT = pathf90
@@ -135,6 +140,7 @@ ifeq ($(COMPILER),pathscale)
   NOOPT_FLAGS = -O0
   NOUNROLL_FLAGS = -LNO:full_unroll=0 -LNO:full_unroll_outer=0
   OPENMP_ENABLE = -openmp
+  DOUBLE_PRECISION =
 endif
 ifeq ($(COMPILER),tau-gcc)
   ifndef TAU_MAKEFILE
