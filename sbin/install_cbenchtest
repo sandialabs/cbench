@@ -136,6 +136,11 @@ eval "require 'install.pl'";
                         "openapps/sweep3d/input_files/" => "sweep3d/input_files/",
                 },
         },
+        'sppm' => {
+                'rsync' => {
+                        "openapps/sppm/inputdeck.cbench" => "sppm/",
+                },
+        },
 );
 
 # get the testing tree location

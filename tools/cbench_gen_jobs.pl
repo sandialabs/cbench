@@ -175,6 +175,10 @@ if (!defined $testdir) {
             'runsizes' => 'phdmesh_gen_runsizes',
             'innerloop' => 'phdmesh_gen_innerloop',
         },
+        'sppm' => {
+            'init' => 'sppm_gen_init',
+            'innerloop' => 'sppm_gen_innerloop',
+        },
 	},
 );
 
@@ -1036,12 +1040,12 @@ sub sweep3d_gen_init {
     %sweep3d_files = ();
 
     my $file;
-    debug_print(3,"DEBUG: entering sweep3d_gen_init()\n");
+    main::debug_print(3,"DEBUG: entering sweep3d_gen_init()\n");
 
     # cache the input file generation templates
     @sweep3d_templates = qw(150std long);
     for my $template (@sweep3d_templates) {
-        debug_print(3, "DEBUG: reading in $template input file template\n");
+        main::debug_print(3, "DEBUG: reading in $template input file template\n");
 
         open (INFILE,"<$bench_test\/$testset\/input_files\/sweep3d_$template") or die
             "ERROR:sweep3d_gen_init() Could not open $bench_test\/$testset\/input_files\/sweep3d_$template ($!)";
@@ -1057,18 +1061,18 @@ sub sweep3d_gen_init {
 
 sub sweep3d_gen_joblist {
 
-    debug_print(3, "DEBUG: entering sweep3d_gen_joblist\n");
+    main::debug_print(3, "DEBUG: entering sweep3d_gen_joblist\n");
 
     my @joblist = qw(150std long);
 
-    debug_print(3, "DEBUG: sweep3d_gen_joblist=".join(',',@joblist));
+    main::debug_print(3, "DEBUG: sweep3d_gen_joblist=".join(',',@joblist));
 
     return @joblist;
 }
 
 sub sweep3d_gen_innerloop {
     my $outbuf = shift;      # a *reference* to the actual $outbuf
-        my $numprocs = shift;
+    my $numprocs = shift;
     my $ppn = shift;
     my $numnodes = shift;
     my $runtype = shift;
@@ -1078,9 +1082,9 @@ sub sweep3d_gen_innerloop {
     my $ident = shift;
     my $job = shift;
 
-    debug_print(3,"DEBUG: entering custom_sweep3d_innerloop()\n");
-    debug_print(2,"DEBUG: sweep3d_gen_innerloop() populating files in: $testset_path\/$ident\/$jobname\n");
-    debug_print(3,"DEBUG: writing input file for $job with NP=$numprocs and PPN=$ppn\n");
+    main::debug_print(3,"DEBUG: entering custom_sweep3d_innerloop()\n");
+    main::debug_print(2,"DEBUG: sweep3d_gen_innerloop() populating files in: $testset_path\/$ident\/$jobname\n");
+    main::debug_print(3,"DEBUG: writing input file for $job with NP=$numprocs and PPN=$ppn\n");
 
     # substitute in required input deck information for this job size
     $databuf = $sweep3d_files{$job};
@@ -1180,6 +1184,54 @@ gears $px $py $pz
 	return 0;
 }
 
+sub sppm_gen_init {
+    my $testset = shift;
+
+    main::debug_print(3,"DEBUG: entering sppm_gen_init()\n");
+
+    open (INFILE,"<$bench_test\/$testset\/inputdeck.cbench") or die
+        "ERROR:sweep3d_gen_init() Could not open $bench_test\/$testset\/inputdeck.cbench ($!)";
+    undef $/;
+
+    # save input file for later use
+    $input_file = <INFILE>;
+
+    close(INFILE);
+
+    return 0;
+}
+
+sub sppm_gen_innerloop {
+	my $outbuf = shift;      # a *reference* to the actual $outbuf
+	my $numprocs = shift;
+	my $ppn = shift;
+	my $numnodes = shift;
+	my $runtype = uc shift;
+	my $walltime = shift;
+	my $testset = shift;
+	my $jobname = shift;
+	my $ident = shift;
+	my $job = shift;
+
+	main::debug_print(3,"DEBUG: entering sppm_gen_innerloop()\n");
+
+    # substitute in required input deck information for this job size
+    my $databuf = $input_file;
+    $databuf =~ s/NP_HERE/$numprocs/gs;
+    my $temp = calc_num_threads($numprocs, $ppn);
+    $databuf =~ s/NUM_THREADS_HERE/$temp/gs;
+
+    main::debug_print(3,"DEBUG: writing input file for $job with NP=$numprocs and PPN=$ppn\n");
+
+    # write out the generated input file
+    my $full_test_path = "$testset_path\/$ident\/$jobname\/inputdeck";
+    open (OUTFILE,">$full_test_path") or die
+        "Could not write $full_test_path ($!)";
+    print OUTFILE $databuf;
+    close(OUTFILE);
+
+    return 0;
+}
 
 ######################################################################
 ######################################################################
