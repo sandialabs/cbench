@@ -7,7 +7,7 @@ FLAGS = $(CFLAGS)
 FFLAGS += $(OPTFLAGS)
 MYSECOND=mysecond.o
 
-EXECS = stream-c stream-f stream2-f stream-big-c stream-mpi stream-big-f stream-mpi
+EXECS = stream-c stream-f stream2-f stream-big-c stream-mpi stream-big-f stream-mpi stream-big-10G-c
 
 ifeq ($(COMPILER),intel)
   EXECS += stream-intel-c stream-intel-f stream-intel2-c stream-intel2-f stream-intel-openmp-f stream-intel-openmp-c stream-intel2-openmp-f stream-intel2-openmp-c stream-mpi-openmp
@@ -50,6 +50,9 @@ stream-big-c: stream_big.c
 
 stream-big-f: stream_big.f mysecond.o
 	$(F90) $(FFLAGS) -o $@ $^ -lm
+
+stream-big-10G-c: stream_10G.c
+	$(PLAINCC) $(FLAGS) -o $@ $^ -lm
 
 # stream binary optimized for GCC compilers
 stream-gcc-c: stream_big.c
