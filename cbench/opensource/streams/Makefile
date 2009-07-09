@@ -10,7 +10,7 @@ MYSECOND=mysecond.o
 EXECS = stream-c stream-f stream2-f stream-big-c stream-mpi stream-big-f stream-mpi stream-big-10G-c
 
 ifeq ($(COMPILER),intel)
-  EXECS += stream-intel-c stream-intel-f stream-intel2-c stream-intel2-f stream-intel-openmp-f stream-intel-openmp-c stream-intel2-openmp-f stream-intel2-openmp-c stream-mpi-openmp
+  EXECS += stream-intel-c stream-intel-f stream-intel2-c stream-intel2-f stream-intel3-f stream-intel-openmp-f stream-intel-openmp-c stream-intel2-openmp-f stream-intel2-openmp-c stream-mpi-openmp
 endif
 ifeq ($(COMPILER),gcc)
   EXECS += stream-gcc-c stream-gcc2-c stream-gcc3-c stream-gcc4-c stream-gcc5-c stream-gcc6-c stream-gcc7-c
@@ -52,7 +52,7 @@ stream-big-f: stream_big.f mysecond.o
 	$(F90) $(FFLAGS) -o $@ $^ -lm
 
 stream-big-10G-c: stream_10G.c
-	$(PLAINCC) $(FLAGS) -o $@ $^ -lm
+	$(PLAINCC) $(FLAGS) -mcmodel=medium -o $@ $^ -lm
 
 # stream binary optimized for GCC compilers
 stream-gcc-c: stream_big.c
@@ -80,14 +80,16 @@ stream-intel-f: stream_big.f mysecond.o
 	$(PLAINF77) $(COMMON_FLAGS) -O3 -axP -ip -fno-alias -o $@ $^ -lm
 stream-intel2-f: stream_big.f mysecond.o
 	$(PLAINF77) $(COMMON_FLAGS) -O3 -axW -ip -fno-alias -o $@ $^ -lm
+stream-intel3-f: stream_big.f mysecond.o
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -axsse4.2 -ip -fno-alias -o $@ $^ -lm
 stream-intel-openmp-f: stream.f mysecond.o
-	$(PLAINF77) $(COMMON_FLAGS) -O3 -ip -openmp -o $@ $^ -lm
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -ip -openmp -fno-alias -o $@ $^ -lm
 stream-intel2-openmp-f: stream_big.f mysecond.o
-	$(PLAINF77) $(COMMON_FLAGS) -O3 -ip -openmp -o $@ $^ -lm
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -ip -openmp -fno-alias -o $@ $^ -lm
 stream-intel-openmp-c: stream.c
-	$(PLAINCC) $(COMMON_FLAGS) -O3 -ip -openmp -o $@ $^ -lm
+	$(PLAINCC) $(COMMON_FLAGS) -O3 -ip -openmp -fno-alias -o $@ $^ -lm
 stream-intel2-openmp-c: stream_big.c
-	$(PLAINCC) $(COMMON_FLAGS) -O3 -ip -openmp -o $@ $^ -lm
+	$(PLAINCC) $(COMMON_FLAGS) -O3 -ip -openmp -fno-alias -o $@ $^ -lm
 
 # stream binaries optimized for PGI compilers
 stream-pgi-c: stream_big.c
