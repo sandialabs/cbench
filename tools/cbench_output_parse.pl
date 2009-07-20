@@ -988,17 +988,22 @@ sub parse_output_file {
 				$file = $f;
 			}
 
-        	# open and slurp the output file
+        	# open and slurp the output file unless the job is currently RUNNING
 			my @txtbuf;
-			open_and_slurp($file,\@txtbuf) or do {
-				# FIXME: this probably should be printed for non-STDERR files?
-				debug_print(1,"parse_output_file() Could not open $file for read ($!)\n");
+			if (exists $main::slurm_jobdata{$JOBID} and $main::slurm_jobdata{$JOBID} eq 'running') {
+				$txtbuf[0] = "hi";
+			}
+			else {
+				open_and_slurp($file,\@txtbuf) or do {
+					# FIXME: this probably should be printed for non-STDERR files?
+					debug_print(1,"parse_output_file() Could not open $file for read ($!)\n");
 
-				# there was a problem opening the file for some reason, in this case
-				# open_and_slurp() will return a valid array buffer that is empty
-				# and we'll let this fall through to the code below which saves the
-				# valid buffer reference to a trivially empty buffer
-			};
+					# there was a problem opening the file for some reason, in this case
+					# open_and_slurp() will return a valid array buffer that is empty
+					# and we'll let this fall through to the code below which saves the
+					# valid buffer reference to a trivially empty buffer
+				};
+			}
 
 			# save references to this buffer
 			push @output_bufrefs, \@txtbuf;
@@ -1041,6 +1046,7 @@ sub parse_output_file {
 				# job is still running, update is $status appropriately
 				if (exists $main::slurm_jobdata{$JOBID} and $main::slurm_jobdata{$JOBID} eq 'running') {
 					$status = 'RUNNING';
+					$filedata->{'STATUS'} = 'RUNNING';
 				}
 
 				# update the fine grained status data
@@ -1267,6 +1273,7 @@ sub parse_output_file {
 						# 'stress' benchmark since it can generate a TON of
 						# useless output
 						($l =~ /\.\.\.\.\.\.\.\.\+$/) and next;
+						($l =~ /\+\+\+\+\+.*\+\+\+\+$/) and next;
 
 						if ((@capture) = $l =~ /$filter/) {
 							# currently, we only print out any information
@@ -1311,8 +1318,12 @@ sub parse_output_file {
 		(!$jobpassed and ($diagnose or $customparse)) and print "-------------------------------------------------------------\n";
 
 		# if job failure node diagnosis is enabled, we need to do more work
-		if (defined $nodediag and ($filedata->{'STATUS'} ne 'PASSED')) {
-        	debug_print(2,"DEBUG:parse_output_file() Starting nodediag work...\n");
+		if (defined $nodediag and 
+			($filedata->{'STATUS'} ne 'PASSED' and 
+			 $filedata->{'STATUS'} ne 'NOTICE' and 
+			 $filedata->{'STATUS'} ne 'RUNNING')) {
+
+        	debug_print(2,"DEBUG:parse_output_file() Starting nodediag work...(status=$filedata->{'STATUS'})\n");
 
 			my $nodelistdata;
 
@@ -1938,11 +1949,11 @@ sub dump_nodediag_stats {
 	printf "Median number of failed jobs on any node = %0.1f\n",
 		$statvar->median();
 
-	my $numbins = 5;
+	my $numbins = 10;
 	print "\nFailure count frequency distribution ($numbins bins):\n";
 	my %f = $statvar->frequency_distribution($numbins);
 	for (sort {$b <=> $a} keys %f) {
-	  print "  $_ failures: count = $f{$_}\n";
+	  printf "  %0.2f failures: count = %0.1f\n",$_,$f{$_};
 	}
 
 	# print out nodes that are the worst offenders
@@ -1951,7 +1962,6 @@ sub dump_nodediag_stats {
 	foreach my $k (keys %{$hash}) {
 		($hash->{$k} == $maxerrs) and print "  node $k: $hash->{$k} failures\n";
 	}
-
 }
 
 
@@ -1984,6 +1994,7 @@ sub open_and_slurp {
 			# 'stress' benchmark since it can generate a TON of
 			# useless output
 			($_ =~ /\.\.\.\.\.\.\.\.\+$/) and next;
+			($_ =~ /\+\+\+\+\+.*\+\+\+\+$/) and next;
 			$$txtbuf[$i++] = $_;
 		};
 		close(FILE);
