@@ -23,7 +23,7 @@
 
 include make.def
 
-HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride
+HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride stab
 
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck ior_bench iozone bonnie++ rotate HPLlinpack \
