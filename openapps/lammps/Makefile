@@ -40,6 +40,7 @@ clean:
 	-make -C $(SRC)/lib/poems -f Makefile.cbench clean
 	-make -C $(SRC)/lib/meam -f Makefile.cbench clean
 	-make -C $(SRC)/src clean-all
+	-/bin/rm -f $(EXECS)
 
 distclean:
 	/bin/rm -rf $(TAR) $(SRC) src
