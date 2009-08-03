@@ -23,3 +23,21 @@ cbench_echo "Cbench OMP_NUM_THREADS: $OMP_NUM_THREADS"
 
 # whitepace
 cbench_echo ""
+
+# dump out some information on the environment the job is running in for
+# posterity
+cbench_echo "======= Job Environment Info ========"
+# check to see if Modules is being used and if so, list the loaded modules
+set | egrep -q '^module.*()$'
+if [ $? -eq 0 ]; then
+	tmp=`module list 2>&1`
+	cbench_echo "$tmp"
+cbench_echo ""
+fi
+# dump some key environmental variables
+env | egrep 'LD_LIBRARY_PATH|^PATH|MODULE'
+
+cbench_echo "====================================="
+cbench_echo ""
+
+
