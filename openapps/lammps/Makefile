@@ -1,7 +1,5 @@
 include $(CBENCHOME)/make.def
 
-export CFLAGS
-
 SRC=lammps
 TAR=$(SRC).tar.gz
 URL=http://lammps.sandia.gov/tars/$(TAR)
