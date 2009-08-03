@@ -32,10 +32,15 @@ set | egrep -q '^module.*()$'
 if [ $? -eq 0 ]; then
 	tmp=`module list 2>&1`
 	cbench_echo "$tmp"
-cbench_echo ""
+	cbench_echo ""
 fi
 # dump some key environmental variables
-env | egrep 'LD_LIBRARY_PATH|^PATH|MODULE'
+tmp=`env | egrep '^PATH'`
+cbench_echo "$tmp"
+tmp=`env | egrep 'LD_LIBRARY_PATH'`
+cbench_echo "$tmp"
+tmp=`env | egrep 'MODULE'`
+cbench_echo "$tmp"
 
 cbench_echo "====================================="
 cbench_echo ""
