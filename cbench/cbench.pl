@@ -978,6 +978,9 @@ sub start_jobs {
 		chomp $i;
 		$i =~ s/\.$batch_extension|\.sh//;
 
+		# check the format of the job name
+		($i !~ /^(\S+)\-(\S+)ppn\-(\d+)$/) and next;
+
 		# process the filename based on regex in $match
 		my $matchstr = "$match";
 		next unless ($i =~ /$matchstr/);
