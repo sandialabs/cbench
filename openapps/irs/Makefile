@@ -37,6 +37,7 @@ $(TAR) download:
 clean:
 	export PATH=$(IRS)/src/scripts:$(PATH); \
 	  make CC=$(CC) CFLAGS="$(CFLAGS) $(OPENMP_ENABLE)" COMMON_FLAGS="$(COMMON_FLAGS) $(OPENMP_ENABLE)" -C build.space/build clean
+	/bin/rm $(EXECS)
 
 distclean:
 	/bin/rm -rf $(TAR) $(SRC) src build.space
