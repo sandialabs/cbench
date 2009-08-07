@@ -53,7 +53,7 @@ $(TAR):
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
-	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) arch=cbench clean
+	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean_arch_all arch=cbench
 	/bin/rm -rf $(HPL2)/src/lib/* $(HPL2)/src/bin/*
 	/bin/rm -f xerbla.o
 
