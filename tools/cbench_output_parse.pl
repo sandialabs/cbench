@@ -871,6 +871,10 @@ sub parse_output_file {
 				$jobname = $tmpjob;
 			}
 		}
+		else {
+			warning_print("parse_output_file() $fileid is missing embedded Cbench info..skipping");
+			next;
+		}
 
 		# check for combobatch output files which are not parsed directly
 		if ($embedded_info_buf =~ /Cbench benchmark:\s+combobatch/) {
