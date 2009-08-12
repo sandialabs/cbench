@@ -74,6 +74,7 @@ int main( int argc, char *argv[] )
     const char *test_type_msg = 0;
     int      BeVerbose = 0;
     int      Quiet = 0;
+    int      pluscount = 0;
     int      loopcount;
     double   bytes_so_far;
 
@@ -187,12 +188,18 @@ int main( int argc, char *argv[] )
             }
 	    if (__MYPROCID == 0) {
 		if (Quiet) {
-		    if (Quiet++ > 70) {
-			fputs( "+\n", fp );
+                    //if (Quiet++ > 70) {
+		    if (Quiet++ > 20000) {
+			fputs( "+", fp );
 			Quiet=1;
+                        // added to help control the + output nonsense - rkb
+                        if (pluscount++ > 79) {
+                            fputs( "\n", fp );
+                            pluscount=0;
+                        }
 		    }
 		    else {
-			fputs( "+", fp );
+			//fputs( "+", fp );
 		    }
 		    BigFlush( fp, 1 );
 		}
@@ -225,7 +232,7 @@ int main( int argc, char *argv[] )
 	    p = timebuf;
 	    while (*str && *str != '\n') *p++ = *str++;
 	    *p = 0;
-	    fprintf( stdout, "stress runs to %s (%d) [%f MB/s aggregate]\n", 
+	    fprintf( stdout, "\nstress runs to %s (%d) [%f MB/s aggregate]\n", 
 		     timebuf, loopcount, rate );
 	  
 	    BigFlush( stdout, 1 );
