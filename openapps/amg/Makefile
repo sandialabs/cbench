@@ -13,7 +13,7 @@ all: $(EXECS)
 
 $(SRC)/test/amg2006: $(SRC)
 	make CC=$(CC) -C $(SRC) veryclean
-	$(MAKE) CC=$(CC) -C $(SRC)
+	$(MAKE) CC=$(CC) -C $(SRC) -j$(MAKE_JOBS)
 
 $(SRC) src: $(TAR)
 	-[ ! -d $(SRC) ] && tar zxf $(TAR)

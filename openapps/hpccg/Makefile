@@ -12,7 +12,7 @@ INSTALLTARGETS = $(EXECS)
 
 all normal: $(SRC)
 	cd $(SRC) && ln -sf ../Makefile.cbench Makefile.cbench
-	$(MAKE) CXX=$(CXX) LINKER=$(CXX) -C $(SRC) -f Makefile.cbench
+	$(MAKE) CXX=$(CXX) LINKER=$(CXX) -C $(SRC) -f Makefile.cbench -j$(MAKE_JOBS)
 
 $(SRC): $(TAR)
 	-[ ! -d $(SRC) ] && tar zxf $(TAR)

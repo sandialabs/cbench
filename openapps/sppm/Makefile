@@ -11,7 +11,7 @@ INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
 all: $(SRC)
-	make -C $(SRC) -f Makefile.cbench
+	make -C $(SRC) -f Makefile.cbench -j$(MAKE_JOBS)
 
 $(SRC) src: $(TAR)
 	[ ! -d $(SRC) ] && tar xf $(TAR)

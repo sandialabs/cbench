@@ -13,11 +13,12 @@ INSTALLTARGETS = $(EXECS)
 all: $(EXECS)
 
 $(EXECS): $(SRC)
-	$(MAKE) -C $(SRC)/lib/poems -f Makefile.cbench
+	$(MAKE) -C $(SRC)/lib/poems -f Makefile.cbench -j$(MAKE_JOBS)
 	make -C $(SRC)/lib/meam -f Makefile.cbench
-	make -C $(SRC)/lib/reax -f Makefile.cbench
+	make -C $(SRC)/lib/reax -f Makefile.cbench -j$(MAKE_JOBS)
 	$(MAKE) -C $(SRC)/src yes-all
-	$(MAKE) -C $(SRC)/src cbench
+	$(MAKE) -C $(SRC)/src no-gpu
+	$(MAKE) -C $(SRC)/src cbench -j$(MAKE_JOBS)
 
 $(SRC): $(TAR)
 	-[ ! -d $(SRC) ] && tar zxf $(TAR)

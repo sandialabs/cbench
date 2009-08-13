@@ -11,7 +11,7 @@ INSTALLTARGETS = $(EXECS)
 
 
 all: $(SRC) src/Makefile
-	make -C $(SRC)
+	make -C $(SRC) -j$(MAKE_JOBS)
 
 src/Makefile:
 	cd src && ./configure --with-mpi F77=$(F90) CC=$(CC) CPP="cpp" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)"

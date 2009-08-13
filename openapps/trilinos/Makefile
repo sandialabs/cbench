@@ -28,8 +28,8 @@ export LAPACKLIB
 all: $(SRC)/EPETRA_MPI_OPT/$(BENCH_SRC)/$(BENCH_EXEC_RENAMED)
 
 $(SRC)/EPETRA_MPI_OPT/$(BENCH_SRC)/$(BENCH_EXEC_RENAMED): $(SRC)
-	cd $(SRC)/EPETRA_MPI_OPT && ../../configure_wrapper && $(MAKE) && $(MAKE) install
-	cd $(SRC)/EPETRA_MPI_OPT/$(BENCH_SRC) && $(MAKE) && mv $(BENCH_EXEC) $(BENCH_EXEC_RENAMED)
+	cd $(SRC)/EPETRA_MPI_OPT && ../../configure_wrapper && $(MAKE) && $(MAKE) install -j$(MAKE_JOBS)
+	cd $(SRC)/EPETRA_MPI_OPT/$(BENCH_SRC) && $(MAKE) -j$(MAKE_JOBS) && mv $(BENCH_EXEC) $(BENCH_EXEC_RENAMED)
 
 $(SRC): $(TAR) $(BENCH_TAR)
 	-[ ! -d $(SRC) ] && tar zxf $(TAR)
