@@ -59,6 +59,13 @@ F90 = $(BUILD_PATH)mpif90
 FC = $(F90)
 INCLUDES = -I$(MPIHOME)/include
 
+# allow user to specify the number of make jobs (commands) to run simultaneously
+ifndef JOBS
+    MAKE_JOBS=1
+else
+    MAKE_JOBS=$(JOBS)
+endif
+
 ###### Compiler specific general configs
 ifeq ($(COMPILER),intel)
   FORT = ifort
