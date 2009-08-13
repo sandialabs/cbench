@@ -1,3 +1,4 @@
+include $(CBENCHOME)/make.def
 ###############################################################################
 #    Copyright (2009) Sandia Corporation.  Under the terms of Contract
 #    DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
@@ -42,5 +43,4 @@ binstatus:
 
 .PHONY: $(DIRLIST)
 $(DIRLIST):
-	$(MAKE) -C $@ $(PASSTARGET)
-
+	-$(MAKE) -C $@ $(PASSTARGET)
