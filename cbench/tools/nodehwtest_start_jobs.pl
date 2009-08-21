@@ -69,7 +69,11 @@ if (defined $help) {
 (!defined $ident) and $ident = $cluster_name . "1";
 
 if (!defined $remote and !defined $batch and !defined $nodebatch) {
-    die "--batch or --nodebatch or --remote parameter required\n";
+    die "ERROR: --batch or --nodebatch or --remote parameter required\n";
+}
+if ((defined $nodebatch and ! defined $nodelist) or
+	(!defined $nodebatch and defined $nodelist)) { 
+    die "ERROR: --nodebatch and --nodelist must be used together\n";
 }
 
 my $pwd = `pwd`;
@@ -519,6 +523,7 @@ sub usage {
 		  "                        by the Pdsh style compressed node list. For\n".
 		  "                        example:\n".
 		  "                           --nodelist bn[1-20,25-50]\n".
+		  "                        This must be used with the --nodebatch parameter.\n".
 		  "   --nodefile <file>    Run the node level tests on the nodes specified\n".
 		  "                        in the file provided.  One hostname per line\n". 
 		  "   --ignorenodes <spec> Ignore/exclude nodes specified by the Pdsh style\n".
