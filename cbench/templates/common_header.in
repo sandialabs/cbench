@@ -30,17 +30,17 @@ cbench_echo "======= Job Environment Info ========"
 # check to see if Modules is being used and if so, list the loaded modules
 set | egrep -q '^module.*()$'
 if [ $? -eq 0 ]; then
-	tmp=`module list 2>&1`
-	cbench_echo "$tmp"
+	module list 2>&1 | while read tmp
+	do
+		cbench_echo "$tmp"
+	done
 	cbench_echo ""
 fi
 # dump some key environmental variables
-tmp=`env | egrep '^PATH'`
-cbench_echo "$tmp"
-tmp=`env | egrep 'LD_LIBRARY_PATH'`
-cbench_echo "$tmp"
-tmp=`env | egrep 'MODULE'`
-cbench_echo "$tmp"
+env | egrep '^PATH|LD_LIBRARY_PATH|MODULE|OMPI_|^MPI' | sort | while read tmp
+do
+	cbench_echo "$tmp"
+done
 
 cbench_echo "====================================="
 cbench_echo ""
