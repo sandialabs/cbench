@@ -34,4 +34,4 @@ timestep        2.0
 # create restart files per process every 1000 timesteps like restart.RANKNUM.STEPNUM
 restart 1000 restart.%
 
-run		10000
+run		20000
