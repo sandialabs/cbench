@@ -674,7 +674,7 @@ diff -urN phdMesh.orig/tests/gears/test_gears_big.cpp phdMesh/tests/gears/test_g
 +  dt_proximity = 0 ;
 +  dt_ghosting = 0 ;
 +
-+  const unsigned nsteps = 1000 ;
++  const unsigned nsteps = 50000 ;
 +
 +  {
 +    for ( unsigned i = 0 ; i < nsteps ; ++i ) {
