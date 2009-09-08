@@ -22,6 +22,11 @@ CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/mpiGraph"
 TEE_FILE="mpiGraph.out"
 cbench_run_cmd $CMD
 
+# some whitespace in the output
+cbench_echo ""
+cbench_echo ""
+cbench_echo ""
+
 # Crunch the output into the nice html files
 # We do NOT want to tee the output in this case.
 unset TEE_FILE
