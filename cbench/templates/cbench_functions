@@ -10,46 +10,75 @@ cbench_run_cmd()
 {
 	local cmd=$@
 
+	# if $STDIN_FILE is defined, the job script wants the file
+	# pointed to by $STDIN_FILE to be used as STDIN to the command line
+
+	# if $TEE_FILE is defined, the job script wants the output of the
+	# command line to be 'teed' to another file in addition to the normal
+	# piping/teeing we do behind the scenes
+
+
 	# add stdin file to command line if required
 	if [ -n "$STDIN_FILE" ] ; then
 		# echo out the command-line we'll exec for posterity
 		cbench_echo "Cbench joblaunch cmd line: $cmd < $STDIN_FILE"
 
 		# the simple batch mode case, we don't worry about catching any output
-		if [ "$CBENCH_RUN_TYPE" == "BATCH" ]; then
+		# unless TEE_FILE is defined
+		if [ "$CBENCH_RUN_TYPE" == "BATCH" -a -z "$TEE_FILE" ]; then
 		    $cmd < $STDIN_FILE
+			return
+		elif [ "$CBENCH_RUN_TYPE" == "BATCH" -a -n "$TEE_FILE" ]; then
+		    $cmd < $STDIN_FILE | tee $TEE_FILE
 			return
 		fi
 
 		# the interactive mode case with echoing of the output requested
-		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a "$CBENCH_ECHO_OUTPUT" == "YES" ]; then
+		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a "$CBENCH_ECHO_OUTPUT" == "YES" -a -z "$TEE_FILE" ]; then
 		    $cmd < $STDIN_FILE 2>&1 | tee -a $STDOUT_FILE 
+			return
+		elif [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a "$CBENCH_ECHO_OUTPUT" == "YES" -a -n "$TEE_FILE" ]; then
+		    $cmd < $STDIN_FILE 2>&1 | tee $TEE_FILE | tee -a $STDOUT_FILE 
 			return
 		fi
 
 		# the simple interactive mode case with just catching the output to file
-		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a -z "$CBENCH_ECHO_OUTPUT" ]; then
+		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a -z "$CBENCH_ECHO_OUTPUT" -a -z "$TEE_FILE"  ]; then
 		    $cmd < $STDIN_FILE >> $STDOUT_FILE 2>&1
+			return
+		elif [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a -z "$CBENCH_ECHO_OUTPUT" -a -n "$TEE_FILE" ]; then
+		    $cmd < $STDIN_FILE 2>&1 | tee $TEE_FILE >> $STDOUT_FILE
+			return
 		fi
 	else
 		# echo out the command-line we'll exec for posterity
 		cbench_echo "Cbench joblaunch cmd line: $cmd"
 
 		# the simple batch mode case, we don't worry about catching any output
-		if [ "$CBENCH_RUN_TYPE" == "BATCH" ]; then
+		if [ "$CBENCH_RUN_TYPE" == "BATCH" -a -z "$TEE_FILE" ]; then
 		    $cmd
+			return
+		elif [ "$CBENCH_RUN_TYPE" == "BATCH" -a -n "$TEE_FILE" ]; then
+		    $cmd | tee $TEE_FILE
 			return
 		fi
 
 		# the interactive mode case with echoing of the output requested
-		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a "$CBENCH_ECHO_OUTPUT" == "YES" ]; then
+		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a "$CBENCH_ECHO_OUTPUT" == "YES" -a -z "$TEE_FILE" ]; then
 		    $cmd 2>&1 | tee -a $STDOUT_FILE 
+			return
+		elif [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a "$CBENCH_ECHO_OUTPUT" == "YES" -a -n "$TEE_FILE" ]; then
+		    $cmd 2>&1 | tee $TEE_FILE | tee -a $STDOUT_FILE 
 			return
 		fi
 
 		# the simple interactive mode case with just catching the output to file
-		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a -z "$CBENCH_ECHO_OUTPUT" ]; then
+		if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a -z "$CBENCH_ECHO_OUTPUT" -a -z "$TEE_FILE"  ]; then
 		    $cmd >> $STDOUT_FILE 2>&1
+			return
+		elif [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a -z "$CBENCH_ECHO_OUTPUT" -a -n "$TEE_FILE"  ]; then
+		    $cmd 2>&1 | tee $TEE_FILE >> $STDOUT_FILE
+			return
 		fi
 	fi
 }
