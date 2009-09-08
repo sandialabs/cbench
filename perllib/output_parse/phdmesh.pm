@@ -77,7 +77,6 @@ sub parse {
 			($l =~ /CBENCH NOTICE/) and $status = $l;
 			($l =~ /GEARS meshing/) and $status = "STARTED";
 
-			# sqmr doesn't have a good indication of being done...
 			($l =~ /N_GEARS Performance results/) and $status = 'COMPLETED';
 
 			if ($l =~ /Search\/step\s+=\s+(\S+)\s+sec/) {
