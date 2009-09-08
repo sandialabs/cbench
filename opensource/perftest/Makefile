@@ -33,7 +33,7 @@ clean:
 	make -C $(SUBDIR) clean
 
 distclean: clean
-	make -C $(SUBDIR) distclean
+	-make -C $(SUBDIR) distclean
 	/bin/rm -f .config
 
 install uninstall:
