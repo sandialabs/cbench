@@ -68,6 +68,7 @@ sub parse {
 
 	my $status = 'NOTSTARTED';
 	my $solver = 'foo';
+	my %solver_ok = ('solver3' => 0,'solver4' => 0);
 
     foreach (@bufrefs) {
 		# process all the lines in the buffer
@@ -77,17 +78,30 @@ sub parse {
 		foreach my $l (@{$txtbuf}) {
 			($l =~ /CBENCH NOTICE/) and $status = $l;
 			($l =~ /===== solver (\d) ===/) and $solver = $1;
-			($l =~ /BoomerAMG SETUP/) and $status = "SOLVER$solver"."STARTED";
-			($l =~ /Final Relative Residual/) and
-				$status = "SOLVER$solver"."DONE";
+			if ($l =~ /SStruct Interface/) {
+				$status = "SOLVER$solver"."STARTED";
+				$solver_ok{"solver$solver"} = 1;
+			}
 
 			if ($l =~ /System Size \* Iterations \/ Solve Phase Time:\s+(\S+)/) {
 				$data{"solver$solver\_fom"} = $1;
+				$solver_ok{"solver$solver"} = 2;
+				$status = "SOLVER$solver"."DONE";
 			}
 		}
 	}
 
-	if ($status =~ /SOLVER4DONE/) {
+	if ($solver_ok{"solver3"} == 1 and $solver_ok{"solver4"} != 0) {
+		$status = "SOLVER3STARTED";
+	}
+	elsif ($solver_ok{"solver3"} == 2 or $solver_ok{"solver4"} == 1) {
+		$status = "SOLVER4STARTED";
+	}
+	elsif ($solver_ok{"solver3"} != 2 or $solver_ok{"solver4"} != 2) {
+		$status = "PARTIALFAILURE";
+	}
+
+	if ($solver_ok{"solver3"} == 2 and $solver_ok{"solver4"} == 2) {
 		$data{'STATUS'} = "PASSED";
 	}
 	elsif ($status =~ /CBENCH NOTICE/) {
