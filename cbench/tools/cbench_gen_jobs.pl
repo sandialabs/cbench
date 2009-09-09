@@ -215,7 +215,7 @@ build_job_templates($testset,\%templates);
 delete $templates{combobatch};
 
 # this hash will hold any job template specific walltime requirements
-my %specialwalltimes = ();
+our %specialwalltimes = ();
 
 # process any Cbench directives inside the job templates
 foreach my $k (keys %templates) {
