@@ -46,7 +46,6 @@ use File::stat;
 use Date::Manip;
 use Storable;
 use Term::ANSIColor qw(:constants color);
-$Term::ANSIColor::AUTORESET = 1;
 
 my $num_data_columns = 2;
 our $testset = find_testset_identity($0);
