@@ -1,36 +1,39 @@
 include ../../make.def
 
-SUBDIRS = src/C
+SRC=IOR-2.10.2
+TAR=$(SRC).tgz
+URL="http://downloads.sourceforge.net/project/ior-sio/IOR%20latest/$(SRC)/$(SRC).tgz"
+
 
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(shell ls IOR.*)
 
-default all: IOR.posix IOR.mpiio
-lustre: IOR.posix-lustre IOR.mpiio-lustre
+all: $(SRC) IOR.posix IOR.mpiio
+
 
 IOR.posix:
-	cd src/C; $(MAKE) CC.Linux=$(CC) LDFLAGS.Linux=-L$(MPICH)/lib posix
-	/bin/cp -f src/C/IOR $@
-
-IOR.posix-lustre:
-	cd src/C; $(MAKE) CC.Linux=$(CC) LDFLAGS.Linux=-L$(MPICH)/lib clean
-	cd src/C; $(MAKE) CC.Linux=$(CC) LDFLAGS.Linux=-L$(MPICH)/lib CCFLAGS.Linux='-g -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_USE_LUSTRE' posix 
-	/bin/cp -f src/C/IOR $@
+	$(MAKE) -C src CC.Linux=$(CC) posix
+	/bin/cp -f src/IOR $@
 
 IOR.mpiio:
-	cd src/C; $(MAKE) CC.Linux=$(CC) LDFLAGS.Linux=-L$(MPICH)/lib mpiio
-	/bin/cp -f src/C/IOR $@
+	$(MAKE) -C src CC.Linux=$(CC) mpiio
+	/bin/cp -f src/IOR $@
 
-IOR.mpiio-lustre:
-	cd src/C; $(MAKE) CC.Linux=$(CC) LDFLAGS.Linux=-L$(MPICH)/lib clean
-	cd src/C; $(MAKE) CC.Linux=$(CC) LDFLAGS.Linux=-L$(MPICH)/lib CCFLAGS.Linux='-g -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_USE_LUSTRE' mpiio 
-	/bin/cp -f src/C/IOR $@
+$(SRC): $(TAR)
+	[ ! -d $(SRC) ] && tar zxf $(TAR)
+	touch $(SRC)
+	ln -s $(SRC)/src/C src
+
+$(TAR) download:
+	$(call download-url,$(URL))
+	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
-	cd src/C; $(MAKE) CC.Linux=$(CC) LDFLAGS.Linux=-L$(MPICH)/lib $@
+	-[ -d $(SRC)/src/C ] && $(MAKE) -C src CC.Linux=$(CC) $@
 	/bin/rm -f IOR.*
 
 distclean: clean
+	/bin/rm -rf $(TAR) $(SRC) src
 
 install uninstall:
 	$(do-$@)
