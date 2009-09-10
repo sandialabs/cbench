@@ -49,7 +49,6 @@ use Getopt::Long;
 use Statistics::Descriptive;
 use Data::Dumper;
 use Term::ANSIColor qw(color :constants);
-$Term::ANSIColor::AUTORESET = 1;
 
 GetOptions(
 	'quiet' => \$quiet,
