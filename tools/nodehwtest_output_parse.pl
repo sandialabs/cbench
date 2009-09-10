@@ -135,6 +135,9 @@ my %statvars = ();
 # from parsed data
 my %target = ();
 
+# string of tests that fall into the "pass/fail" category
+my $passfail = '(streams_failed)|(fpck_fail)|(hpcc_fail)|(memtester_fail)|(memtester_incomplete)|(nodeperf_error)|(npb_error)|(stress_disk_fail)|(stress_cpu_fail)|(ctcs_memtst_fail)|(ctcs_memtst_incomplete)';
+
 # if we aren't running in a characterize mode of operation, then 
 # attemp to load target values from the target values file
 if (!defined $characterize) {
@@ -187,7 +190,7 @@ if (!defined $quiet) {
 
 my $start = time;
 
-# load all theh hw_test modules, we'll need them for parsing
+# load all the hw_test modules, we'll need them for parsing
 # chunks of the outputs
 my %test_modules;
 load_hwtest_modules(\%test_modules,*STDOUT);
@@ -209,7 +212,7 @@ if (defined $characterize) {
 	# that was parsed
 	for $k (keys %statvars) {
 		$target{$k}{'mean'} = $statvars{$k}->mean();
-		$target{$k}{'min'} = $statvars{$k}->min();
+               $target{$k}{'min'} = $statvars{$k}->min();
 		$target{$k}{'max'} = $statvars{$k}->max();
 		$target{$k}{'stddev'} = $statvars{$k}->standard_deviation();
 		$target{$k}{'count'} = $statvars{$k}->count();
@@ -381,10 +384,18 @@ if (defined $dplot) {
 	open (PLOT, ">dplot-in.dat");
 	for $node (sort {$a cmp $b} keys %nodehash) {
 		for $k (sort {$a cmp $b} keys %{$nodehashref->{$node}}) {
-			($k =~ /maxrunid|iterations/) and next;
-			($dplotparams[0] !~ /$k/) and next;
+                    ($k =~ /maxrunid|iterations/) and next;
+                    ($dplotparams[0] !~ /$k/) and next;
 			for $dat (@{$nodehashref->{$node}->{$k}}) {
-				print PLOT "$dat\t$k\-$node\n";
+
+                            # prevent plot of bogus "0" value by dplot
+                            if ($dat eq 0.0 and $k !~ /$passfail/) {
+                                debug_print(2,"DEBUG: prevented dplot of datapoint "
+                                        . $dat . " for $node in $k\n");
+                            }
+                            else {
+                                print PLOT "$dat\t$k\-$node\n";
+                            }
 			}
 		}
 	}
@@ -693,7 +704,16 @@ sub parse_buf {
 			if (! exists $statvars{$k}) {
 				$statvars{$k} = Statistics::Descriptive::Full->new();
 			}
-			$statvars{$k}->add_data($data->{$k});
+
+                        # check for bogus data values of 0.0000 (ignore such values when they
+                        # make sense for certain tests)
+                        if ($data->{$k} eq 0.0000 and $k !~ /$passfail/) {
+                            debug_print(2,"DEBUG: prevented storage of datapoint " 
+                            . $data->{$k} . " for $node in $k\n");
+                        }
+                        else {
+                            $statvars{$k}->add_data($data->{$k});
+                        }
 		}
 		(defined $DEBUG and $DEBUG > 2) and print
 			"DEBUG:parse_buf() $k => $data->{$k}\n";
