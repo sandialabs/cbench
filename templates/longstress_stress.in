@@ -4,6 +4,10 @@
 # NOTE: bash syntax is used here
 #
 # Cbench job binary: CBENCHTEST_BIN_HERE/stress
+# 
+# tell Cbench gen_jobs structure to set the batch walltime
+# for longstress jobs to 8.5 hours
+# Cbench_walltime: 08:30:00
 
 cbench_check_for_bin CBENCHTEST_BIN_HERE/stress
 

@@ -10,6 +10,11 @@ cbench_check_for_bin CBENCHTEST_BIN_HERE/mpiGraph
 # use cbench_runin_tempdir() to run ourselves in a unique isolated directory
 cbench_runin_tempdir
 
+# parameters for mpiGraph
+MESSAGE_SIZE=$((4*1024*1024))
+TIMES=1000
+WINDOW=1
+
 # Setup command line to run mpiGraph. TEE_FILE will tell Cbench to
 # Do the equivalent of
 #    $CMD | tee $TEE_FILE
@@ -18,7 +23,7 @@ cbench_runin_tempdir
 # has to pipe and tee stdout/stderr behind the scenes depending on 
 # the execution environment, the "| tee $TEE_FILE" cannot be appended
 # directly to the $CMD variable which has the command line to execute.
-CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/mpiGraph"
+CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/mpiGraph $MESSAGE_SIZE $TIMES $WINDOW"
 TEE_FILE="mpiGraph.out"
 cbench_run_cmd $CMD
 
