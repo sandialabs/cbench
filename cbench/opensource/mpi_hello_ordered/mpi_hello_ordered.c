@@ -28,6 +28,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <mpi.h>
 
@@ -60,10 +61,10 @@ int main (int argc, char **argv) {
     }
 
     sprintf(ssize, "%d", size);
-    sprintf(fmt, "Hello, I am node %%s with rank %%%dd\n", strlen(ssize));
-    printf(fmt, hostname, rank);
+    sprintf(fmt, "Hello, I am node %%s with rank %%%lud (%%d/%%d)\n", strlen(ssize));
+    printf(fmt, hostname, rank, rank+1, size);
     fflush(stdout);
-    usleep(1000);
+    /*usleep(1000);*/
 
     if ( rank != (size - 1) ) {
         /* send message to n+1 node */
