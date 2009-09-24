@@ -1,15 +1,17 @@
 Index: opensource/HPLlinpack/hpl/Make.cbench
 ===================================================================
---- opensource/HPLlinpack/hpl/Make.cbench	(revision 862)
+--- opensource/HPLlinpack/hpl/Make.cbench	(revision 678)
 +++ opensource/HPLlinpack/hpl/Make.cbench	(working copy)
-@@ -190,6 +190,7 @@
- #              captures all DGEMM calls (if you use Fortran BLAS) and records
+@@ -191,7 +191,8 @@
  #              their data.  As it does this, this routine has a marginal
  #              intrusive overhead.
-+#HPL_OPTS     =  -DASYOUGO -DMEMINFO_RUN -DHPL_USE_MPI_DATATYPE
- HPL_OPTS     =  -DASYOUGO -DMEMINFO_RUN
+ #   -DMEMINFO_RUN  Add some memory allocation stats
+-HPL_OPTS     =  -DASYOUGO
++#HPL_OPTS     =  -DASYOUGO
++HPL_OPTS     =  -DASYOUGO -DHPL_USE_MPI_DATATYPE
  #
  # ----------------------------------------------------------------------
+ #
 Index: opensource/HPLlinpack/hpl/testing/ptest/HPL_pddriver.c
 ===================================================================
 --- opensource/HPLlinpack/hpl/testing/ptest/HPL_pddriver.c	(revision 862)
