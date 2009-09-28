@@ -116,6 +116,9 @@ our %parse_filters = (
 
 	'Error name:\s+(\S+)' =>
 		'OMPI saw error name $1',
+
+	'A daemon \(pid \S+\) died unexpectedly on (signal\s+\d+)\s+while attempting to' =>
+		'OMPI says a daemon died ($1)',
 );
 
 1;
