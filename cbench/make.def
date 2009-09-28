@@ -334,8 +334,11 @@ endif
 ifeq ($(ARCH),x86_64)
 
   ifeq ($(COMPILER),intel)
-  COMMON_FLAGS =
-  OPTFLAGS = -O3 -axP -xW -mcmodel=medium
+  COMMON_FLAGS = -traceback
+  #OPTFLAGS = -O3 -axP -xW -mcmodel=medium
+  # really picky flags to track down application runtime issues better
+  #OPTFLAGS = -O2 -xsse4.2 -g -traceback -fpe0 -fp-model source -prec-div -prec-sqrt -nolib-inline -protect_parens -fp-stack-check
+  OPTFLAGS = -O3 -xsse4.2
   MPILIB = 
   endif
 
@@ -378,7 +381,7 @@ ifeq ($(ARCH),x86_64)
   ifeq ($(COMPILER),gcc)
   COMMON_FLAGS = 
   FFLAGS += -fno-second-underscore
-  OPTFLAGS = -O3 -mtune=amdfam10
+  OPTFLAGS = -O3 -mtune=generic
   MPILIB =
   endif
 
