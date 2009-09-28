@@ -125,6 +125,7 @@ GetOptions( 'ident=s' => \$ident,
 			'gazebo' => \$gazebo,
 			'report:s' => \$report,
 			'usecache' => \$usecache,
+			'pokejobstatusi=s' => \$pokejobstatus,
 );
 
 if (defined $help) {
@@ -323,6 +324,44 @@ my %nodediag_data;
 # hits.
 my %customparse_hits;
 
+# if --pokejobstatus <file> was given, we need to read the file into
+# the %pokestatus hash. the purpose of this option is to allow a way
+# to override the status (e.g. PASSED, ERROR(FOO), ERROR(BAR)) of jobs
+# that are specified in the simple text file. this is mostly useful
+# for massive use of Cbench, like in a synthetic workload sustained
+# test which will run thousands of jobs, where some jobs need to be
+# post processed with extra information correlation . for instance,
+# many real world applications run as many simulation timesteps as
+# they can fit in before a batch scheduler kills them. then, they
+# continue from the last set of restart files. Cbench includes jobs like
+# this in testsets from the Openapps tree, i.e. the LAMMPS rhodolong.scaled
+# job. the cbench output parser sees these jobs killed by walltime
+# as errors since the application does not shutdown normally. 
+# --pokejobstatus gives the ability to tell Cbench to assign any
+# status to any jobid via a text file formatted like:
+#
+# job1 status1 comment
+# job2 status2 comment
+#
+# each line in the file is a single jobid
+my %pokestatus = ();
+if (defined $pokejobstatus) {
+	if (open(POKE,"<$pokejobstatus")) {
+		while (<POKE>) {
+			if (/^(\S+)\s+(\S+)\s+(.*)$/) {
+				$pokestatus{$1} = $2;
+				debug_print(2,"DEBUG: pokestatus job $1 status $2 comment \"$3\"");
+			}
+		}
+	}
+	else {
+		error_print("Could not open $pokejobstatus with error ($!), ".
+			"job status poking disabled\n");
+		$pokejobstatus = undef;
+	}
+}
+
+#
 # HERE IS WHERE THE REAL PARSING WORK GETS KICKED OFF...
 #
 # Recursively process all files from the current directory and
@@ -1050,6 +1089,18 @@ sub parse_output_file {
 				if (exists $main::slurm_jobdata{$JOBID} and $main::slurm_jobdata{$JOBID} eq 'running') {
 					$status = 'RUNNING';
 					$filedata->{'STATUS'} = 'RUNNING';
+				}
+
+				# if --pokejobstatus was given, we need to possibly update the status of the job
+				if (defined $pokejobstatus and exists $pokestatus{$jobid}) {
+					$status = $pokestatus{$jobid};
+					print BOLD GREEN "**POKED**";
+					print RESET "(";
+					print GREEN, "$fileid";
+					print RESET ")";
+					print BOLD WHITE " with status",BOLD MAGENTA . "$status";
+					print RESET "\n";
+					print "-------------------------------------------------------------\n";
 				}
 
 				# update the fine grained status data
