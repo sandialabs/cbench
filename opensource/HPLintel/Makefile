@@ -13,13 +13,13 @@ HPL2=$(CBENCHOME)/opensource/HPLintel
 
 ifeq ($(CBENCH_STANDALONE),yes)
   $(warning ================ STANDALONE MPI COMPILE)
-  EXECS = /src/bin/cbench/xhpl2.$(MPICH_CH)
+  EXECS = /src/bin/cbench/xhplintel.$(MPICH_CH)
   default_tgt := local
   MPIHOME = $(CBENCHOME)/opensource/mpich
   MPIBINNAME = bin
 else
   # NORMAL MPI COMPILE
-  EXECS = src/bin/cbench/xhpl2
+  EXECS = src/bin/cbench/xhplintel
   default_tgt := linpack
 endif
 
@@ -32,11 +32,11 @@ all: linpack clean local
 
 linpack: $(SRC) xerbla
 	$(MAKE) -C $(UNTARSRC)/benchmarks/mp_linpack arch=cbench
-#	[ -e src/bin/cbench/xhpl ] && /bin/mv src/bin/cbench/xhpl src/bin/cbench/xhplintel
+	[ -e src/bin/cbench/xhpl ] && /bin/mv src/bin/cbench/xhpl src/bin/cbench/xhplintel
 
 $(SRC): $(TAR)
 	-[ ! -d $(UNTARSRC) ] && tar xzf $(TAR)
-	ln -sf $(UNTARSRC) src
+	ln -sf $(UNTARSRC)/benchmarks/mp_linpack src
 	ln -sf $(HPL2)/Make.cbench $(HPL2)/$(UNTARSRC)/benchmarks/mp_linpack/Make.cbench
 	touch $(UNTARSRC)
 
