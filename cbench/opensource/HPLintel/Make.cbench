@@ -73,7 +73,7 @@ ARCH         = cbench
 # - HPL Directory Structure / HPL library ------------------------------
 # ----------------------------------------------------------------------
 #
-TOPdir       = $(BENCH_HOME)/opensource/HPLinpack2/src
+TOPdir       = $(BENCH_HOME)/opensource/HPLintel/src
 INCdir       = $(TOPdir)/include
 BINdir       = $(TOPdir)/bin/$(ARCH)
 LIBdir       = $(TOPdir)/lib/$(ARCH)
@@ -98,7 +98,7 @@ HPLlib       = $(LIBdir)/libhpl.a
 # header files,  LAlib  is defined  to be the name of  the library to be
 # used. The variable LAdir is only used for defining LAinc and LAlib.
 #
-LAdir        = $(BENCH_HOME)/opensource/HPLinpack2
+LAdir        = $(BENCH_HOME)/opensource/HPLintel
 LAinc        =
 LAlib        = $(BLASLIB)
 #
