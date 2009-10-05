@@ -1,7 +1,7 @@
 include ../../make.def
 
 INSTALLDIR = $(bin_dir)
-INSTALLTARGETS = src/current/iozone
+INSTALLTARGETS = src/current/iozone src/current/fileop
 
 ifeq ($(ARCH),x86_64)
 	TARGET=linux-AMD64
