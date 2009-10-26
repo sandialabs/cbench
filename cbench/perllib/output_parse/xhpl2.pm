@@ -133,6 +133,8 @@ sub parse {
 	my $found_endrecord = 0;
     my $i = 0;
 	my $gflops = 'NODATA';
+	my $numpassed = 0;
+	my $numfailed = 0;
 	my $local_max_gflops = 0.0;
 	my $local_total_tests = 'nodata1';
 	my $local_passed_tests = 'nodata2';
@@ -198,12 +200,16 @@ sub parse {
 		# pending the determination whether the overall output file is deemed
 		# to pass (this check is done further down)
 		if ($pass == 1) {
+			$numpassed++;
 			if ($gflops > $local_max_gflops) {
 				$local_max_gflops = $gflops;
 			}
 		}
+		else {
+			$numfailed++;
+		}
 
-		main::debug_print(2,"DEBUG:$shortpackage.parse() RESULT, $gflops, $total_time, $pass, $status\n");
+		main::debug_print(2,"DEBUG:$shortpackage.parse() RESULT, $gflops, $total_time, $pass, $status, numpass $numpassed, fail $numfailed\n");
 
 		# we finished parsing a test result, prime the loop for finding the next
 		# result in case there are multiple results in the output
@@ -227,14 +233,18 @@ xhplendrecord:
 		$i++;
 	}
 
-	(defined $main::DEBUG and $main::DEBUG > 2) and print
+	main::debug_print(2,
 		"ENDPARSE, $local_max_gflops, $local_total_tests, $local_passed_tests, ".
-		"$local_failed_tests, $status\n";
+		"$local_failed_tests, $status, numpass $numpassed, fail $numfailed\n");
 
 	# only if all tests in the output file PASSED do we flag this overall
 	# linpack benchmark as having completed correctly
 	if ($status =~ /FINISHED/ and $local_total_tests == $local_passed_tests) {
 		$status = 'COMPLETED';
+	}
+	elsif ($status =~ /FOUND A RESULT/ and $numfailed == 0) {
+		$status = 'COMPLETED';
+        defined $main::diagnose and main::print_job_err($fileid,'PASSED','DID NOT FINISH CLEAN',"$numpassed PASSED results");
 	}
 	elsif ($status =~ /FAILURE/) {
 		# noop
