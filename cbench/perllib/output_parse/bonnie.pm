@@ -74,38 +74,38 @@ sub parse {
 		my $numlines = scalar @$txtbuf;
 
 		foreach my $l (@{$txtbuf}) {
+		#print "yo $l\n";
 			($l =~ /CBENCH NOTICE/) and $status = $l;
 			($l =~ /Writing with putc/) and $status = "STARTED";
 
-			($l =~ /Version.*Sequential Output.*Sequential Input/) and $status = 'COMPLETED';
+			($l =~ /Version\s+\S+\s+.*Sequential Output.*Sequential Input/) and $status = 'COMPLETED';
 
-			#SUMMARY: (of 50 iterations)
-			#   Operation                  Max        Min       Mean    Std Dev
-			#   ---------                  ---        ---       ----    -------
-			#   Directory creation:   9273.825   6788.107   8343.664    668.352
-			#   Directory stat    :   5502.662   5106.717   5300.309     77.801
-			#   Directory removal :   6128.883   5015.467   5705.629    263.386
-			#   File creation     :   7412.247   6136.470   6833.696    292.678
-			#   File stat         :   5517.454   5035.605   5261.947     99.959
-			#   File removal      :   4813.524   4207.714   4505.605    125.475
 
-			if ($l =~ /Directory creation\s*:\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) {
-				$data{'directory_create'} = $3;
-			}
-			elsif ($l =~ /Directory stat\s*:\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) {
-				$data{'directory_stat'} = $3;
-			}
-			elsif ($l =~ /Directory removal\s*:\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) {
-				$data{'directory_remove'} = $3;
-			}
-			elsif ($l =~ /File creation\s*:\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) {
-				$data{'file_create'} = $3;
-			}
-			elsif ($l =~ /File stat\s*:\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) {
-				$data{'file_stat'} = $3;
-			}
-			elsif ($l =~ /File removal\s*:\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) {
-				$data{'file_remove'} = $3;
+			#Version 1.03d       ------Sequential Output------ --Sequential Input- --Random-
+			#                    -Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--
+			#Machine        Size K/sec %CP K/sec %CP K/sec %CP K/sec %CP K/sec %CP  /sec %CP
+			#tb6             16G 87042  99 128721  98 85973  97 78972  98 218669  95 156.2   0
+			#                    ------Sequential Create------ --------Random Create--------
+			#                    -Create-- --Read--- -Delete-- -Create-- --Read--- -Delete--
+			#              files  /sec %CP  /sec %CP  /sec %CP  /sec %CP  /sec %CP  /sec %CP
+			#                 16  1551  15  1615  31  1593   9  1923  14  1578  34  1669   6
+			#tb6,16G,87042,99,128721,98,85973,97,78972,98,218669,95,156.2,0,16,1551,15,1615,31,1593,9,1923,14,1578,34,1669,6
+
+			if ($l =~ /^\S+\,\S+\,\S+\,\S+\,\S+\,.*$/) {
+				main::debug_print(2,"DEBUG:$shortpackage\.parse() bonnie csv data found");
+				my @a = split(/,/,$l);
+				$data{'sequential_write_char'} += $a[2];
+				$data{'sequential_write_block'} += $a[4];
+				$data{'sequential_write_rewrite'} += $a[6];
+				$data{'sequential_read_char'} += $a[8];
+				$data{'sequential_read_block'} += $a[10];
+				$data{'random_seeks'} += $a[12];
+				$data{'sequential_create'} += $a[15];
+				$data{'sequential_create_read'} += $a[17];
+				$data{'sequential_delete'} += $a[19];
+				$data{'random_create'} += $a[21];
+				$data{'random_create_read'} += $a[23];
+				$data{'random_delete'} += $a[25];
 			}
 		}
 	}
@@ -171,12 +171,18 @@ sub _init {
 	# this is a KEY array... see the metric_units method above for
 	# more info
 	%{$self->{METRIC_UNITS}} = (
-		'directory_remove' => 'ops/sec',
-		'file_remove' => 'ops/sec',
-		'directory_stat' => 'ops/sec',
-		'directory_create' => 'ops/sec',
-		'file_create' => 'ops/sec',
-		'file_stat' => 'ops/sec',
+		'random_create_read' => 'ops/sec',
+		'sequential_delete' => 'ops/sec',
+		'sequential_create' => 'ops/sec',
+		'sequential_create_read' => 'ops/sec',
+		'sequential_write_char' => 'KB/s',
+		'random_delete' => 'ops/sec',
+		'sequential_read_block' => 'KB/sec',
+		'random_seeks' => 'ops/sec',
+		'random_create' => 'ops/sec',
+		'sequential_read_char' => 'KB/s',
+		'sequential_write_block' => 'KB/s',
+		'sequential_write_rewrite' => 'KB/s',
 	);
 	
 	return 1;
