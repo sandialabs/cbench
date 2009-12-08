@@ -32,23 +32,34 @@ $CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
 use Getopt::Long;
 
-GetOptions( 'nproc=i'  => \$nproc,
-	    'ppn=i' => \$ppn,
-	    'utilization=s' => \$util,
+GetOptions(
+	'nproc=i'  => \$nproc,
+	'ppn=i' => \$ppn,
+	'utilization=s' => \$util,
+	'memory=i' => \$mem,
+	'help' => \$help,
 );
+(defined $help) and usage();
+(!defined $nproc or !defined $ppn) and usage();
 
-@memory_util_factors = ($util);
+(defined $mem) and $memory_per_node = $mem;
+$nodes = $nproc / $ppn;
+$totmem = $nodes * $memory_per_node * 1024 *1024;
+$totMB = $totmem / 1024;
+print "total nodes = $nodes  total mem = $totMB MB\n";
+
+(defined $util) and @memory_util_factors = split(',',$util);
 print "memory_util_factors = @memory_util_factors\n";
 
+#@Nval = test_N($nproc,$ppn);
+#print "test Nvals = " . join(' ',@Nval) . "\n";
+
 @Nval = compute_N($nproc,$ppn);
-
-print join(' ',@Nval) . "\n";
-
-@Nval = normal_N($nproc,$ppn);
-print join(' ',@Nval) . "\n";
+print "cbench Nvals = " . join(' ',@Nval) . "\n";
 
 
-sub normal_N {
+
+sub test_N {
 	my $np = shift;
 	my $ppn = shift;
 
@@ -65,4 +76,15 @@ sub normal_N {
 		push @Nvals, $temp;
 	}
 	return @Nvals;
+}
+
+sub usage {
+	print "USAGE: $0 --nproc <np> --ppn <num> [--util <frac1,frac2,..>] [--memory <num MB>] \
+	--nproc		number of proceses, i.e. mpi ranks \
+	--ppn		processes per node \
+	--util		memory utilization factors, e.g. \
+					--util 0.5,0.6,0.7 \
+	--memory	memory per node in MB \
+";
+	exit 0;
 }
