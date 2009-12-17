@@ -18,6 +18,7 @@ $(EXECS): $(SRC)
 	make -C $(SRC)/lib/reax -f Makefile.cbench -j$(MAKE_JOBS)
 	$(MAKE) -C $(SRC)/src yes-all
 	$(MAKE) -C $(SRC)/src no-gpu
+	$(MAKE) -C $(SRC)/src no-user-atc
 	$(MAKE) -C $(SRC)/src cbench -j$(MAKE_JOBS)
 
 $(SRC): $(TAR)
