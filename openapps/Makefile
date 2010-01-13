@@ -38,6 +38,12 @@ binstatus:
 		[ -f $$dir/.binstatus ] && cat $$dir/.binstatus; \
 	done
 
+distclean:
+	$(MAKE) PASSTARGET=$@ $(DIRLIST)
+	@for dir in $(DIRLIST); do \
+		[ -f $$dir/.binstatus ] && /bin/rm -f $$dir/.binstatus; \
+	done
+
 %:
 	$(MAKE) PASSTARGET=$@ $(DIRLIST)
 
