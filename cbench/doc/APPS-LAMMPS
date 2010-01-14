@@ -86,3 +86,4 @@ Output parsing is handled in the same way as other Cbench jobs. A main output pa
 {{{
 [alogin1 cbench_test/lammps]$ ./lammps_output_parse.pl --ident test1
 }}}
+ 	  	 

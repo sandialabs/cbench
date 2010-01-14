@@ -54,3 +54,5 @@ which you can then cut and paste into a wiki page.  I'll paste it just below her
 Clearly the --urlbase and --urldir need to be tweaked for your webserver setup.  But it assumes there is some directory tree to put static content with a URL alias to point to it.
 
 Works for me!
+
+ 	  	 

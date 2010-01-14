@@ -4,7 +4,7 @@
 
 ''Page last updated 16 December 2008''
 
-'''Note: This HOWTO shows how to use the old 1.1 version of Cbench.  Instructions for how to use Cbench 1.2 (the current version) are found [wiki:doc/RunTestHowTo_1.2 here].'''
+'''Note: This HOWTO shows how to use the old 1.1 version of Cbench.  Instructions for how to use Cbench 1.2 (the current version) are found [wiki:doc/HOWTO-RunTestHowTo_1.2 here].'''
 
 == Overview ==
 
@@ -12,7 +12,7 @@ Cbench provides the framework to create, launch, and analyze tests for many benc
 
 == Configure Cbench for Testing ==
 
-If running on a cluster with [http://modules.sourceforge.net/ Environment Modules], make sure the Cbench environment variables are set up properly for you to run the tests.  Using the parameters from the [wiki:HowTo Installation HOWTO], we need:
+If running on a cluster with [http://modules.sourceforge.net/ Environment Modules], make sure the Cbench environment variables are set up properly for you to run the tests.  Using the parameters from the [wiki:doc/HOWTO-QuickInstall_1.1 Installation HOWTO], we need:
  * OpenMPI libraries
  * GNU Compilers
  * [http://www.tacc.utexas.edu/resources/software/gotoblasfaq.php GOTO BLAS] libraries 
@@ -117,7 +117,7 @@ Values that need to be set for each cluster:
 
 There are other values to set if necessary: see `~/cbench/cluster.def` to fully customize for your cluster 
 
-[wiki:RunTestHowTo#Examplecluster.def Here] is the `cluster.def` used for this set of tests 
+[wiki:doc/HOWTO-QuickInstall_1.1#Examplecluster.def Here] is the `cluster.def` used for this set of tests 
 
 Now, on to some testing.  We'll start with MPI level testing since this is where most people conduct their testing.  The node-level tests (encapsulated in the ''nodehwtest'' test set), which focus on single-node hardware testing, are really targeted to system integrators, system administrators, hardware breakfix engineers, and the like.  The node-level testing is more involved and compilcated.
 
@@ -296,7 +296,7 @@ EDITORIAL NOTE: might be good to mention the .png and .ps output files after eac
 
 == Node-Level Testing ==
 
-Cbench's node-level hardware testing is also described somewhat in the [wiki:doc/UserGuide#NodehwtestTestsetakaLowLevelNodeHardwareTesting Nodehwtest User Manual].  
+Cbench's node-level hardware testing is also described somewhat in the [wiki:doc/HOWTO-NodeLevelTesting  Nodehwtest Testset HOWTO (aka node-level testing)].  
 
 This example was done on 64 Thunderbird nodes in interactive mode.  Currently there is no way to run `nodehwtest` without knowing the list of nodes, so batch scheduler submission withouth targeting specific nodes won't work.  Either run it interactively or on a predetermined set of nodes (e.g., burn-in hardening or breakfix testing).  Many of the tests also require administrative privileges to run properly.  If you are trying to run the tests as a user, be prepared for many of the tests to fail.
 
@@ -536,3 +536,4 @@ $remotecmd_extraargs = "-f 700";
 
 # vim: syntax=perl
 }}}
+ 	  	 

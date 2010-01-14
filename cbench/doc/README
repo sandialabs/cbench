@@ -46,16 +46,14 @@ is with you.  Should the program prove defective, you assume the cost of
 all necessary servicing, repair or correction.
 
 == Resources, Documentation, Help, etc. ==
-The best place is the Cbench homepage which is located at https://cbench.sandia.gov .
-This page for the time being is located within a firewall at Sandia National Labs. There
-is a read-only mirror site that is generally available on the Internet at http://cbench.org .
+The best place is the Cbench homepage which is located at http://cbench.sourceforge.net or http://cbench.org.
 
 There is an email list you can email questions to: cbench-sf-devel_AT_lists_DOT_sourceforge_DOT_net .
 The email list is archived and searchable on Sourceforge at http://sourceforge.net/mail/?group_id=153330 .
 Documentation is periodically exported from the Wiki pages on the Cbench website to the
 doc directory of the Cbench distribution tarball.
 
-Cbench tarballs can be found at http://sourceforge.net/projects/cbench-sf under the Files section.
+Cbench tarballs can be found at http://sourceforge.net/projects/cbench under the Files section.
 
 == Contributors ==
 Cbench historically is the result of work done at Sandia National Laboratories by
@@ -67,3 +65,5 @@ to Sandia.  These days many fine contributions come from others.  Other contribu
  * Randy Scott (Hewlett-Packard contractor to Sandia)
  * Jonathan Atencio (Hewlett-Packard contractor to Sandia)
 
+
+ 	  	 

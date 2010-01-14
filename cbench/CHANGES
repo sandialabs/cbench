@@ -8,7 +8,7 @@ A __brief__ summary of changes in each release of Cbench.
 	* Changed how cbench_start_jobs.pl and start_jobs() handle delaying 
 	between each job submission.  Should be much faster when submitting 
 	100s to 1000s of jobs. Fastest submission is still --delay 0.
-	* Fix HPlinpack2 output parsing bugs.j
+	* Fix HPlinpack2 output parsing bugs.
 	* Mostly cosmetic changes to status output during generating
 	and starting jobs which gives some stats on numbers of jobs built 
 	and submitted.

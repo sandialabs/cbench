@@ -4,6 +4,7 @@
 
 [wiki:doc/CbenchDocumentation Back to Cbench Documentation]
 
+== Overview ==
 "Test sets" are a concept in Cbench used to package up useful collections of testing work with utility scripts to highly assist the entire testing process. Each test set is a subdirectory within the Cbench testing tree.
 
 There are three key utility scripts that facilitate the use of a given test set (TESTSET below gets replaced with the actual test set name, e.g. linpack, bandwidth, ...):
@@ -36,14 +37,32 @@ The approach Cbench uses in the generation of files (batch scripts, interactive 
 
 Each script is then processed for keyword replacements by the `*_gen_jobs.pl` scripts.  The `*_gen_jobs.pl` scripts are pretty well commented and use as much common code as possible so that one can see the process and logic involved. Input files such as the `HPL.dat` file for HPlinpack are generated as well using templates (see `xhpl_dat.in` and `linpack_gen_jobs.pl` for an example).
 
-The currently available test sets are (not up-to-date as of 1-22-08):
+== Supported Test Sets ==
+The currently available test sets are (as of 05-04-2009):
+ * '''amg'''
  * '''Bandwidth''' -  Tests the unidirectional and bidirectional bandwidth at the MPI level in a cluster. In other words, a bandwidth scaling study. Currently the benchmarks used are the common Bandwidth Effective (b_eff) and the bandwidth benchmark from Presta 1.2, com. Presta 1.2 is part of the ASCI Purple benchmarks.
- * '''Linpack'''       -  Uses the High Performance Linpack (xhpl) codebase with the ASYOUGO patches to perform a Linpack scaling study.
- * '''NPB'''           -  NAS Parallel Benchmark scaling study.
- * '''Rotate'''        -  Rotate is a cross-sectional bandwidth benchmark developed at Sandia National Labs. It is useful for measuring how well an interconnect takes advantage of the available hardware bandwidth at the MPI level. Specifically, this benchmark is useful to see the effects of static routing in fully connected CLOS network. The test set is a scaling study using rotate.
- * '''MPI Overhead'''  -  Scaling study that measures the memory overhead per process for MPI as well as the job launch time.
- * '''IO'''            -  Scaling study measuring filesystem performance. Currently uses iozone and IOR.
- * '''Latency'''       -  Scaling study measuring MPI latency
  * '''Collective'''    -  Scaling study measuring MPI collectives
+ * '''hpcc'''
+ * '''hpccg'''
+ * '''IO'''            -  Scaling study measuring filesystem performance. Currently uses iozone and IOR.
+ * '''iosanity'''
+ * '''irs'''
+ * '''lammps'''
+ * '''Latency'''       -  Scaling study measuring MPI latency
+ * '''Linpack'''       -  Uses the High Performance Linpack (xhpl) codebase with the ASYOUGO patches to perform a Linpack scaling study.
+ * '''linpack2'''
+ * '''MPI Overhead'''  -  Scaling study that measures the memory overhead per process for MPI as well as the job launch time.
+ * '''mpisanity'''
+ * '''news05'''
+ * '''nodehwtest'''
+ * '''NPB'''           -  NAS Parallel Benchmark scaling study.
+ * '''phdmesh'''
+ * '''purple'''
+ * '''Rotate'''        -  Rotate is a cross-sectional bandwidth benchmark developed at Sandia National Labs. It is useful for measuring how well an interconnect takes advantage of the available hardware bandwidth at the MPI level. Specifically, this benchmark is useful to see the effects of static routing in fully connected CLOS network. The test set is a scaling study using rotate.
+ * '''shakedown'''
+ * '''sweep3d'''
+ * '''trilinos'''
 
 Note that work in a 'test set' is most often generated using a "scaling study" type approach. The ''nodehwtest'' test set is the current most notable exception to this rule.
+
+ 	  	 
