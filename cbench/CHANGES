@@ -4,6 +4,77 @@
         
 A __brief__ summary of changes in each release of Cbench.
 
+* Cbench release (1.2.2)
+	* Changed how cbench_start_jobs.pl and start_jobs() handle delaying 
+	between each job submission.  Should be much faster when submitting 
+	100s to 1000s of jobs. Fastest submission is still --delay 0.
+	* Fix HPlinpack2 output parsing bugs.j
+	* Mostly cosmetic changes to status output during generating
+	and starting jobs which gives some stats on numbers of jobs built 
+	and submitted.
+	* Changes to allow nodehwtest jobs to be started without specifying 
+	specific nodes (ticket #12).  The traditional --batch mode for 
+	nodehwtest_start_jobs.pl is now called --nodebatch.  --batch now behaves 
+	much more like how like cbench_start_jobs.pl deals with it.
+	* Support IS and EP NPB tests as well.
+	* cbench_output_parse.pl tweaks for statistics when jobs are flagged as RUNNING.
+	* openapps: Updated LAMMPS rhodolong job to test checkpoint/restart
+	capabilities. (braithr)
+	* openapps: Upate SWEEP3D output parse module to calculate overall memory usage
+	and to parse sweep3d_150std and sweep3d_long jobs. (braithr)
+	* openapps: Update SWEEP3D job generation to be much more dynamic.
+	* Add CBENCH NOTICE output parsing capabilities to all output_parse modules that
+	did not support it correctly. (braithr)
+	* Added existence and executability checks before job submission for
+	binaries used by jobs.  cbench_start_jobs.pl will now only submit or start a
+	job if the required binary can be found and is executable. (braithr)
+	* openapps: Added PHDMESH testset with a customized longer running test
+	* Fix a makefile bug in opensource/perftest when changing COMPILERCOLLECTION
+	* Update std_substitute() to do the JOBLAUNCH_CMD_HERE template variable
+	replacement earlier. This enables more sophisticated joblaunch_extraargs usage 
+	such as:
+		foo_gen_jobs.pl --ident t1 --joblaunch_extraargs "numa_wrapper --ppn=NUM_PPN_HERE"
+	* Added opensource/maketests area which contains tiny little make/link/include 
+	test cases for things like BLAS, LAPACK, and FFTW linkage. The idea is to have
+	some quick test cases to determine whethere certain tests/benchmarks/apps 
+	included in Cbench will link correctly with the external libraries.
+	* Upgrade to iozone version 3_323.
+	* Add LLNL's 'mdtest' benchmark.
+	* Add 'fdtree' from Scalable I/O Project.
+	* Add LLNL 'simul' filesystem test.
+	* Add LLNL 'miranda_io' Scalable I/O Project test
+	* Add support for building and instrumenting Cbench tests with TAU
+	(http://www.cs.uoregon.edu/research/tau/home.php). Most tests work,
+	but some more complicated ones (e.g. LAMMPS) don't quite work yet.
+	See https://apps.sourceforge.net/trac/cbench/wiki/doc/TAUandCbench
+	for information on using TAU. (braithr)
+	* collective_imball.in job template now runs all IMB tests.
+	* bandwidth_imb.in now runs all the bandwidth tests in IMB.
+	* openapps: Add support for the LAMMPS Chute benchmark. (braithr)
+	* Add the miranda_io test to the IO testset.
+	* openapps: Add Cbench support for sPPM. (braithr)
+	* Add a Stream test that uses ~11 GB of memory.
+	* Add some prototype support for parallel makes.
+	* Added a testset for the LLNL mpiGraph benchmark.
+	* openapps: tune down amg memory requirements to fit 1.5GB/core better.
+	* Ignore bogus 0.000 min values being reported for tests in 
+	nodehwtest_output_parse.pl (braithr)
+	* Updated to latest IOR version which is IOR-2.10.2
+	* Use nehalem flags as the default for intel compilers.
+	* Add Intel HPlinpack as another Linpack variant. (cashmont)
+	* Add linpackintel testset. (cashmont)
+	* New protyotype test set 'iometadata' aimed testing metadata 
+	performance/stability of a filesystem.
+	* Some updated Openmpi support. (mr_ep)
+	* Make slurm the default batch_method in cluster.def
+
+For a complete history of changes in Cbench 1.2.2 go to:
+    http://sourceforge.net/apps/trac/cbench/log/trunk/cbench?action=follow_copy&mode=follow_copy&rev=696&stop_rev=552&limit=200&verbose=on
+
+For a complete history of changes in the Openapps tree since Cbench 1.2.1 through Cbench 1.2.2 go to:
+	    http://sourceforge.net/apps/trac/cbench/log/trunk/openapps?action=follow_copy&mode=follow_copy&rev=696&stop_rev=552&limit=200&verbose=on
+
+
 * Cbench release (1.2.1)
 	* Made the Cbench release tarball conform to more common opensource
 	release "standards".
