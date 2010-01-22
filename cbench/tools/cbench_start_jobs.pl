@@ -153,9 +153,17 @@ foreach my $i (@identlist) {
 
 	print "Starting jobs for test identifier \'$i\':\n";
 	$optdata{ident} = $i;
-	start_jobs($start_method,$match,$delay,$polldelay,$maxprocs,$minprocs,$repeat,$batchargs,\%optdata);
+	my $ret = start_jobs($start_method,$match,$delay,$polldelay,$maxprocs,$minprocs,$repeat,$batchargs,\%optdata);
 
 	chdir $pwd;
+
+	# if we are in Gazebo mode, we need to check for the case of zero jobs 
+	# being started.  if we see that, exit with error code 1 so that the
+	# cbench_gazebo_runjob.sh wrapper can catch the condition.
+	if (defined $gazebo && $ret == 0) {
+		print("ERROR: No job started in Gazebo mode.\n");
+		exit 1;
+	}
 }
 
 

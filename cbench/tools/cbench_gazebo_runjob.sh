@@ -32,7 +32,7 @@ echo " "
 echo " "
 echo " "
 echo "---------- Setup Cbench Environment -----------------------------------------------"
-CBENCH_PPN=$PESPERNODE"ppn"
+CBENCH_PPN=$GZ_PESPERNODE"ppn"
 CBENCH_MATCH=$CBENCH_JOB-$CBENCH_PPN
 echo "CBENCH_PPN=$CBENCH_PPN"
 echo "CBENCH_MATCH=$CBENCH_MATCH"
@@ -40,7 +40,7 @@ echo "CBENCH_MATCH=$CBENCH_MATCH"
 # NOTE: some  CBENCH_  environment vars will be set for us by the Gazebo script that
 #       called us based on the gazebo test config file
 
-env | egrep 'CBENCH|NPES|JOBID|GAZ'
+env | egrep 'CBENCH|NPES|JOBID|GAZ|GZ'
 echo " "
 echo " "
 echo " "
@@ -51,7 +51,15 @@ cd $CBENCHTEST
 cd $CBENCH_TESTSET
 
 echo "---------- Start Cbench Job -------------------------------------------------------"
-./$CBENCH_TESTSET\_start_jobs.pl --interactive --procs $NPES --match $CBENCH_MATCH --ident $CBENCH_TESTIDENT --echooutput --gazebo 2>&1 | tee $RUNHOME/temp.start
+./$CBENCH_TESTSET\_start_jobs.pl --interactive --procs $GZ_NPES --match $CBENCH_MATCH --ident $CBENCH_TESTIDENT --echooutput --gazebo 2>&1 | tee $RUNHOME/temp.start
+grep -q "ERROR: No job started" $RUNHOME/temp.start
+if [ $? -eq 0 -o ! -f "$RUNHOME/temp.start" ]; then
+	echo "ERROR: Cbench did not seem to find a job matching these criteria:"
+	echo "  number of processors (procs/GZ_NPES): $GZ_NPES"
+	echo "  processes/cores per node (ppn/GZ_PESPERNODE): $GZ_PESPERNODE"
+	echo "  Cbench --match: $CBENCH_MATCH"
+	echo "  Cbench --ident: $CBENCH_TESTIDENT"
+fi
 echo " "
 echo " "
 echo " "
@@ -67,6 +75,11 @@ echo "Cbench jobid was $jobid"
 echo " "
 echo " "
 echo " "
-./$CBENCH_TESTSET\_output_parse.pl --procs $NPES --ident $CBENCH_TESTIDENT --match $CBENCH_MATCH --jobid $jobid --gazebo
+if [ -z "$jobid" ]; then
+	echo "FAIL: Cbench jobid was not found. Cbench probably did not find a job to start."
+	exit 1
+else
+	./$CBENCH_TESTSET\_output_parse.pl --procs $NPES --ident $CBENCH_TESTIDENT --match $CBENCH_MATCH --jobid $jobid --gazebo
+fi
 
-exit
+exit 0

@@ -1371,6 +1371,8 @@ sub start_jobs {
             print BOLD WHITE "  $key -- ",RESET,"$not_started{$key}";
         }
         print "\n";
+
+		return $job_count;
 	}
 
 }

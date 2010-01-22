@@ -710,11 +710,16 @@ if (defined $gazebo) {
 
 			my $line = "<td> $series ";
 
+			# print data
 			if (defined $outhash{$np}{$job}) {
 				my $str = sprintf("%s",$outhash{$np}{$job});
 				$str =~ s/\s+//;
 				$line .= $str;
 			}
+
+			# print units
+			$line .= " $metrics_to_units{$series}";
+
 			push @output, "$line\n" unless (!defined $outhash{$np}{$job});
     	}
 	}
