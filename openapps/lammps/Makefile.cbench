@@ -14,7 +14,7 @@ CCFLAGS =	-DFFT_FFTW $(FFTWINCLUDE) $(CFLAGS) -I../../lib -I../../lib/poems -I..
 DEPFLAGS =	-M
 LINK =		$(CXX)
 LINKFLAGS =	-L../../lib/meam -L../../lib/poems -L../../lib/reax
-USRLIB =	-lstdc++ -lpoems -lmeam -lreax -lfftw
+USRLIB =	-lstdc++ -lpoems -lmeam -lreax
 SYSLIB =	$(FFTWLIB) -lm
 SIZE =		size
 
