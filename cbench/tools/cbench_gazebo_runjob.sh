@@ -32,6 +32,13 @@ echo " "
 echo " "
 echo " "
 echo "---------- Setup Cbench Environment -----------------------------------------------"
+if [ -z "$CBENCH_DEBUG" ]; then
+	DEBUGOPT=""
+else
+	echo "Cbench Gazebo Debug mode enabled with level $CBENCH_DEBUG"
+	DEBUGOPT=" --debug $CBENCH_DEBUG"
+	echo "DEBUGOPT=$DEBUGOPT"
+fi
 CBENCH_PPN=$GZ_PESPERNODE"ppn"
 CBENCH_MATCH=$CBENCH_JOB-$CBENCH_PPN
 echo "CBENCH_PPN=$CBENCH_PPN"
@@ -40,10 +47,15 @@ echo "CBENCH_MATCH=$CBENCH_MATCH"
 # NOTE: some  CBENCH_  environment vars will be set for us by the Gazebo script that
 #       called us based on the gazebo test config file
 
+# dump out some key environment info for posterity
+echo " "
+echo " "
+echo " "
 env | egrep 'CBENCH|NPES|JOBID|GAZ|GZ'
 echo " "
 echo " "
 echo " "
+
 # head over to the Cbench testing tree and setup the environment for using
 # that tree
 cd $CBENCHTEST
@@ -51,7 +63,7 @@ cd $CBENCHTEST
 cd $CBENCH_TESTSET
 
 echo "---------- Start Cbench Job -------------------------------------------------------"
-./$CBENCH_TESTSET\_start_jobs.pl --interactive --procs $GZ_NPES --match $CBENCH_MATCH --ident $CBENCH_TESTIDENT --echooutput --gazebo 2>&1 | tee $RUNHOME/temp.start
+./$CBENCH_TESTSET\_start_jobs.pl --interactive --procs $GZ_NPES --match $CBENCH_MATCH --ident $CBENCH_TESTIDENT --echooutput --gazebo $DEBUGOPT 2>&1 | tee $RUNHOME/temp.start
 grep -q "ERROR: No job started" $RUNHOME/temp.start
 if [ $? -eq 0 -o ! -f "$RUNHOME/temp.start" ]; then
 	echo "ERROR: Cbench did not seem to find a job matching these criteria:"
@@ -79,7 +91,7 @@ if [ -z "$jobid" ]; then
 	echo "FAIL: Cbench jobid was not found. Cbench probably did not find a job to start."
 	exit 1
 else
-	./$CBENCH_TESTSET\_output_parse.pl --procs $NPES --ident $CBENCH_TESTIDENT --match $CBENCH_MATCH --jobid $jobid --gazebo
+	./$CBENCH_TESTSET\_output_parse.pl --procs $NPES --ident $CBENCH_TESTIDENT --match $CBENCH_MATCH --jobid $jobid --gazebo $DEBUGOPT
 fi
 
 exit 0

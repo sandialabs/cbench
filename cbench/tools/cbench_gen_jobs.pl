@@ -41,7 +41,6 @@ detect_color_support();
 use Getopt::Long;
 use Data::Dumper;
 use Term::ANSIColor qw(:constants color colored);
-$Term::ANSIColor::AUTORESET = 1;
 
 # pre init some vars before command line parsing
 my $xhplbin = 'xhpl';
@@ -76,8 +75,9 @@ GetOptions(
     'scaled_only' => \$scaled_only,
     'scale_factor=i' => \$scale_factor,
 	'gazebo' => \$gazebo,
-	'gazebohome|gazhome=s' => \$gazebo_home,
-	'gazeboconfig|gazconfig=s' => \$gazebo_config, 
+	'gazebohome|gzhome|gazhome=s' => \$gazebo_home,
+	'gazeboconfig|gzhome|gazconfig=s' => \$gazebo_config, 
+	'gazebodebug|gzdebug|gazdebug' => \$gazebo_debug, 
 	'walltimemethod|walltime_method=i' => \$walltime_method,
 	'defaultwalltime|defwalltime=s' => \$default_walltime,
 );
@@ -302,16 +302,21 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 	# prevent oversubscription of processes to processors
 	($ppn > $procs_per_node) and next;
 
-	# Gazebo mode special case
-	# we only want to generate jobs for the $procs_per_node ppn case
-	if (defined $gazebo) {
-		($ppn != $procs_per_node) and next;
-	}
 
 	# inner loop iterates of the various run sizes (i.e. number of
 	# processors in a parallel job) in the @run_sizes array as
 	# defined in cbench.pl
 	foreach $numprocs (sort {$a <=> $b} @run_sizes) {
+
+		# Gazebo mode special cases
+		# for jobs > 1 node in size, we only want to generate jobs for the 
+		# $procs_per_node ppn case.
+		# for jobs == 1 node in size, generate jobs for all the ppn cases
+		if (defined $gazebo) {
+			($ppn != $procs_per_node) and next;
+			$redundant = 1;
+		}
+
 		# check and make sure we don't generate jobs over the max
 		# number of procs for the cluster or for the current
 		# ppn (as specified in cluster.def)
@@ -437,6 +442,10 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 \$test_config{'CBENCH_TESTSET'} = \"$testset\";
 \$test_config{'CBENCH_TESTIDENT'} = \"$ident\";
 ";
+
+				# possibly enable Gazebo debug mode
+				(defined $gazebo_debug) and $testconfig .= "\$test_config{'CBENCH_DEBUG'} = \"2\"";
+
 				# write out the config file
 				open (EXECCONFIG,">$gazebo_home\/test_exec\/$gazname/config") or die
 					"Could not write $gazebo_home\/test_exec\/$gazname/config ($!)";

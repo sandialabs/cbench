@@ -47,8 +47,9 @@ GetOptions( 'ident=s' => \$ident,
 			'debug:i' => \$DEBUG,
 			'help' => \$help,
 			'testsets=s' => \$testsets,
-			'gazebohome|gazhome=s' => \$gazebo_home,
-			'gazeboconfig|gazconfig=s' => \$gazebo_config, 
+			'gazebohome|gzhome|gazhome=s' => \$gazebo_home,
+			'gazeboconfig|gzconfig|gazconfig=s' => \$gazebo_config, 
+			'gazebodebug|gzdebug|gazdebug' => \$gazebo_debug, 
 			'minprocs=i' => \$minprocs,
 			'maxprocs=i' => \$maxprocs,
 			'procs=i' => \$procs,
@@ -88,6 +89,7 @@ foreach my $set (@testset_list) {
 	(defined $minprocs) and $cmd .= " --minprocs $minprocs";
 	(defined $maxprocs) and $cmd .= " --maxprocs $maxprocs";
 	(defined $procs) and $cmd .= " --procs $procs";
+	(defined $gazebo_debug) and $cmd .= " --gzdebug";
 	(defined $DEBUG and $DEBUG > 1) and $cmd .= " --debug $DEBUG";
 
 	debug_print(1,"DEBUG: cmd= $cmd");
