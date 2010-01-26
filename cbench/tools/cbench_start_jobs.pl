@@ -40,7 +40,6 @@ detect_color_support();
 
 use Getopt::Long;
 use Term::ANSIColor qw(:constants color);
-$Term::ANSIColor::AUTORESET = 1;
 
 my $testset = find_testset_identity($0);
 
