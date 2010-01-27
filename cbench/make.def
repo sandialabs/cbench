@@ -306,19 +306,29 @@ endif
 ###### FFTW library settings
 
 ifndef FFTWLIB
-  ifdef FFTW_LIB
-  	FFTWLIB=-Wl,-rpath,$(FFTW_LIB) -L$(FFTW_LIB) -lfftw
-  	FFTWINCLUDE="-I$(FFTW_INCLUDE)"
-  else
-    ifdef MKL_LIB
-	  FFTWLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lfftw $(BLASLIB)
-	  FFTWINCLUDE = "-I$(MKLHOME)/include/fftw"
+  ifdef FFTW_LINK_LINE
+    ifdef FFTW_COMPILE_LINE
+      # just use what we're told...
+      FFTWLIB = $(FFTW_LINK_LINE)
+      FFTWINCLUDE = $(FFTW_COMPILE_LINE)
     else
-      ifdef ACML_LIB
-        FFTWLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
-        FFTWINCLUDE="-I$(ACML_LIB)/../include"
+      FFTWLIB = FFTW_LINK_LINE_defined_without_FFTW_COMPILE_LINE___PLEASE_DEFINE_FFTWLIB_IN_make.def
+    endif
+  else
+    ifdef FFTW_LIB
+      FFTWLIB=-Wl,-rpath,$(FFTW_LIB) -L$(FFTW_LIB) -lfftw
+      FFTWINCLUDE="-I$(FFTW_INCLUDE)"
+    else
+      ifdef MKL_LIB
+        FFTWLIB = -Wl,-rpath,$(MKL_LIB) -L$(MKL_LIB) -lfftw $(BLASLIB)
+        FFTWINCLUDE = "-I$(MKLHOME)/include/fftw"
       else
-        FFTWlIB = PLEASE_DEFINE_FFTWLIB_IN_make.def
+        ifdef ACML_LIB
+          FFTWLIB = -Wl,-rpath,$(ACML_LIB) -L$(ACML_LIB) -lacml
+          FFTWINCLUDE="-I$(ACML_LIB)/../include"
+        else
+          FFTWLIB = PLEASE_DEFINE_FFTWLIB_IN_make.def
+        endif
       endif
     endif
   endif
