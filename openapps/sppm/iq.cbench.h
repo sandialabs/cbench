@@ -8,9 +8,9 @@ c This problem size should use <=1.4 GB of memory per core
 
 define(IQX, 200)
 define(IQY, 200)
-define(IQZ, 350)
+define(IQZ, 200)
 
 c IQ should be set to at least the max of IQX, IQY, & IQZ
-define(IQ, 350)
+define(IQ, 200)
 
 
