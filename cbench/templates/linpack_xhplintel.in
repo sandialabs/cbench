@@ -1,4 +1,4 @@
-# linpackintel_xhplintel job template
+# linpack_xhplintel job template
 # NOTE: bash syntax is used here
 #
 # Cbench job binary: CBENCHTEST_BIN_HERE/XHPLINTEL_BIN_HERE
