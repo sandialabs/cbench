@@ -2,7 +2,7 @@ include ../../make.def
 
 SRC=mdtest-1.7.4
 TAR=$(SRC).tar.gz
-URL=http://superb-east.dl.sourceforge.net/sourceforge/mdtest/$(TAR)
+URL=http://downloads.sourceforge.net/project/mdtest/mdtest/$(SRC)/$(TAR)
 
 EXECS = $(SRC)/mdtest
 INSTALLDIR = $(bin_dir)
