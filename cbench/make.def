@@ -344,7 +344,7 @@ endif
 ifeq ($(ARCH),x86_64)
 
   ifeq ($(COMPILER),intel)
-  COMMON_FLAGS = -traceback
+  COMMON_FLAGS = -traceback 
   #OPTFLAGS = -O3 -axP -xW -mcmodel=medium
   # really picky flags to track down application runtime issues better
   #OPTFLAGS = -O2 -xsse4.2 -g -traceback -fpe0 -fp-model source -prec-div -prec-sqrt -nolib-inline -protect_parens -fp-stack-check
@@ -576,7 +576,7 @@ endef
 
 define download-url
 	@file=`basename $1`; url=`dirname $1`; \
-	for path in $$url http://cbench.sourceforge.net/common/tarballs http://synapse.sandia.gov/static/tarballs; do \
+	for path in $$url http://cbench.sourceforge.net/common/tarballs https://synapse.sandia.gov/static/tarballs; do \
 	   [ -f $$file ] && break; \
 	   wget --connect-timeout=10 --tries=2 --no-check-certificate $$path/$$file; \
 	done
