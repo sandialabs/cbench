@@ -14,7 +14,7 @@ sizeofint.h: sizeofint ;
 	sh -c "./sizeofint > sizeofint.h"
 
 maxalloc: sizeofint.h ;
-	$(CC) maxalloc.c -o maxalloc
+	$(CC) $(CFLAGS) maxalloc.c -o maxalloc
 
 memtst: sizeofint.h ;
 	$(CC) $(MEMTST_CFLAGS) -c memory.c -o memory.o
