@@ -126,6 +126,7 @@ GetOptions( 'ident=s' => \$ident,
 			'report:s' => \$report,
 			'usecache' => \$usecache,
 			'pokejobstatusi=s' => \$pokejobstatus,
+                        'csv' => \$csv,
 );
 
 if (defined $help) {
@@ -576,7 +577,7 @@ for $testid (keys %data) {
 					# correlate the metric to its units in the 2D hash
 					$outhash{'UNITS'}{"$columns{'min'}"} = $metrics_to_units{$metric};
 				} 
-				if (defined $statsmode or defined $grepable) {
+				if (defined $statsmode or defined $grepable or defined $csv) {
 					$columns{'stats'} = $columnidx++;
 					$outhash{'0'}{"$columns{'stats'}"} .= "$testid-$bench-$ppn-$metric";
 					# correlate the metric to its units in the 2D hash
@@ -742,6 +743,11 @@ if (defined $gazebo) {
 if (defined $grepable) {
 	results_to_stdout_grephappy(\%outhash);
 	exit;
+}
+
+if (defined $csv) {
+    results_to_csv(\%outhash);
+    exit;
 }
 
 # print results to stdout
@@ -1666,6 +1672,74 @@ sub results_to_stdout_grephappy {
 	print @output;
 }
 
+sub results_to_csv {
+    my $outhash = shift;
+
+    my $firstrow = 0;
+    my $lastrow = 0;
+    my $column = 0;
+    my $row = 1;
+    my %units = ();
+
+    # find the possbile UNITS for these tests
+    for my $thisjob (keys %{$outhash->{UNITS}}) {
+        my $thisunit = $outhash->{UNITS}{$thisjob};
+        ($thisunit ne "UNITS") and $units{$thisunit} = 1;
+    }
+
+    # create a separate CSV for all data with a certain unit type
+    for my $unitval (keys %units) {
+
+        my $unitstr = $unitval;
+        $unitstr =~ s/\//_/g;   #remove '/' from the units so we can use it as a filename
+
+        # construct a descriptive filename
+        my $filename = "";
+        $filename .= (defined $ident) ? "$ident-" : "test-";
+        $filename .= (defined $match) ? "$match-" : "all-";
+        $filename .= "$unitstr.csv";
+
+        # create a separate CSV for each unit type
+        open (CSV, ">$filename") or die "Could not open $filename for CSV: $!\n";
+
+        # print header line
+        print CSV "\"TEST\",\"NUMPROCS\",\"PPN\",\"$unitval\"\n";
+
+        for $job (sort {$outhash{'0'}{$a} cmp $outhash{'0'}{$b} } (keys %{$outhash{'0'}}) ) {
+            ($job == 0) and next;
+
+            for $np (sort {$a <=> $b} (keys %{$outhash}) ) {
+                ($np == 0) and next;
+
+                # only results with the current unitval are allowed
+                ($outhash->{UNITS}{$job} ne $unitval) and next;
+
+                my $seriesval = $outhash->{'0'}{$job};
+                # gather ppn and ident from series name
+                $seriesval =~ /.*-(\d+)ppn-.*/ and my $ppnval = $1;
+                $seriesval =~ /^(\w+)-.*/ and my $identval = $1;
+
+                # strip out ident and ppn from series name
+                $seriesval =~ s/^\w+-(.*)/$1/g;
+                $seriesval =~ s/^(\w+-)\d+ppn-(.*)/$1$2/g;
+
+                # start constructing the output line
+                my $line = "\"$seriesval\",$np,$ppnval,";
+
+                if (defined $outhash->{$np}{$job}) {
+                    my $outval = $outhash->{$np}{$job};
+                    $outval =~ s/\s+//g;
+                    $outval =~ s/NODATA/NA/g; # R prefers "NA" to "NODATA" for non-values
+                    $line .= $outval;
+                    print CSV "$line\n";
+                }
+            }
+        }
+        close (CSV);
+        print "CSV file $filename successfully created.\n";
+    }
+}
+
 
 
 sub results_to_gnuplot {
@@ -2298,5 +2372,6 @@ sub usage {
 			"   --gazebo           Outputs results of the parse in a format that is friendly\n".
 			"                      to being run under the Gazebo testing system\n".
 			"   --report           Generate a detailed workload report for all parsed jobs\n".
+                        "   --csv              Create a CSV file for each type of unit found in the output\n".
             "   --debug <level>  turn on debugging at the specified level\n";
 }
