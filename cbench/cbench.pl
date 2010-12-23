@@ -490,7 +490,7 @@ sub pbspro_query {
 
 	if (defined $DEBUG and $DEBUG > 1) {
 		print "DEBUG:DEBUG:pbspro_query() Dump of \%jobdata:\n";
-		print Dumper (%jobdata);
+		print Dumper (\%jobdata);
 	}
 
 	return %jobdata;
@@ -583,7 +583,7 @@ sub slurm_query {
 
 	if (defined $DEBUG and $DEBUG > 1) {
 		print "DEBUG:slurm_query() Dump of \%jobdata:\n";
-		print Dumper (%jobdata);
+		print Dumper (\%jobdata);
 	}
 
 	return %jobdata;
@@ -709,7 +709,7 @@ sub torque_query {
 
 	if (defined $DEBUG and $DEBUG > 1) {
 		print "DEBUG:torque_query() Dump of \%jobdata:\n";
-		print Dumper (%jobdata);
+		print Dumper (\%jobdata);
 	}
 
 	return %jobdata;
@@ -1048,9 +1048,9 @@ sub start_jobs {
 
 	if (defined $DEBUG and $DEBUG > 1) {
 		print "DEBUG:start_jobs() Dump of \%bench_list:\n";
-		print Dumper (%bench_list);
+		print Dumper (\%bench_list);
 		print "DEBUG:start_jobs() Dump of \%scripts:\n";
-		print Dumper (%scripts);
+		print Dumper (\%scripts);
 	}
    
 	if ($start_method =~ /throttled/) {
@@ -1227,7 +1227,7 @@ sub start_jobs {
 	}
 	elsif ($start_method =~ /combobatch/) {
 		# combination batch mode
-		#print Dumper (%$optdata);
+		#print Dumper (\%$optdata);
 
 		# get into the combobatch test ident dir because we want to
 		# build and submit jobs from here
@@ -1690,7 +1690,7 @@ sub linux_parse_cpuinfo {
 
 	(defined $DEBUG and $DEBUG > 2 ) and do {
 		debug_print(3,"DEBUG:linux_parse_cpuinfo()\n===================\n");
-		print Dumper (%cpumap);
+		print Dumper (\%cpumap);
 		debug_print(3,"===================\n");
 	};
 
@@ -2157,7 +2157,7 @@ sub load_parse_filter_modules {
 		else {
 			local $symname = "parse_filter::". $_ ."::parse_filters";
 			*sym = \%$symname;
-			#print Dumper (%sym),"\n";
+			#print Dumper (\%sym),"\n";
 			foreach my $k (keys %sym) {
 				$$href{$k} = $sym{$k};
 			}
@@ -2166,7 +2166,7 @@ sub load_parse_filter_modules {
 				"DEBUG: loaded parse_filter::$_ filters\n";
 		}
 	}
-	#print Dumper (%main::parse_filters);
+	#print Dumper (\%main::parse_filters);
 }
 
 

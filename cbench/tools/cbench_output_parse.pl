@@ -260,7 +260,7 @@ foreach $k (keys %parse_modules) {
 if (defined $DEBUG and $DEBUG > 2) {
 	print "====================================================================\n";
 	print "DEBUG: Dumping \%parse_modules_files hash:\n";
-	print Dumper (%parse_modules_files);
+	print Dumper (\%parse_modules_files);
 }
 
 # Each parse module has the option of having an alias_spec member
@@ -438,22 +438,22 @@ elsif (defined $usecache) {
 if (defined $DEBUG and $DEBUG > 2) {
 	print "====================================================================\n";
 	print "DEBUG: Dumping \%data hash:\n";
-	print Dumper (%data);
+	print Dumper (\%data);
 	print "====================================================================\n";
 	print "DEBUG: Dumping \%metrics_to_units hash:\n";
-	print Dumper (%metrics_to_units);
+	print Dumper (\%metrics_to_units);
 	print "====================================================================\n";
 	print "DEBUG: Dumping \%unit_groupings hash:\n";
-	print Dumper (%unit_groupings);
+	print Dumper (\%unit_groupings);
 	print "====================================================================\n";
 	print "DEBUG: Dumping \%jobdiag_data hash:\n";
-	print Dumper (%jobdiag_data);
+	print Dumper (\%jobdiag_data);
 	print "====================================================================\n";
 	print "DEBUG: Dumping \%success_data hash:\n";
-	print Dumper (%success_data);
+	print Dumper (\%success_data);
 	print "====================================================================\n";
 	print "DEBUG: Dumping \%nodediag_data hash:\n";
-	print Dumper (%nodediag_data);
+	print Dumper (\%nodediag_data);
 }
 
 # We need to run through the raw data hash once to get a list of all the
@@ -515,10 +515,10 @@ for $testid (keys %data) {
 (defined $DEBUG and $DEBUG > 2) and do {
 	print "====================================================================\n";
 	print "DEBUG: Dumping \%metrics hash:\n";
-	print Dumper (%metrics);
+	print Dumper (\%metrics);
 	print "====================================================================\n";
 	print "DEBUG: Dumping \%dplotdata hash:\n";
-	print Dumper (%dplotdata);
+	print Dumper (\%dplotdata);
 };
 
 
@@ -683,7 +683,7 @@ cleanup_output_hash(\%outhash);
 (defined $DEBUG and $DEBUG > 2) and do {
 	print "====================================================================\n";
 	print "DEBUG: Dumping \%outhash hash:\n";
-	print Dumper (%outhash);
+	print Dumper (\%outhash);
 };
 
 print "\n";
@@ -1075,7 +1075,7 @@ sub parse_output_file {
 		# we have all the buffers we need, so call the parse() method of the appropriate
 		# parse module and pass the array of output buffer references
 		my $filedata = $parse_modules{$parsemod}->parse("$fileid",@output_bufrefs);
-		#print Dumper (%{$filedata});
+		#print Dumper (\%{$filedata});
 
 		# try to help with memory reclaimation
 		@output_bufrefs = undef;
