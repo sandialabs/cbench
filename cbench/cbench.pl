@@ -155,35 +155,6 @@ sub openmpi_ranktonode_parse {
 	return \%nodelist;
 }
 
-###########################################################
-# Support for the "prun" job launch method
-#
-sub prun_joblaunch_cmdbuild {
-	my $numprocs = shift;
-	my $ppn = shift;
-	my $numnodes = shift;
-
-	my $cmd;
-	if (length $joblaunch_cmd > 1) {
-		$cmd = $joblaunch_cmd;
-	}
-
-	else {
-		$cmd = "prun";
-	}
-	
-	# if we use nolocal, and fail to specify extra job nodes, set it
-	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
-	
-	$cmd .= " -N $numnodes -n $numprocs";
-
-	# putting this last so that it can act as extra launcher arguments, or as
-	# a wrapper of some sort (numa_wrapper, valgrind, etc)
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
-
-	return $cmd;
-}
-
 
 ###########################################################
 # Support for the "mpiexec" job launch method
@@ -279,36 +250,6 @@ sub mpiexec_ranktonode_parse {
 
 
 ###########################################################
-# Support for the "mpirun_prun" job launch method
-#
-sub mpirun_prun_joblaunch_cmdbuild {
-	my $numprocs = shift;
-	my $ppn = shift;
-	my $numnodes = shift;
-
-	my $cmd;
-	if (length $joblaunch_cmd > 1) {
-		$cmd = $joblaunch_cmd;
-	}
-	else {
-		$cmd = "mpirun.prun";
-	}
-	
-	# if we use nolocal, and fail to specify extra job nodes, set it
-	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
-	
-	($ppn == 1) and $cmd .= " -pernode";
-	
-	$cmd .= " -np $numprocs ";
-	
-	# putting this last so that it can act as extra launcher arguments, or as
-	# a wrapper of some sort (numa_wrapper, valgrind, etc)
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
-
-	return $cmd;
-}
-
-###########################################################
 # Support for the "mpirun" job launch method
 #
 sub mpirun_joblaunch_cmdbuild {
@@ -338,36 +279,6 @@ sub mpirun_joblaunch_cmdbuild {
 	return $cmd;
 }
 
-###########################################################
-# Support for the "mpirun_ch_p4" job launch method
-#
-sub mpirun_ch_p4_joblaunch_cmdbuild {
-	my $numprocs = shift;
-	my $ppn = shift;
-	my $numnodes = shift;
-
-	my $cmd;
-	if (length $joblaunch_cmd > 1) {
-		$cmd = $joblaunch_cmd;
-	}
-	else {
-		# typically mpirun is the default when using ch_p4
-		$cmd = "mpirun";
-	}
-
-	# if we use nolocal, and fail to specify extra job nodes, set it
-	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
-
-	#($ppn == 1) and $cmd .= " -pernode";
-
-	$cmd .= " -machine p4 -np $numprocs ";
-
-	# putting this last so that it can act as extra launcher arguments, or as
-	# a wrapper of some sort (numa_wrapper, valgrind, etc)
-	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
-
-	return $cmd;
-}
 
 ###########################################################
 # Support for the "yod" job launch method
