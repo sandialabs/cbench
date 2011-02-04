@@ -73,6 +73,14 @@ hwtest: $(HWTEST_SUBDIRS)
 nodehwtest: hwtest standalone standaloneinstall
 	$(call do-hwtest-subdirs,install)
 
+cbenchstandalonedir: openmpi
+	@sbin/install_cbenchtest --testtop
+	$(MAKE) -C opensource/ompi install
+
+openmpi: 
+	$(MAKE) -C opensource/ompi distclean
+	$(MAKE) -C opensource/ompi 
+
 # targets to compile the Cbench standalone MPI
 mpich: opensource/mpich/lib/libmpich.a
 opensource/mpich/lib/libmpich.a:

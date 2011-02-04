@@ -2595,7 +2595,11 @@ sub get_cbench_addon {
 # return a correct BENCH_TEST/CBENCHTEST path
 sub get_bench_test {
 
-	if ($ENV{CBENCHTEST}) {
+	if ($ENV{CBENCHSTANDALONEDIR}) {
+		debug_print(2,"DEBUG: found CBENCHSTANDALONEDIR environment variable\n");
+		return $ENV{CBENCHSTANDALONEDIR};
+	} 
+	elsif ($ENV{CBENCHTEST}) {
 		debug_print(2,"DEBUG: found CBENCHTEST environment variable\n");
 		return $ENV{CBENCHTEST};
 	}
