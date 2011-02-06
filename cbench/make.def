@@ -590,6 +590,11 @@ define download-url
 	done
 endef
 
+# downlad a url with curl
+# works great for redirected sites like sf $1 is the sf download url
+define download-sf-url
+	curl --connect-timeout 10 --retry 2 -L -O $1 
+endef
 
 
 # Installation variables
