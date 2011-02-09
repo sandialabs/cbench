@@ -26,7 +26,7 @@ $(NAME):
 
 install: .make-$(NAME)
 	mkdir -p $(CBENCHTEST)/$(NAME)
-	cp libgoto* $(CBENCHTEST)/$(NAME) 
+	cp $(NAME)/libgoto* $(CBENCHTEST)/$(NAME) 
 
 clean:
 
