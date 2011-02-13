@@ -1,9 +1,10 @@
 include ../../make.def
 
-SRC=hpcc-1.2.0
+SRC=hpcc-1.4.0
 TAR=$(SRC).tar.gz
 HPL=$(SRC)/hpl
 MPICH_CH=ch_shmem
+URL=http://icl.cs.utk.edu/projectsfiles/hpcc/download/$(TAR)
 
 # hpcc.ch_shmem won't exist for the normal case, so make install will print an error
 ifeq ($(CBENCH_STANDALONE),yes)
@@ -54,7 +55,7 @@ clean:
 	/bin/rm -f xerbla.o
 
 distclean:
-	/bin/rm -rf $(SRC) xerbla.o .patched src .debugpatched
+	/bin/rm -rf $(SRC) xerbla.o .patched src .debugpatched $(TAR)
 
 make.def: $(SRC)
 	[ -d $(HPL) ] && cd $(HPL) && ln -sf $(CBENCHOME)/opensource/hpcc/Make.cbench .
@@ -64,6 +65,11 @@ make.def: $(SRC)
 $(SRC): $(TAR)
 	[ ! -d $(SRC) ] && tar zxf $(TAR) && rm -f .patched .debugpatched
 	ln -sf $(SRC) src
+
+$(TAR):
+	$(call download-url,$(URL))
+	-[ -e $(TAR) ] && touch $(TAR)
+
 
 .patched:
 	for patch in *.patch ; do \
