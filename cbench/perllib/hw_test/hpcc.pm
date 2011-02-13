@@ -74,6 +74,7 @@ sub run {
 	
 	# find the appropriate mpirun to use
 	my $mpirun = main::find_bin('mpirun',"$main::bench_test/mpich/bin","$main::BENCH_HOME/opensource/mpich/bin");
+	$mpirun = main::find_bin('mpirun',"$main::bench_test/openmpi/bin") if defined($ENV{CBENCHSTANDALONEDIR});
 	(!defined $mpirun) and do {
 		print "$shortpackage\.run() Couldn't find mpirun...exiting\n";
 		return 1;
@@ -149,6 +150,7 @@ sub run {
 	# Ok, should be ready to run HPCC
 	my $cmd = "$mpirun -machine shmem ".
 		"-machinefile $rundir\/hostlist -np 1 $path/hpcc.ch_shmem";
+	$cmd = "$mpirun -machinefile $rundir\/hostlist -n 1 $path/hpcc" if defined($ENV{CBENCHSTANDALONEDIR});
 	(defined $main::DEBUG) and print
 		"DEBUG:$shortpackage\.run() cmd = $cmd\n";
 	system("$cmd");

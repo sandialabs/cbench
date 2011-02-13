@@ -142,6 +142,7 @@ sub run {
 
 	# find the appropriate mpirun to use
 	my $mpirun = main::find_bin('mpirun',"$main::bench_test/mpich/bin","$main::BENCH_HOME/opensource/mpich/bin");
+	$mpirun = main::find_bin('mpirun',"$main::bench_test/openmpi/bin") if defined($ENV{CBENCHSTANDALONEDIR});
 	(!defined $mpirun) and do {
 		print "$shortpackage\.run() Couldn't find mpirun...exiting\n";
 		return 1;
@@ -150,6 +151,7 @@ sub run {
 	# build mpirunned psnap command line
 	my $cmd = "$mpirun -machine shmem ".
 		"-machinefile $file -np $np $path/psnap.ch_shmem -n $iter";
+	$cmd = "$mpirun -machinefile $file -n $np $path/psnap -n $iter" if defined($ENV{CBENCHSTANDALONEDIR});
 	(defined $main::DEBUG) and print
 		"DEBUG:$shortpackage\.run() cmd = $cmd\n";
 	#

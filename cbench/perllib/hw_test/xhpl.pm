@@ -73,6 +73,7 @@ sub run {
 	
 	# find the appropriate mpirun to use
 	my $mpirun = main::find_bin('mpirun',"$main::bench_test/mpich/bin","$main::BENCH_HOME/opensource/mpich/bin");
+	$mpirun = main::find_bin('mpirun',"$main::bench_test/openmpi/bin") if defined($ENV{CBENCHSTANDALONEDIR});
 	(!defined $mpirun) and do {
 		print "$shortpackage\.run() Couldn't find mpirun...exiting\n";
 		return 1;
@@ -157,6 +158,7 @@ sub run {
 		# Ok, should be ready to run Linpack
 		my $cmd = "$mpirun -machine shmem ".
 			"-machinefile $rundir\/hostlist -np $ppn $path/xhpl.ch_shmem";
+		$cmd = "$mpirun -machinefile $rundir\/hostlist -n $ppn $path/xhpl" if defined($ENV{CBENCHSTANDALONEDIR});
 		main::debug_print(1,"DEBUG:$shortpackage\.run() cmd = $cmd\n");
 		print $ofh "====> $ppn"."ppn\n";
 		main::run_single_process("$cmd",\@buf);
