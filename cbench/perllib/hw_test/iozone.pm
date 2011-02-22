@@ -186,7 +186,7 @@ sub run {
 	}
 
 	# Build the iozone command line.
-	my $cmd = "$path/iozone -i 0 -i 1 -i 2 -e -T -K -r $stripe -s $size\m -t $numfs -F ";
+	my $cmd = "$path/iozone -i 0 -i 1 -i 2 -I -e -T -K -r $stripe -s $size\m -t $numfs -F ";
 
 	# tack on the list of filesystems to iozone command line
 	my $i = 1;
