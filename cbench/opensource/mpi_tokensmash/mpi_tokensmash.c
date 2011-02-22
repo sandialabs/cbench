@@ -49,9 +49,9 @@
 #define DEALER_ID           0x0000ff00
 #define TOKEN_ID            0x000000ff
 #define DEALER_ID_SHIFT     8
-#define GENERIC_TAG         0x00aa0000
-#define CTRL_WORD_TAG       0x00bb0000
-#define STATS_TAG           0x00cc0000
+#define GENERIC_TAG         0x000a0000
+#define CTRL_WORD_TAG       0x000b0000
+#define STATS_TAG           0x000c0000
 
 /* token_obj_t defines */
 #define TAG_IDLE            0
@@ -106,7 +106,7 @@ typedef enum {STAR,MESH_2D,MESH_3D} topology_t;
 
 /* typedefs and structures */
 typedef struct {
-    unsigned int tag;
+    int tag;
     unsigned int start_edge;
     unsigned int current_edge;
     unsigned int last_edge;
@@ -121,7 +121,7 @@ typedef struct {
 
 typedef struct {
     unsigned int status;
-    unsigned int tag;
+    int tag;
     MPI_Status mpi_status;
     MPI_Request *mpi_request;
     MPI_Request *send_mpi_request;
@@ -1758,7 +1758,7 @@ int main(int argc, char *argv[])
         ctrl_word = CTRL_SHUTDOWN;
         printf("%d: Sending CTRL_SHUTDOWN to everyone...\n",my_rank);
 
-        for (i=0; i<mpi_size; i++) {
+        for (i=1; i<mpi_size; i++) {
             rc = MPI_Send(&ctrl_word,1,MPI_UNSIGNED_LONG,i,CTRL_WORD_TAG,MPI_COMM_WORLD);
             if (rc != MPI_SUCCESS) {
                 printf("%d: MPI_Send to %d of CTRL_SHUTDOWN failed!\n",
@@ -1883,7 +1883,7 @@ int main(int argc, char *argv[])
     }
 
 
-    final_cleanup(0);
+    /*final_cleanup(0);*/
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;
