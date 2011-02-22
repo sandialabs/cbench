@@ -315,6 +315,38 @@ sub yod_joblaunch_cmdbuild {
 
 
 ###########################################################
+# Support for the "alps" job launch method
+# This is the Cray Application Level Placement Scheduler on CLE 3.x+
+#
+
+# routine to build launch command lines
+sub alps_joblaunch_cmdbuild {
+	my $numprocs = shift;
+	my $ppn = shift;
+	my $numnodes = shift;
+
+	my $cmd;
+	if (length $joblaunch_cmd > 1) {
+		$cmd = $joblaunch_cmd;
+	}
+	else {
+		$cmd = "aprun";
+	}
+	
+	# if we use nolocal, and fail to specify extra job nodes, set it
+	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
+	
+	$cmd .= " -n $numprocs -N $ppn";
+
+	# putting this last so that it can act as extra launcher arguments, or as
+	# a wrapper of some sort (numa_wrapper, valgrind, etc)
+	(length $joblaunch_extraargs > 1) and $cmd .= " $joblaunch_extraargs";
+
+	return $cmd;
+}
+
+
+###########################################################
 #
 # This section has all the subroutines that support the
 # various batch systems that Cbench knows about.
@@ -538,6 +570,29 @@ sub moab_query {
 
 sub moab_batch_extension {
 	return "moab";
+}
+
+###########################################################
+# Support for the "cletorque" batch system
+#
+# That is Torque running in the Cray Linux Environment (CLE)
+sub cletorque_batchsubmit_cmdbuild {
+	return torque_batchsubmit_cmdbuild();
+}
+
+sub cletorque_nodespec_build {
+	# a reference to an array of nodes
+	my $nodearray = shift;
+	return torque_nodespec_build($nodearray);
+}
+
+sub cletorque_query {
+	my $regex = shift;
+	return torque_query($regex);
+}
+
+sub cletorque_batch_extension {
+	return "pbs";
 }
 
 ###########################################################
