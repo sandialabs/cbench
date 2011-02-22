@@ -43,3 +43,15 @@ cbench_echo ""
 # grab the jobid
 JOBID="$SLURM_JOB_ID"
 
+# dump out some information on the environment the job is running in for
+# posterity
+cbench_echo "======= Slurm Job Environment Info ========"
+# dump some key environmental variables
+env | egrep 'SLURM' | sort | while read tmp
+do
+	cbench_echo "$tmp"
+done
+
+cbench_echo "==========================================="
+cbench_echo ""
+

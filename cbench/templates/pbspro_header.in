@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-############ Cbench torque_header.in ######################
+############ Cbench pbspro_header.in ######################
 # Directives for PBS Pro
 # NOTE: Torque seems to require that these directives be
 #       first, I imagine PBS Pro does too...
@@ -13,7 +13,7 @@
 #
 #PBS -l walltime=WALLTIME_HERE
 #
-# other attributes you might use but are hidded from PBS Pro processing
+# other attributes you might use but are hidden from PBS Pro processing
 #HIDE -q somequeue
 #HIDE -A 70400/01.01.02
 
