@@ -21,7 +21,7 @@ $(TAR) download:
 	(cd $(OPENMPI); export CC=$(PLAINCC); export F77=$(PLAINF77); \
 	 export FC=$(PLAINF77); export CXX=$(PLAINCXX); \
 	 export CFLAGS='-O1'; export LDFLAGS='-lpthread'; \
-	 ./configure --enable-orterun-prefix-by-default \
+	 ./configure --enable-orterun-prefix-by-default --enable-mpi-threads\
 	 --prefix=$(BENCH_TEST)/openmpi)
 	@touch $@
 

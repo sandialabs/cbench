@@ -76,6 +76,8 @@ nodehwtest: hwtest standalone standaloneinstall
 cbenchstandalonedir: openmpi
 	@sbin/install_cbenchtest --testtop
 	$(MAKE) -C opensource/ompi install
+	$(MAKE) -C opensource/GotoBLAS2 install
+	$(MAKE) -C opensource/hwtest
 
 openmpi: 
 	$(MAKE) -C opensource/ompi distclean
