@@ -4,10 +4,12 @@
 include ../../make.def
 
 export CFLAGS
-SRC=l_lpk_p_10.2.5.013
-UNTARSRC=linpack_10.2.5
+SRC=l_lpk_p_10.3.2.005
+UNTARSRC=linpack_10.3.2
 TAR=$(SRC).tgz
-URL=http://registrationcenter-download.intel.com/akdlm/irc_nas/1778/${TAR}
+#URL=http://registrationcenter-download.intel.com/akdlm/irc_nas/1778/${TAR}
+URL=http://registrationcenter-download.intel.com/akdlm/irc_nas/2070/$(TAR)
+
 MPICH_CH=ch_shmem
 HPL2=$(CBENCHOME)/opensource/HPLintel
 
@@ -52,6 +54,8 @@ local: linpack
 $(TAR):
 	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
+
+extractnodeperf: $(SRC)
 
 clean:
 	-[ -d $(UNTARSRC) ] && $(MAKE) -C $(UNTARSRC)/benchmarks/mp_linpack clean_arch_all arch=cbench

@@ -1,12 +1,16 @@
 include ../../make.def
 
-SRC = nodeperf.c nodeperf2.c xerbla.c dclock.c
+SRC = nodeperf.c xerbla.c dclock.c
+INTERNALSRC = nodeperf.c nodeperf2.c xerbla.c dclock.c
 OBJS = xerbla.o dclock.o
 
 OPFLAGS += -g
 
 INSTALLDIR = $(bin_dir)
-INSTALLTARGETS = nodeperf2-nompi nodeperf nodeperf2 
+INSTALLTARGETS = nodeperf 
+INTERNALINSTALLTARGETS = nodeperf2-nompi nodeperf  nodeperf2
+
+NODEPERFILE=$(CBENCHOME)/opensource/HPLintel/src/../mp_linpack/nodeperf.c
 
 default: $(INSTALLTARGETS)
 
@@ -32,18 +36,9 @@ dclock.o: dclock.c
 	$(CC) $(OPTFLAGS) -c $<
 
 nodeperf.c:
-	$(call download-url,http://synapse.sandia.gov/static/tarballs/nodeperf.c)
-	@if [ -e nodeperf.c ]; then \
-		touch nodeperf.c;\
-	else \
-		echo; \
-		echo "ERROR:  Please download Intel's MP Linpack package from the following address,"; \
-		echo "ERROR:  extract nodeperf.c to this directory, and try the make again:"; \
-		echo "ERROR:"; \
-		echo "ERROR:  http://www.intel.com/software/products/mkl/linpack.htm"; \
-		echo "ERROR:  http://www.intel.com/cd/software/products/asmo-na/eng/363191.htm"; \
-		echo; \
-		false; \
+	@if [ ! -f $(NODEPERFILE) ]; then \
+		make -C $(CBENCHOME)/opensource/HPLintel extractnodeperf; \
+		cp $(NODEPERFILE) $(CBENCHOME)/opensource/nodeperf; \
 	fi
 
 nodeperf2.c:

@@ -59,17 +59,12 @@ stream-gcc-c: stream_big.c
 	$(PLAINCC) $(COMMON_FLAGS) -O3 -mtune=nocona -o $@ $^ -lm
 stream-gcc2-c: stream_big.c
 	$(PLAINCC) $(COMMON_FLAGS) -O3 -mtune=opteron -o $@ $^ -lm
-stream-gcc3-c: stream_big.c
-	-gcc4 $(COMMON_FLAGS) -O3 -mtune=nocona -o $@ $^ -lm
-stream-gcc4-c: stream_big.c
-	-gcc4 $(COMMON_FLAGS) -O3 -mtune=opteron -o $@ $^ -lm
 stream-gcc5-c: stream_big.f mysecond.o
-	gfortran $(COMMON_FLAGS) -O3 -mtune=opteron -o $@ $^ -lm
+	$(PLAINF90) $(COMMON_FLAGS) -O3 -mtune=opteron -o $@ $^ -lm
 stream-gcc6-c: stream_big.f mysecond.o
-	gfortran $(COMMON_FLAGS) -O3 -mtune=nocona -o $@ $^ -lm
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -mtune=nocona -o $@ $^ -lm
 stream-gcc7-c: stream_big.f mysecond.o
-	gfortran $(COMMON_FLAGS) -O3 -mtune=amdfam10 -funroll-all-loops -o $@ $^ -lm
-
+	$(PLAINF77) $(COMMON_FLAGS) -O3 -mtune=amdfam10 -funroll-all-loops -o $@ $^ -lm
 
 # stream binaries optimized for Intel compilers
 stream-intel-c: stream_big.c
