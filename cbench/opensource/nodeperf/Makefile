@@ -38,8 +38,8 @@ dclock.o: dclock.c
 nodeperf.c:
 	@if [ ! -f $(NODEPERFILE) ]; then \
 		make -C $(CBENCHOME)/opensource/HPLintel extractnodeperf; \
-		cp $(NODEPERFILE) $(CBENCHOME)/opensource/nodeperf; \
 	fi
+	cp $(NODEPERFILE) $(CBENCHOME)/opensource/nodeperf
 
 nodeperf2.c:
 	$(call download-url,http://synapse.sandia.gov/static/tarballs/nodeperf2.c)

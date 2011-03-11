@@ -37,7 +37,12 @@ linpack: $(SRC) xerbla
 	[ -e src/bin/cbench/xhpl ] && /bin/mv src/bin/cbench/xhpl src/bin/cbench/xhplintel
 
 $(SRC): $(TAR)
-	-[ ! -d $(UNTARSRC) ] && tar xzf $(TAR)
+	@echo "Extracting $(SRC)"
+	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
+	else \
+		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
+		exit 1; \
+	fi
 	ln -sf $(UNTARSRC)/benchmarks/mp_linpack src
 	ln -sf $(HPL2)/Make.cbench $(HPL2)/$(UNTARSRC)/benchmarks/mp_linpack/Make.cbench
 	touch $(UNTARSRC)
