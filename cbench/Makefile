@@ -23,7 +23,8 @@
 
 include make.def
 
-HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride stab
+OLDHW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride stab
+HW_TESTS = fpck memtester streams nodeperf llcbench stress matmult stride stab
 
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck ior_bench iozone bonnie++ rotate HPLlinpack \
@@ -63,7 +64,7 @@ iotest:
 	$(MAKE) -C opensource/ior_bench install
 
 hwtest: $(HWTEST_SUBDIRS)
-	$(do-hwtest-subdirs)
+	$(do-hwtest-subdirs) 
 	$(MAKE) -C opensource/NPB serial
 	$(MAKE) -C opensource/iozone
 	$(MAKE) -C opensource/iozone install
@@ -76,12 +77,25 @@ nodehwtest: hwtest standalone standaloneinstall
 cbenchstandalonedir: openmpi
 	@sbin/install_cbenchtest --testtop
 	$(MAKE) -C opensource/ompi install
+	$(MAKE) -C opensource/GotoBLAS2 distclean
 	$(MAKE) -C opensource/GotoBLAS2 install
-	$(MAKE) -C opensource/hwtest
+	$(call do-hwtest-subdirs,distclean)
+	$(do-hwtest-subdirs)
+	$(call do-hwtest-subdirs,install)
+	$(do-compiled-bin-installs-binident)
+	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
 
 openmpi: 
 	$(MAKE) -C opensource/ompi distclean
 	$(MAKE) -C opensource/ompi 
+
+# more to test the flow ... can remove later -cdm
+cbenchstandalonedirbins:
+	$(call do-hwtest-subdirs,distclean)
+	$(do-hwtest-subdirs)
+	$(call do-hwtest-subdirs,install)
+	$(do-compiled-bin-installs-binident)
+	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
 
 # targets to compile the Cbench standalone MPI
 mpich: opensource/mpich/lib/libmpich.a
