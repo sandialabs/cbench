@@ -6,7 +6,7 @@ TAR=$(SRC).tar
 URL="http://www.iozone.org/src/current/$(TAR)"
 
 INSTALLDIR = $(bin_dir)
-INSTALLTARGETS = src/current/iozone src/current/fileop
+INSTALLTARGETS = src/src/current/iozone src/src/current/fileop
 
 ifeq ($(ARCH),x86_64)
 	TARGET=linux-AMD64
