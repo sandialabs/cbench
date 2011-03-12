@@ -1,5 +1,10 @@
 include ../../make.def
 
+VERSION=3_373
+SRC=iozone$(VERSION)
+TAR=$(SRC).tar
+URL="http://www.iozone.org/src/current/$(TAR)"
+
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = src/current/iozone src/current/fileop
 
@@ -13,13 +18,30 @@ ifeq ($(COMPILER),intel)
 	LDFLAGS += -i-static -static-libcxa -static
 endif
 
+all: $(SRC)
+	$(MAKE) CC=$(PLAINCC) CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" -C src/src/current $(TARGET)
+
 default all:
-	$(MAKE) CC=$(PLAINCC) CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" -C src/current $(TARGET)
+
+$(TAR):
+	@echo "Downloading $(TAR)"
+	$(call download-url,$(URL))
+
+$(SRC): $(TAR)
+	@echo "Extracting $(SRC)"
+	@if [ -f $(TAR) ] ; then tar -xf $(TAR); \
+	else \
+		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
+		exit 1; \
+	fi
+	ln -sf $(SRC) src
 
 clean:
-	$(MAKE) -C src/current clean
+	$(MAKE) -C src/src/current clean
 
-distclean: clean
+distclean:
+	-/bin/rm -rf $(SRC) $(TAR) src
 
 install uninstall:
 	$(do-$@)
+
