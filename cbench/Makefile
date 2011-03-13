@@ -74,6 +74,7 @@ hwtest: $(HWTEST_SUBDIRS)
 nodehwtest: hwtest standalone standaloneinstall
 	$(call do-hwtest-subdirs,install)
 
+# BEGIN STANDALONE 
 cbenchstandalonedir: openmpi
 	@sbin/install_cbenchtest --testtop
 	$(MAKE) -C opensource/ompi install
@@ -82,6 +83,24 @@ cbenchstandalonedir: openmpi
 	$(call do-hwtest-subdirs,distclean)
 	$(do-hwtest-subdirs)
 	$(call do-hwtest-subdirs,install)
+	$(MAKE) -C opensource/lanl distclean
+	$(MAKE) -C opensource/lanl 
+	$(MAKE) -C opensource/lanl install
+	$(MAKE) -C opensource/iozone distclean
+	$(MAKE) -C opensource/iozone
+	$(MAKE) -C opensource/iozone install
+	$(MAKE) -C opensource/HPLlinpack distclean
+	$(MAKE) -C opensource/HPLlinpack
+	$(MAKE) -C opensource/HPLlinpack install
+	$(MAKE) -C opensource/hpcc distclean
+	$(MAKE) -C opensource/hpcc
+	$(MAKE) -C opensource/hpcc install
+	$(MAKE) -C opensource/HPLinpack2 distclean
+	$(MAKE) -C opensource/HPLinpack2
+	$(MAKE) -C opensource/HPLinpack2 install
+	$(MAKE) -C opensource/NPB distclean
+	$(MAKE) -C opensource/NPB serial
+	$(MAKE) -C opensource/NPB install
 	$(do-compiled-bin-installs-binident)
 	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
 
@@ -89,13 +108,12 @@ openmpi:
 	$(MAKE) -C opensource/ompi distclean
 	$(MAKE) -C opensource/ompi 
 
-# more to test the flow ... can remove later -cdm
+# more to test the flow of new tests to integrate... can remove later -cdm
 cbenchstandalonedirbins:
-	$(call do-hwtest-subdirs,distclean)
-	$(do-hwtest-subdirs)
-	$(call do-hwtest-subdirs,install)
 	$(do-compiled-bin-installs-binident)
 	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
+#
+# END STANDALONE 
 
 # targets to compile the Cbench standalone MPI
 mpich: opensource/mpich/lib/libmpich.a
