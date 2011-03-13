@@ -83,12 +83,28 @@ cbenchstandalonedir: openmpi
 	$(call do-hwtest-subdirs,distclean)
 	$(do-hwtest-subdirs)
 	$(call do-hwtest-subdirs,install)
-	$(MAKE) -C opensource/lanl distclean
-	$(MAKE) -C opensource/lanl 
-	$(MAKE) -C opensource/lanl install
+	$(MAKE) -C opensource/hdparm distclean
+	$(MAKE) -C opensource/hdparm
+	$(MAKE) -C opensource/hdparm install
 	$(MAKE) -C opensource/iozone distclean
 	$(MAKE) -C opensource/iozone
 	$(MAKE) -C opensource/iozone install
+	$(MAKE) -C opensource/dt distclean
+	$(MAKE) -C opensource/dt
+	$(MAKE) -C opensource/dt install
+	$(MAKE) -C opensource/bonnie++ distclean
+	$(MAKE) -C opensource/bonnie++
+	$(MAKE) -C opensource/bonnie++ install
+	$(MAKE) -C opensource/ior_bench distclean
+	$(MAKE) -C opensource/ior_bench
+	$(MAKE) -C opensource/ior_bench install
+	$(MAKE) -C opensource/fdtree install
+	$(MAKE) -C opensource/mdtest distclean
+	$(MAKE) -C opensource/mdtest
+	$(MAKE) -C opensource/mdtest install
+	$(MAKE) -C opensource/lanl distclean
+	$(MAKE) -C opensource/lanl 
+	$(MAKE) -C opensource/lanl install
 	$(MAKE) -C opensource/HPLlinpack distclean
 	$(MAKE) -C opensource/HPLlinpack
 	$(MAKE) -C opensource/HPLlinpack install
