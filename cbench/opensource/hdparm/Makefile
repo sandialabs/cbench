@@ -5,20 +5,31 @@ SRC=hdparm-$(VERSION)
 TAR=$(SRC).tar.gz
 URL="http://sourceforge.net/projects/hdparm/files/hdparm/$(TAR)"
 
-install: build
-	$(do-$@)
+INSTALLDIR = $(bin_dir)
+INSTALLTARGETS = src/hdparm
 
-build: $(TAR)
-	@if [ ! -d $(SRC) ]; then tar zxf $(TAR); fi
-	cd $(SRC); CC=$(PLAINCC) make
+default: $(SRC)
+	make -C src CC=$(PLAINCC) 
 
 $(TAR):
-	@if [ ! -e $(TAR) ]; then $(call download-sf-url,$(URL),$(TAR)); fi
+	@echo "Downloading $(TAR)"
+	$(call download-sf-url,$(URL))
+
+$(SRC): $(TAR)
+	@echo "Extracting $(SRC)"
+	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
+	else \
+		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
+		exit 1; \
+	fi
+	ln -sf $(SRC) src
 
 clean:
 	-[ -d $(SRC) ] && /bin/rm -fr $(SRC)
 
-distclean: clean
-	-[ -f $(TAR) ] && /bin/rm -f $(TAR) 
+distclean:
+	-/bin/rm -rf $(SRC) $(TAR) src
 
+install uninstall:
+	$(do-$@)
 
