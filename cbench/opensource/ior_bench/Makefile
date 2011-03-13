@@ -1,6 +1,6 @@
 include ../../make.def
 
-SRC=IOR-2.10.2
+SRC=IOR-2.10.3
 TAR=$(SRC).tgz
 URL="http://downloads.sourceforge.net/project/ior-sio/IOR%20latest/$(SRC)/$(SRC).tgz"
 
@@ -20,13 +20,18 @@ IOR.mpiio:
 	/bin/cp -f src/IOR $@
 
 $(SRC): $(TAR)
-	[ ! -d $(SRC) ] && tar zxf $(TAR)
-	touch $(SRC)
+	@echo "Extracting $(SRC)"
+	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
+	else \
+		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
+		exit 1; \
+	fi
+	mv IOR $(SRC)
 	ln -s $(SRC)/src/C src
 
-$(TAR) download:
-	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
+$(TAR):
+	@echo "Downloading $(TAR)"
+	$(call download-sf-url,$(URL))
 
 clean:
 	-[ -d $(SRC)/src/C ] && $(MAKE) -C src CC.Linux=$(CC) $@
@@ -37,3 +42,4 @@ distclean: clean
 
 install uninstall:
 	$(do-$@)
+
