@@ -2,9 +2,13 @@
 
 include ../../make.def
 
-SRC=bonnie++-1.03d
+#VERSION=1.03e
+VERSION=1.96
+SRC=bonnie++-$(VERSION)
 TAR=$(SRC).tgz
-URL=http://www.coker.com.au/bonnie++/$(TAR)
+
+#URL=http://www.coker.com.au/bonnie++/$(TAR)
+URL="http://www.coker.com.au/bonnie++/experimental/$(TAR)"
 
 EXECS = $(SRC)/bonnie++
 
@@ -12,22 +16,28 @@ INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
 default: $(SRC)
-	cd src/; export CC=$(CC); export F77=$(F77); export MPILIB=$(MPICH)/lib; if [ ! -f config.status ]; then ./configure; fi; make
+	make -C src CC=$(PLAINCC) CXX=$(PLAINCXX)
+#	cd src/; export CC=$(CC); export F77=$(F77); export MPILIB=$(MPICH)/lib; if [ ! -f config.status ]; then ./configure; fi; make
 
-$(SRC) src: $(TAR)
-	if [ ! -d bonnie++-1.03d ]; then tar -zxvf bonnie++-1.03d.tgz; fi
-	ln -sf $(SRC) src
-	touch $(SRC)
-
-$(TAR) download:
+$(TAR):
+	@echo "Downloading $(TAR)"
 	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
+
+$(SRC): $(TAR)
+	@echo "Extracting $(SRC)"
+	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
+	else \
+		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
+		exit 1; \
+	fi
+	ln -sf $(SRC) src
 
 clean:
-	-cd $(SRC); make realclean
+	make -C src realclean 
 
-distclean: clean
+distclean: 
 	-/bin/rm -rf $(SRC) $(TAR) src
 
 install uninstall:
 	$(do-$@)
+
