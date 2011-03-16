@@ -302,7 +302,7 @@ sub yod_joblaunch_cmdbuild {
 	# if we use nolocal, and fail to specify extra job nodes, set it
 	$extra_job_nodes = 1 if !$extra_job_nodes and $joblaunch_extraargs =~ /nolocal/;
 	
-	($ppn == 2) and $cmd .= " -VN";
+	$cmd .= " -VN$ppn";
 	
 	$cmd .= " -sz $numprocs ";
 
