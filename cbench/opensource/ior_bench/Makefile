@@ -33,6 +33,8 @@ $(TAR):
 	@echo "Downloading $(TAR)"
 	$(call download-sf-url,$(URL))
 
+download: $(TAR)
+
 clean:
 	-[ -d $(SRC)/src/C ] && $(MAKE) -C src CC.Linux=$(CC) $@
 	/bin/rm -f IOR.*

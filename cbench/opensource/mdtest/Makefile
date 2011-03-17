@@ -18,6 +18,8 @@ $(TAR):
 	@echo "Downloading $(TAR)"
 	$(call download-sf-url,$(URL))
 
+download: $(TAR)
+
 $(SRC): $(TAR)
 	@echo "Extracting $(SRC)"
 	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \

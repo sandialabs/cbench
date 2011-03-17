@@ -52,6 +52,8 @@ $(TAR):
 	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
+download: $(TAR)
+
 clean:
 	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean_arch_all arch=cbench
 	/bin/rm -rf $(HPL2)/src/lib/* $(HPL2)/src/bin/*
