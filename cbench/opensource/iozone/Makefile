@@ -18,10 +18,14 @@ ifeq ($(COMPILER),intel)
 	LDFLAGS += -i-static -static-libcxa -static
 endif
 
+default: src/src/current/iozone src/src/current/fileop
+
+src/src/current/iozone src/src/current/fileop:
+	$(MAKE) all
+
 all: $(SRC)
 	$(MAKE) CC=$(PLAINCC) CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" -C src/src/current $(TARGET)
 
-default all:
 
 $(TAR):
 	@echo "Downloading $(TAR)"
