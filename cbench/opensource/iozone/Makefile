@@ -41,6 +41,7 @@ $(SRC): $(TAR)
 		exit 1; \
 	fi
 	ln -sf $(SRC) src
+	patch -p0 < make.patch
 
 clean:
 	$(MAKE) -C src/src/current clean
