@@ -3,12 +3,7 @@ include ../../make.def
 VERSION = 1.3.1pre1
 CTCS = ctcs-1.3.1-pre1
 TAR = $(CTCS).tgz
-
 URL="http://sourceforge.net/projects/va-ctcs/files/va-ctcs/$(VERSION)/$(TAR)"
-
-$(TAR) download:
-	$(call download-sf-url,$(URL),$(TAR))
-	-[ -e $(TAR) ] && touch $(TAR)
 
 INSTALLDIR = $(hwtest_bin_dir)
 INSTALLTARGETS = src/runin/memtst
@@ -26,3 +21,9 @@ distclean clean:
 
 install uninstall:
 	$(do-$@)
+
+$(TAR):
+	$(call download-sf-url,$(URL),$(TAR))
+	-[ -e $(TAR) ] && touch $(TAR)
+
+download:

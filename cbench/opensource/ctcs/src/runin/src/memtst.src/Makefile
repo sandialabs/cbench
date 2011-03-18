@@ -3,7 +3,7 @@
 #
 MEMTST_CFLAGS=$(CFLAGS) -fno-unroll-loops -fno-unroll-all-loops
 
-all: memtst maxalloc;
+all: memtst;
 
 memtst_main: memtst;
 
