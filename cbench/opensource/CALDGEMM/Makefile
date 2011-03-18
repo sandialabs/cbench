@@ -27,8 +27,11 @@ $(SRC): $(TAR)
 		exit 1; \
 	fi
 	ln -sf $(SRC) src
+	patch -p0 < rtlib.patch
+
 
 patchgoto2: $(SRC)
+	@echo "Compiling patching GotoBLAS2"
 	@if [ ! -f $(GOTOBLAS2TAR) ]; then \
 		echo "Failed to find $(GOTOBLAS2TAR) ..."; exit 1; \
 	else \
@@ -40,7 +43,8 @@ patchgoto2: $(SRC)
 	fi \
 
 all: patchgoto2
-	make CC=$(PLANCC) -C src 
+	@echo "Compiling $(SRC)"
+	make CC=$(PLAINCC) -C src 
 
 clean:
 	-[ -d $(SRC) ] && /bin/rm -fr $(SRC)
