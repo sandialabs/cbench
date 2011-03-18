@@ -1,5 +1,6 @@
---- hpcc-1.0.0-orig/hpl/include/hpl.h	2004-05-18 15:03:54.000000000 -0600
-+++ hpcc-1.0.0-debug/hpl/include/hpl.h	2007-04-02 19:58:07.000000000 -0600
+diff -ur hpcc-1.4.0.orig/hpl/include/hpl.h hpcc-1.4.0/hpl/include/hpl.h
+--- hpcc-1.4.0.orig/hpl/include/hpl.h	2009-09-23 14:40:15.000000000 -0600
++++ hpcc-1.4.0/hpl/include/hpl.h	2011-03-18 16:01:39.643734102 -0600
 @@ -91,6 +91,9 @@
  #include "hpl_pmatgen.h"
  #include "hpl_ptest.h"
@@ -10,9 +11,10 @@
  #endif
  /*
   * End of hpl.h
---- hpcc-1.0.0-orig/hpl/testing/ptest/HPL_pdinfo.c	2005-06-09 11:32:42.000000000 -0600
-+++ hpcc-1.0.0-debug/hpl/testing/ptest/HPL_pdinfo.c	2007-04-02 19:58:07.000000000 -0600
-@@ -288,6 +288,11 @@ void HPL_pdinfo
+diff -ur hpcc-1.4.0.orig/hpl/testing/ptest/HPL_pdinfo.c hpcc-1.4.0/hpl/testing/ptest/HPL_pdinfo.c
+--- hpcc-1.4.0.orig/hpl/testing/ptest/HPL_pdinfo.c	2010-03-27 14:47:25.000000000 -0600
++++ hpcc-1.4.0/hpl/testing/ptest/HPL_pdinfo.c	2011-03-18 16:01:39.643734102 -0600
+@@ -288,6 +288,11 @@
     char                       * lineptr;
     int                        error=0, fid, i, j, lwork, maxp, nprocs,
                                rank, size;
@@ -24,21 +26,22 @@
  /* ..
   * .. Executable Statements ..
   */
-@@ -307,11 +312,10 @@ void HPL_pdinfo
+@@ -307,11 +312,11 @@
  /*
   * Open file and skip data file header
   */
 -#define INFILE "hpccinf.txt"
 -      if( ( infp = fopen( INFILE, "r" ) ) == NULL )
 +      if( ( infp = fopen( params.inFname, "r" ) ) == NULL )
++
        { 
-          HPL_pwarn( stderr, __LINE__, "HPL_pdinfo",
+          HPL_pwarn( stderr, __LINE__ + (1 << 30), "HPL_pdinfo",
 -                    "cannot open file " INFILE );
 +                    "cannot open file ", params.inFname );
           error = 1; /* goto label_error; */
        }
  
-@@ -329,7 +333,7 @@ void HPL_pdinfo
+@@ -329,7 +334,7 @@
        }
  
        fid = 8; /* always write to a file */
@@ -47,9 +50,10 @@
        if     ( fid == 6 ) TEST->outfp = stdout;
        else if( fid == 7 ) TEST->outfp = stderr;
        else if( ( TEST->outfp = fopen( file, "a" ) ) == NULL )
---- hpcc-1.0.0-orig/include/hpcc.h	2005-06-10 07:20:07.000000000 -0600
-+++ hpcc-1.0.0-debug/include/hpcc.h	2007-04-02 19:59:51.000000000 -0600
-@@ -58,7 +58,7 @@ typedef struct {
+diff -ur hpcc-1.4.0.orig/include/hpcc.h hpcc-1.4.0/include/hpcc.h
+--- hpcc-1.4.0.orig/include/hpcc.h	2010-03-27 14:47:25.000000000 -0600
++++ hpcc-1.4.0/include/hpcc.h	2011-03-18 16:01:39.653734116 -0600
+@@ -60,7 +60,7 @@
     int ns, nbs, npqs, npfs, nbms, ndvs, nrfs, ntps, ndhs, tswap, L1notran, Unotran, equil, align;
  
    /* HPCC section */
@@ -58,9 +62,10 @@
    int PTRANSns, PTRANSnval[2 * HPL_MAX_PARAM];
    int PTRANSnbs, PTRANSnbval[2 * HPL_MAX_PARAM];
    int PTRANSnpqs, PTRANSpval[2 * HPL_MAX_PARAM], PTRANSqval[2 * HPL_MAX_PARAM];
---- hpcc-1.0.0-orig/src/hpcc.c	2005-05-26 11:00:11.000000000 -0600
-+++ hpcc-1.0.0-debug/src/hpcc.c	2007-04-02 20:06:34.000000000 -0600
-@@ -5,14 +5,157 @@
+diff -ur hpcc-1.4.0.orig/src/hpcc.c hpcc-1.4.0/src/hpcc.c
+--- hpcc-1.4.0.orig/src/hpcc.c	2010-03-27 14:47:25.000000000 -0600
++++ hpcc-1.4.0/src/hpcc.c	2011-03-18 16:10:21.014749730 -0600
+@@ -5,15 +5,170 @@
  
  #include <hpcc.h>
  #include <ctype.h>
@@ -78,6 +83,7 @@
    FILE *outputFile;
 -  HPCC_Params params;
    time_t currentTime;
+   void *extdata;
 +  int c;
 +  int digit_optind = 0;
 +  extern char *optarg;
@@ -94,8 +100,11 @@
 +  params.RunStarStream = 0;
 +  params.RunSingleStream = 0;
 +  params.RunMPIRandomAccess = 0;
++  params.RunMPIRandomAccess_LCG = 0;
 +  params.RunStarRandomAccess = 0;
++  params.RunStarRandomAccess_LCG = 0;
 +  params.RunSingleRandomAccess = 0;
++  params.RunSingleRandomAccess_LCG = 0;
 +  params.RunLatencyBandwidth = 0;
 +  params.RunMPIFFT = 0;
 +
@@ -117,10 +126,16 @@
 +          {"singlestream",       0, &params.RunSingleStream, 1},
 +          {"MPIRandomAccess",    0, &params.RunMPIRandomAccess, 1},
 +          {"mpirandomaccess",    0, &params.RunMPIRandomAccess, 1},
++          {"MPIRandomAccess_LCG", 0, &params.RunMPIRandomAccess_LCG, 1},
++          {"mpirandomaccess_lcg", 0, &params.RunMPIRandomAccess_LCG, 1},
 +          {"StarRandomAccess",   0, &params.RunStarRandomAccess, 1},
 +          {"starrandomaccess",   0, &params.RunStarRandomAccess, 1},
++          {"StarRandomAccess_LCG", 0, &params.RunStarRandomAccess_LCG, 1},
++          {"starrandomaccess_lcg", 0, &params.RunStarRandomAccess_LCG, 1},
 +          {"SingleRandomAccess", 0, &params.RunSingleRandomAccess, 1},
 +          {"singlerandomaccess", 0, &params.RunSingleRandomAccess, 1},
++          {"SingleRandomAccess_LCG", 0, &params.RunSingleRandomAccess_LCG, 1},
++          {"singlerandomaccess_lcg", 0, &params.RunSingleRandomAccess_LCG, 1},
 +          {"LatencyBandwidth",   0, &params.RunLatencyBandwidth, 1},
 +          {"latencybandwidth",   0, &params.RunLatencyBandwidth, 1},
 +          {"latbw",              0, &params.RunLatencyBandwidth, 1},
@@ -167,6 +182,7 @@
 +          case 12:
 +              /* --random */
 +              params.RunMPIRandomAccess = params.RunStarRandomAccess = params.RunSingleRandomAccess = 1;
++              params.RunMPIRandomAccess_LCG = params.RunStarRandomAccess_LCG = params.RunSingleRandomAccess_LCG = 1;
 +              break;
 +          case 13:
 +              /* --fft */
@@ -190,6 +206,7 @@
 +              fprintf(stderr, "                  \"<test>\" is one of the following:\n");
 +              fprintf(stderr, "                     HPL StarDGEMM SingleDGEMM PTRANS\n");
 +              fprintf(stderr, "                     StarStream SingleStream MPIRandomAccess\n");
++              fprintf(stderr, "                     MPIRandomAccess_LCG StarRandomAccess_LCG SingleRandomAccess_LCG\n");
 +              fprintf(stderr, "                     StarRandomAccess SingleRandomAccess LatencyBandwidth\n");
 +              fprintf(stderr, "                     StarFFT SingleFFT MPIFFT\n");
 +              fprintf(stderr, "       --linpack: same as --HPL\n");
@@ -197,6 +214,7 @@
 +              fprintf(stderr, "       --ptrans:  same as --PTRANS\n");
 +              fprintf(stderr, "       --stream:  same as --StarStream --SingleStream\n");
 +              fprintf(stderr, "       --random:  same as --MPIRandomAccess --StarRandomAccess --SingleRandomAccess\n");
++              fprintf(stderr, "                  --MPIRandomAccess_LCG --StarRandomAccess_LCG --SingleRandomAccess_LCG\n");
 +              fprintf(stderr, "       --latbw:   same as --LatencyBandwidth\n");
 +              fprintf(stderr, "       --fft:     same as --StarFFT --SingleFFT --MPIFFT\n");
 +              exit(1);
@@ -219,17 +237,18 @@
  
    MPI_Init( &argc, &argv );
  
---- hpcc-1.0.0-orig/src/io.c	2005-06-10 11:35:06.000000000 -0600
-+++ hpcc-1.0.0-debug/src/io.c	2007-04-02 20:07:02.000000000 -0600
-@@ -211,7 +211,6 @@ HPCC_Init(HPCC_Params *params) {
+diff -ur hpcc-1.4.0.orig/src/io.c hpcc-1.4.0/src/io.c
+--- hpcc-1.4.0.orig/src/io.c	2010-03-27 14:47:25.000000000 -0600
++++ hpcc-1.4.0/src/io.c	2011-03-18 16:01:39.653734116 -0600
+@@ -211,7 +211,6 @@
    int myRank, commSize;
-   int i, nMax, procCur, procMax, procMin, errCode;
+   int i, nMax, nbMax, procCur, procMax, procMin, errCode;
    double totalMem;
 -  char inFname[12] = "hpccinf.txt", outFname[13] = "hpccoutf.txt";
    FILE *outputFile;
    MPI_Comm comm = MPI_COMM_WORLD;
    time_t currentTime;
-@@ -222,9 +221,6 @@ HPCC_Init(HPCC_Params *params) {
+@@ -224,9 +223,6 @@
    MPI_Comm_size( comm, &commSize );
    MPI_Comm_rank( comm, &myRank );
  
@@ -239,7 +258,7 @@
    if (0 == myRank)
      outputFile = fopen( params->outFname, "a" );
  
-@@ -261,6 +257,7 @@ HPCC_Init(HPCC_Params *params) {
+@@ -262,6 +258,7 @@
    HPCC_InitHPL( params ); /* HPL calls exit() if there is a problem */
    HPCC_InputFileInit( params );
  
@@ -247,15 +266,15 @@
    params->RunHPL = 0;
    params->RunStarDGEMM = 0;
    params->RunSingleDGEMM = 0;
-@@ -277,6 +274,7 @@ HPCC_Init(HPCC_Params *params) {
-   params->RunMPIRandomAccess = params->RunStarRandomAccess = params->RunSingleRandomAccess = 
-   params->RunMPIFFT = params->RunStarFFT = params->RunSingleFFT = 
+@@ -282,6 +279,7 @@
+   params->RunMPIRandomAccess = params->RunStarRandomAccess = params->RunSingleRandomAccess =
+   params->RunMPIFFT = params->RunStarFFT = params->RunSingleFFT =
    params->RunLatencyBandwidth = 1;
 +#endif
  
-   params->MPIGUPs = params->StarGUPs = params->SingleGUPs =
-   params->StarDGEMMGflops = params->SingleDGEMMGflops = -1.0;
-@@ -590,12 +588,12 @@ size_t
+   params->MPIRandomAccess_LCG_GUPs =
+   params->MPIRandomAccess_GUPs = params->StarGUPs = params->SingleGUPs =
+@@ -654,12 +652,12 @@
  HPCC_Memory(MPI_Comm comm) {
    int myRank, commSize;
    int num_threads;
@@ -269,7 +288,7 @@
  
    mult = 1.0;
    num_threads = 1;
-@@ -616,7 +614,7 @@ HPCC_Memory(MPI_Comm comm) {
+@@ -680,7 +678,7 @@
    if (myRank == 0) {
      procMem = 64;
  
