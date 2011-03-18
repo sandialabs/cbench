@@ -11,15 +11,22 @@ GOTOBLAS2SRC=GotoBLAS2-$(GOTOBLAS2VERSION)_bsd
 GOTOBLAS2DIR="$(CBENCHOME)/opensource/GotoBLAS2"
 GOTOBLAS2TAR="$(GOTOBLAS2DIR)/$(GOTOBLAS2SRC).tar.gz"
 
-install: $(SRC)
-	$(do-$@)
+default: all
 
 $(TAR):
-	@if [ ! -e $(TAR) ]; then $(call download-sf-url,$(URL)); fi
+	@echo "Downloading $(TAR)"
+	$(call download-url,$(URL))
+
+download: $(TAR)
 
 $(SRC): $(TAR)
-	-[ ! -d $(SRC) ] && tar jxf $(TAR)
-	touch $(SRC)
+	@echo "Extracting $(SRC)"
+	@if [ -f $(TAR) ] ; then tar -jxf $(TAR); \
+	else \
+		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
+		exit 1; \
+	fi
+	ln -sf $(SRC) src
 
 patchgoto2: $(SRC)
 	@if [ ! -f $(GOTOBLAS2TAR) ]; then \
@@ -32,11 +39,17 @@ patchgoto2: $(SRC)
 		make NO_MEMPOLICY=1 -j; \
 	fi \
 
+all: patchgoto2
+	make CC=$(PLANCC) -C src 
+
 clean:
 	-[ -d $(SRC) ] && /bin/rm -fr $(SRC)
 
 distclean: clean
-	-[ -f $(TAR) ] && /bin/rm -f $(TAR) 
+	-[ -f $(TAR) ] && /bin/rm -f $(TAR) src
 	-[ -d GotoBLAS2 ] && /bin/rm -fr GotoBLAS2
 	-[ -L src ] && /bin/rm -f src
+
+install: $(SRC)
+	$(do-$@)
 
