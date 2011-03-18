@@ -51,7 +51,8 @@ nodeperf2.c:
 		false; \
 	fi
 
-download: nodeperf.c nodeperf2.c
+internaldownload: nodeperf.c nodeperf2.c
+download: nodeperf.c 
 
 clean:
 	rm -f $(INSTALLTARGETS) nodeperf.o nodeperf2.o $(OBJS)
