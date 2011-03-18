@@ -35,7 +35,7 @@ $(SRC): $(TAR)
 	ln -sf $(SRC) src
 
 clean:
-	make -C src realclean 
+	make -C src clean 
 
 distclean: 
 	-/bin/rm -rf $(SRC) $(TAR) src
