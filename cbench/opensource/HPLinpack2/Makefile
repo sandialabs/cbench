@@ -19,7 +19,7 @@ ifeq ($(CBENCH_STANDALONE),yes)
 else
   # NORMAL MPI COMPILE
   EXECS = src/bin/cbench/xhpl2
-  default_tgt := linpack
+  default_tgt := src/bin/cbench/xhpl2
 endif
 
 INSTALLDIR = $(bin_dir)
@@ -28,6 +28,9 @@ INSTALLTARGETS = $(EXECS)
 default: $(default_tgt) 
 
 all: linpack clean local
+
+src/bin/cbench/xhpl2:
+	$(MAKE) linpack
 
 linpack: $(SRC) xerbla
 	$(MAKE) -C $(SRC) arch=cbench

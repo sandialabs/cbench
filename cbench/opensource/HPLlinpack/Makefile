@@ -11,7 +11,7 @@ ifeq ($(CBENCH_STANDALONE),yes)
 else
   #$(warning ================ NORMAL MPI COMPILE)
   EXECS = hpl/bin/cbench/xhpl
-  default_tgt := linpack
+  default_tgt := hpl/bin/cbench/xhpl
 endif
 
 INSTALLDIR = $(bin_dir)
@@ -40,6 +40,9 @@ linpack-size: linpack-size.c
 xerbla:
 	$(CC) $(OPTFLAGS) -c xerbla.c
 	#$(F77) $(OPTFLAGS) -c xerbla.f
+
+hpl/bin/cbench/xhpl:
+	$(MAKE) linpack
 
 linpack: xerbla
 	$(MAKE) -C hpl
