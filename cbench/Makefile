@@ -23,8 +23,7 @@
 
 include make.def
 
-OLDHW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride stab
-HW_TESTS = fpck memtester streams nodeperf llcbench stress matmult stride stab
+HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride stab
 
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck ior_bench iozone bonnie++ rotate HPLlinpack \
@@ -49,7 +48,7 @@ endif
   DEST = $(BENCH_TEST)/$(BINDIR)
 
 # by default build all the standard opensource set of binaries
-default: open
+default: open hwtest
 
 open: $(OPEN_SUBDIRS)
 	$(do-open-subdirs)
@@ -65,13 +64,13 @@ iotest:
 
 hwtest: $(HWTEST_SUBDIRS)
 	$(do-hwtest-subdirs) 
-	$(MAKE) -C opensource/NPB serial
 	$(MAKE) -C opensource/iozone
 	$(MAKE) -C opensource/iozone install
 
 # target used to build only the binaries needed to fully utilize the 
 # NODEHWTEST testset, i.e. compile only what is needed for node-level testing
 nodehwtest: hwtest standalone standaloneinstall
+	$(MAKE) -C opensource/NPB serial
 	$(call do-hwtest-subdirs,install)
 
 # BEGIN STANDALONE 
