@@ -13,7 +13,11 @@
 #define MAX_REQ_NUM 1000
 
 #define MAX_ALIGNMENT 16384
+
+#ifndef MAX_MSG_SIZE
 #define MAX_MSG_SIZE (1<<22)
+#endif
+
 #define MYBUFSIZE (MAX_MSG_SIZE + MAX_ALIGNMENT)
 
 int loop = 100;

@@ -11,7 +11,11 @@
 #include <unistd.h>
 
 #define MESSAGE_ALIGNMENT 64
+
+#ifndef MAX_MSG_SIZE
 #define MAX_MSG_SIZE (1<<22)
+#endif
+
 #define MYBUFSIZE (MAX_MSG_SIZE + MESSAGE_ALIGNMENT)
 
 char s_buf_original[MYBUFSIZE];
