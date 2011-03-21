@@ -2,7 +2,7 @@ include ../../make.def
 
 DEFINES = 
 
-# make sure we go to 2^26 (64MB) MB message size
+# make sure we go to 2^26 (64MB) message size
 #  can probably make it as large as we want now
 LARGEDEFINES = "-DMAX_MSG_SIZE=(1<<26)"
 
@@ -35,7 +35,7 @@ osu_bcast: osu_bcast.c
 large_osu_bw: osu_bw.c
 	$(CC) $(CFLAGS) $(LARGEDEFINES) -o $@ $< $(LIBS)
 
-large_osu_bibw: osu_bw.c
+large_osu_bibw: osu_bibw.c
 	$(CC) $(CFLAGS) $(LARGEDEFINES) -o $@ $< $(LIBS)
 
 large_osu_latency: osu_latency.c
