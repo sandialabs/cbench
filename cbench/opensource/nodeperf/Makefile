@@ -1,14 +1,12 @@
 include ../../make.def
 
-SRC = nodeperf.c xerbla.c dclock.c
-INTERNALSRC = nodeperf.c nodeperf2.c xerbla.c dclock.c
+SRC = nodeperf.c nodeperf2.c xerbla.c dclock.c
 OBJS = xerbla.o dclock.o
 
 OPFLAGS += -g
 
 INSTALLDIR = $(bin_dir)
-INSTALLTARGETS = nodeperf 
-INTERNALINSTALLTARGETS = nodeperf2-nompi nodeperf  nodeperf2
+INSTALLTARGETS = nodeperf nodeperf2-nompi nodeperf2
 
 NODEPERFILE=$(CBENCHOME)/opensource/HPLintel/src/../mp_linpack/nodeperf.c
 
@@ -18,11 +16,11 @@ default: $(INSTALLTARGETS)
 nodeperf: $(SRC) $(OBJS)
 	$(CC) $(OPTFLAGS) -o $@ nodeperf.c $(OBJS) $(BLASLIB)
 
-# modified nodeperf with MPI
+# modified nodeperf with MPI and more runtime options
 nodeperf2: $(SRC) $(OBJS)
 	$(CC) $(OPTFLAGS) -o $@ nodeperf2.c $(OBJS) $(BLASLIB)
 
-# modified nodeperf without MPI 
+# modified nodeperf without MPI and more runtime options
 nodeperf2-nompi: $(SRC) $(OBJS)
 	$(PLAINCC) $(OPTFLAGS) -DNOMPI -o $@ nodeperf2.c $(OBJS) $(BLASLIB)
 
@@ -41,24 +39,28 @@ nodeperf.c:
 	fi
 	cp $(NODEPERFILE) $(CBENCHOME)/opensource/nodeperf
 
-nodeperf2.c:
-	$(call download-url,http://synapse.sandia.gov/static/tarballs/nodeperf2.c)
-	@if [ -e nodeperf.c ]; then \
-		touch nodeperf.c;\
+# nodeperf2 is a customization and tweaking of Intel's nodeperf source that was 
+# done circa 2007 based on a much earlier version of nodeperf. i don't think we
+# can put the nodeperf2.c source on the Cbench Sourceforge mirror because of 
+# licensing, so we instead are distributing a patch to get from the Intel
+# distributed version to nodeperf2.
+nodeperf2.c: nodeperf.c
+	@cp nodeperf.c nodeperf2.c; \
+	patch -p0 < n2.patch; \
+	if [ $$? -ne 0 ]; then \
+		echo "WARNING: Could not patch nodeperf.c to make nodeperf2.c"; \
+	    /bin/rm -f nodeperf2.c; \
 	else \
-		echo; \
-		echo "ERROR:  You'll need the Cbench Restricted tree to get nodeperf2.c ..."; \
-		false; \
+	    echo "Patched nodeperf.c to make nodeperf2.c"; \
 	fi
 
-internaldownload: nodeperf.c nodeperf2.c
-download: nodeperf.c 
+download: nodeperf.c nodeperf2.c
 
 clean:
 	rm -f $(INSTALLTARGETS) nodeperf.o nodeperf2.o $(OBJS)
 
 distclean: clean
-	rm -f nodeperf.c nodeperf2.c
+	rm -f nodeperf.c nodeperf2.c nodeperf2.c.orig
 
 install uninstall:
 	$(do-$@)
