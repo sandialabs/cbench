@@ -23,13 +23,13 @@
 
 include make.def
 
-HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride stab
+HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride stab 
 
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck ior_bench iozone bonnie++ rotate HPLlinpack \
              IMB osutests lanl stab perftest mpi_examples mpi_slowcpu \
              mpi_malloc mpi_tokensmash phloem HPLinpack2 \
-             fdtree simul mdtest miranda_io
+             fdtree simul mdtest miranda_io graph500
 
 OPENEXTRAS_TESTS = NPB hpcc
 
@@ -116,6 +116,8 @@ cbenchstandalonedir: openmpi
 	$(MAKE) -C opensource/NPB distclean
 	$(MAKE) -C opensource/NPB serial
 	$(MAKE) -C opensource/NPB install
+	$(MAKE) -C opensource/graph500 
+	$(MAKE) -C opensource/graph500 install
 	$(do-compiled-bin-installs-binident)
 	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
 

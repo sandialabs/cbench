@@ -54,13 +54,13 @@ GetOptions(
 	'binname=s' => \$binname,
 	'xhplbin=s' => \$xhplbin,
 	'hpccbin=s' => \$hpccbin,
-    'maxprocs=i' => \$maxprocs_cmdline,
-    'minprocs=i' => \$minprocs_cmdline,
-    'procs=i' => \$procs_cmdline,
+        'maxprocs=i' => \$maxprocs_cmdline,
+        'minprocs=i' => \$minprocs_cmdline,
+        'procs=i' => \$procs_cmdline,
 	'minnodes=i' => \$minnodes,
 	'maxnodes=i' => \$maxnodes,
 	'nodes=i' => \$nodes,
-    'runsizes=s' => \$runsizes,
+        'runsizes=s' => \$runsizes,
 	'testdir|scratchdir=s' => \$testdir,
 	'jobcbenchtest=s' => \$JOBCBENCHTEST,
 	'testset=s' => \$testset,
@@ -72,14 +72,15 @@ GetOptions(
 	'joblaunch_extraargs=s' => \$joblaunchargs,
 	'memory_util_factors|mem_factors=s' => \$new_memory_util_factors,
 	'threads|ompthreads|ompnumthreads=i' => \$OMPNUMTHREADS,
-    'scaled_only' => \$scaled_only,
-    'scale_factor=i' => \$scale_factor,
+        'scaled_only' => \$scaled_only,
+        'scalefactor=i' => \$scale_factor,
 	'gazebo' => \$gazebo,
 	'gazebohome|gzhome|gazhome=s' => \$gazebo_home,
 	'gazeboconfig|gzhome|gazconfig=s' => \$gazebo_config, 
 	'gazebodebug|gzdebug|gazdebug' => \$gazebo_debug, 
 	'walltimemethod|walltime_method=i' => \$walltime_method,
 	'defaultwalltime|defwalltime=s' => \$default_walltime,
+        'edgefactor=i' => \$edge_factor,
 );
 
 if (defined $help) {
@@ -180,6 +181,9 @@ if (!defined $testdir) {
         'sppm' => {
             'init' => 'sppm_gen_init',
             'innerloop' => 'sppm_gen_innerloop',
+        },
+        'graph500' => {
+            'innerloop' => 'graph500_gen_innerloop',
         },
 	},
 );
@@ -1245,6 +1249,32 @@ sub sppm_gen_innerloop {
     return 0;
 }
 
+sub graph500_gen_innerloop {
+	my $outbuf = shift;      # a *reference* to the actual $outbuf
+	my $numprocs = shift;
+	my $ppn = shift;
+	my $numnodes = shift;
+	my $runtype = uc shift;
+	my $walltime = shift;
+	my $testset = shift;
+	my $jobname = shift;
+	my $ident = shift;
+	my $job = shift;
+
+    main::debug_print(3,"DEBUG: entering graph500_gen_innerloop()\n");
+
+    # give factors some default values if undefined
+    $scale_factor = 8 unless (defined $scale_factor);
+    $edge_factor = 16 unless (defined $edge_factor);
+
+
+    # substitute in the factor values
+    $$outbuf =~ s/SCALE_HERE/$scale_factor/gs;
+    $$outbuf =~ s/EDGE_FACTOR_HERE/$edge_factor/gs;
+
+    return 0;
+}
+
 ######################################################################
 ######################################################################
 # The following are utility subroutines for cbench_gen_jobs
@@ -1346,8 +1376,12 @@ sub usage {
     # only print the LAMMPS options when it is a lammps testset
 	($0 =~ /lammps/) and print "   \nLAMMPS scaling options:\n".
           "   --scaled_only             Generate scaled jobs only (weakly scaled that is)\n".
-          "   --scale_factor <factor>   The additional factor by which you would like to \n".
+          "   --scalefactor <factor>   The additional factor by which you would like to \n".
           "                             scale the x,y,z values in the scaling benchmarks\n".
 		  "                             For example:\n".
-		  "                               --scale_factor 20\n";
+		  "                               --scale_factor 20\n\n";
+
+        ($0 =~ /graph500/) and print "\nGraph500 Scaling Options:\n".
+          "   --scalefactor <factor>  Scale factor for Graph500 graph (Default: 8)\n".
+          "   --edgefactor  <factor>  Edge factor for Graph500 graph (Default: 16)\n\n";
 }
