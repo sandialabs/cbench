@@ -82,10 +82,16 @@ if (defined $help) {
 if (!defined $remote and !defined $batch and !defined $nodebatch) {
     die "ERROR: --batch or --nodebatch or --remote parameter required\n";
 }
-if ((defined $nodebatch and ! defined $nodelist) or
-	(!defined $nodebatch and defined $nodelist)) { 
-    die "ERROR: --nodebatch and --nodelist must be used together\n";
-}
+
+#
+# can uncomment if there is a real reason for this, 
+# but this doesn't allow --remote --nodelist MYNODE to run
+# -cdm4hp
+#
+#if ((defined $nodebatch and ! defined $nodelist) or
+#	(!defined $nodebatch and defined $nodelist)) { 
+#    die "ERROR: --nodebatch and --nodelist must be used together\n";
+#}
 
 my $pwd = `pwd`;
 chomp $pwd;
@@ -117,7 +123,8 @@ elsif (defined $nodefile) {
 	}
 	close(IN);
 }
-elsif (!defined $batch) {
+#elsif (!defined $batch) {
+elsif (-f "$testset_path/$ident/nodelist") {
 	my $infile = "$testset_path/$ident/nodelist";
 	open (IN,"<$infile") or die
 		"Could not read $infile ($!)";
@@ -130,6 +137,9 @@ elsif (!defined $batch) {
 		pdshlist_to_hash($nodelist,\%nodehash);
 	}
 	close(IN);
+} 
+else {
+	die "Could not initialize a node list to run on!"
 }
 
 # if the --ignorenodes (aka -x) parameter is given, we need to exclude the
@@ -155,36 +165,36 @@ if (defined $ignorenodes) {
 # in --nodebatch mode, this is just the count of the %nodehash.
 # in --batch mode, we have to do some figuring.
 my $numtestnodes = 0;
-if (!defined $batch) {
+#if (!defined $batch) {
 	foreach my $node (keys %nodehash) {
 		($nodehash{$node} == 1) and $numtestnodes++;
 	}
-}
-else {
-	if (defined $procs) {
-		$numtestnodes = int ($procs / $procs_per_node);
-		($numtestnodes == 0) and $numtestnodes = 1;
-	}
-	elsif (defined $maxprocs) {
-		$numtestnodes = int ($maxprocs / $procs_per_node);
-		($numtestnodes == 0) and $numtestnodes = 1;
-	}
-	elsif (defined $nodes) {
-		$numtestnodes = $nodes;
-	}
-	elsif (defined $maxnodes) {
-		$numtestnodes = $maxnodes;
-	}
-	else {
-		$numtestnodes = $max_nodes;
-	}
-
-	# to make the block of code below abled to deal with --nodebatch and
-	# cases, we put some dummy info in the %nodehash array.
-	for (1..$numtestnodes) {
-		$nodehash{"dummy$_"} = "dummy";
-	}
-}
+#}
+#else {
+#	if (defined $procs) {
+#		$numtestnodes = int ($procs / $procs_per_node);
+#		($numtestnodes == 0) and $numtestnodes = 1;
+#	}
+#	elsif (defined $maxprocs) {
+#		$numtestnodes = int ($maxprocs / $procs_per_node);
+#		($numtestnodes == 0) and $numtestnodes = 1;
+#	}
+#	elsif (defined $nodes) {
+#		$numtestnodes = $nodes;
+#	}
+#	elsif (defined $maxnodes) {
+#		$numtestnodes = $maxnodes;
+#	}
+#	else {
+#		$numtestnodes = $max_nodes;
+#	}
+#
+#	# to make the block of code below abled to deal with --nodebatch and
+#	# cases, we put some dummy info in the %nodehash array.
+#	for (1..$numtestnodes) {
+#		$nodehash{"dummy$_"} = "dummy";
+#	}
+#}
 (defined $DEBUG) and print "DEBUG: numtestnodes=$numtestnodes\n";
 
 # If an offload map file was given, life becomes a good deal more difficult.
@@ -301,7 +311,7 @@ if (defined $nodebatch or defined $batch) {
 		# get clean batch job template
 		$outbuf = $outbuf_clean;
 
-		if (defined $nodebatch) {
+#		if (defined $nodebatch) {
 			# build the string that we will put into the batch template
 			# that will target the batch script for a specific node
 			@nodearray = ("$node");
@@ -309,12 +319,12 @@ if (defined $nodebatch or defined $batch) {
 			# update the batch job file with the nodespec
 			$outbuf =~ s/TORQUE_NODESPEC_HERE/$nodespec/gs;
 			$outbuf =~ s/SLURM_NODESPEC_HERE/-w $nodespec/gs;
-		}
-		else {
-			# update the batch job file with a generic nodecount
-			$outbuf =~ s/TORQUE_NODESPEC_HERE/1\:ppn\=$procs_per_node/gs;
-			$outbuf =~ s/SLURM_NODESPEC_HERE/-N 1/gs;
-		}
+#		}
+#		else {
+#			# update the batch job file with a generic nodecount
+#			$outbuf =~ s/TORQUE_NODESPEC_HERE/1\:ppn\=$procs_per_node/gs;
+#			$outbuf =~ s/SLURM_NODESPEC_HERE/-N 1/gs;
+#		}
 
 		# updated the batch job template with possible preamble stuff
 		if (defined $preamble) {
@@ -334,7 +344,7 @@ if (defined $nodebatch or defined $batch) {
 
 		# write out the generated job file
 		$outfile = "nhwt\-$node\.$batch_extension";
-		(defined $batch) and $outfile = "nhwt\.$batch_extension";
+#		(defined $batch) and $outfile = "nhwt\.$batch_extension";
 		open (OUT,">$testset_path\/$ident\/$outfile") or die
 			"Could not write $testset_path\/$ident\/$outfile ($!)";
 		print OUT $outbuf;
@@ -423,6 +433,7 @@ if (defined $offloadmap) {
 		my %temphash = ( "$offnode" => 1);
 		my $templist = hash_to_pdshlist(\%temphash);
 		my $cmd = remotecmd_cmdbuild($templist, "export CBENCHOME=$BENCH_HOME\; export CBENCHTEST=$bench_test\; $offloadcmd");
+		$cmd = remotecmd_cmdbuild($templist, "export CBENCHSTANDALONEDIR=$BENCH_HOME\; $offloadcmd") if (defined($ENV{CBENCHSTANDALONEDIR}));
 		defined $DEBUG and print "DEBUG: offload remote execution command = $cmd\n";
 
 		system("$cmd");
@@ -449,7 +460,8 @@ else {
 	# build the full command line we'll execute to do all the remote execution
 	# goodness
 	(defined $preamble) and $nodecmd = "$preamble ; $nodecmd";
-	my $cmd = remotecmd_cmdbuild($nodelist, "export CBENCHOME=$BENCH_HOME\; export CBENCHTEST=$bench_test\; $nodecmd");
+		my $cmd = remotecmd_cmdbuild($nodelist, "export CBENCHOME=$BENCH_HOME\; export CBENCHTEST=$bench_test\; $nodecmd");
+		$cmd = remotecmd_cmdbuild($nodelist, "export CBENCHSTANDALONEDIR=$BENCH_HOME\;  $nodecmd") if (defined($ENV{CBENCHSTANDALONEDIR}));
 	defined $DEBUG and print "DEBUG: remote execution command = $cmd\n";
 
 	if (defined $background) {
