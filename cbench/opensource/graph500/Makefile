@@ -22,7 +22,7 @@ default: $(default_tgt)
 all: mpi 
 
 mpi: $(SRC)
-	$(MAKE) -C $(SRC)
+	$(MAKE) -C $(SRC) MPICC=$(CC) CC=$(PLAINCC)
 
 $(SRC): $(TAR)
 	-[ ! -d $(SRC) ] && tar xjf $(TAR)
