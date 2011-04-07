@@ -65,7 +65,7 @@ F77 = $(BUILD_PATH)mpif77
 F90 = $(BUILD_PATH)mpif90
 # FC is the default gnu make fortran compiler
 FC = $(F90)
-INCLUDES = -I$(MPIHOME)/include
+#INCLUDES = -I$(MPIHOME)/include64
 
 # allow user to specify the number of make jobs (commands) to run simultaneously
 ifndef JOBS
@@ -418,7 +418,7 @@ ifeq ($(ARCH),x86_64)
   endif
 
   ifeq ($(COMPILER),intel32)
-  INCLUDES = -I$(MPIHOME)/include
+#  INCLUDES = -I$(MPIHOME)/include64
   COMMON_FLAGS = -Wl,-melf_i386
   OPTFLAGS = -O3
   MPILIB =
@@ -482,6 +482,17 @@ define do-hwtest-subdirs
 	echo "---------------------------------------------------------"; \
 	$(MAKE) --no-print-directory -C $$dir $1; \
 	if [ $$? -ne 0 -a "$1" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+define do-standaloneopen-subdirs
+	@for dir in $(STANDALONEOPEN_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $1 in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir $1; \
+	if [ $$? -ne 0 -a "$@" = all ] ; then exit 1 ; fi ; \
 	done
 endef
 

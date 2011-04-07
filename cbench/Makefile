@@ -25,6 +25,13 @@ include make.def
 
 HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride stab 
 
+STANDALONEOPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
+             mpi_routecheck rotate IMB osutests stab perftest mpi_examples mpi_slowcpu \
+             mpi_malloc mpi_tokensmash phloem simul graph500 \
+             hdparm dt iozone bonnie++ ior_bench miranda_io \
+             fdtree mdtest lanl \
+             HPLinpack hpcc HPLinpack2 NPB \
+
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck ior_bench iozone bonnie++ rotate HPLlinpack \
              IMB osutests lanl stab perftest mpi_examples mpi_slowcpu \
@@ -37,6 +44,7 @@ OPENEXTRAS_TESTS = NPB hpcc
 HWTEST_SUBDIRS     = $(addprefix opensource/, $(HW_TESTS))
 OPEN_SUBDIRS       = $(addprefix opensource/, $(OPEN_TESTS))
 OPENEXTRAS_SUBDIRS = $(addprefix opensource/, $(OPENEXTRAS_TESTS))
+STANDALONEOPEN_SUBDIRS       = $(addprefix opensource/, $(STANDALONEOPEN_TESTS))
 
 SUBDIRS = $(OPEN_SUBDIRS) $(HWTEST_SUBDIRS)
 
@@ -73,64 +81,43 @@ nodehwtest: hwtest standalone standaloneinstall
 	$(MAKE) -C opensource/NPB serial
 	$(call do-hwtest-subdirs,install)
 
+#
 # BEGIN STANDALONE 
+#
 cbenchstandalonedir: openmpi
 	@sbin/install_cbenchtest --testtop
 	$(MAKE) -C opensource/ompi install
 	$(MAKE) -C opensource/GotoBLAS2 distclean
 	$(MAKE) -C opensource/GotoBLAS2 install
 	$(call do-hwtest-subdirs,distclean)
+	$(call do-hwtest-subdirs,download)
 	$(do-hwtest-subdirs)
 	$(call do-hwtest-subdirs,install)
-	$(MAKE) -C opensource/hdparm distclean
-	$(MAKE) -C opensource/hdparm
-	$(MAKE) -C opensource/hdparm install
-	$(MAKE) -C opensource/iozone distclean
-	$(MAKE) -C opensource/iozone
-	$(MAKE) -C opensource/iozone install
-	$(MAKE) -C opensource/dt distclean
-	$(MAKE) -C opensource/dt
-	$(MAKE) -C opensource/dt install
-	$(MAKE) -C opensource/bonnie++ distclean
-	$(MAKE) -C opensource/bonnie++
-	$(MAKE) -C opensource/bonnie++ install
-	$(MAKE) -C opensource/ior_bench distclean
-	$(MAKE) -C opensource/ior_bench
-	$(MAKE) -C opensource/ior_bench install
-	$(MAKE) -C opensource/fdtree install
-	$(MAKE) -C opensource/mdtest distclean
-	$(MAKE) -C opensource/mdtest
-	$(MAKE) -C opensource/mdtest install
-	$(MAKE) -C opensource/lanl distclean
-	$(MAKE) -C opensource/lanl 
-	$(MAKE) -C opensource/lanl install
-	$(MAKE) -C opensource/HPLlinpack distclean
-	$(MAKE) -C opensource/HPLlinpack
-	$(MAKE) -C opensource/HPLlinpack install
-	$(MAKE) -C opensource/hpcc distclean
-	$(MAKE) -C opensource/hpcc
-	$(MAKE) -C opensource/hpcc install
-	$(MAKE) -C opensource/HPLinpack2 distclean
-	$(MAKE) -C opensource/HPLinpack2
-	$(MAKE) -C opensource/HPLinpack2 install
-	$(MAKE) -C opensource/NPB distclean
-	$(MAKE) -C opensource/NPB serial
-	$(MAKE) -C opensource/NPB install
-	$(MAKE) -C opensource/graph500 
-	$(MAKE) -C opensource/graph500 install
+	$(call do-standaloneopen-subdirs,distclean)
+	$(call do-standaloneopen-subdirs,download)
+	$(do-standaloneopen-subdirs)
+	$(call do-standaloneopen-subdirs,install)
+	$(do-compiled-bin-installs-binident)
+	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
+
+cbenchstandalonedirprogs: 
+	$(call do-hwtest-subdirs,distclean)
+	$(call do-hwtest-subdirs,download)
+	$(do-hwtest-subdirs)
+	$(call do-hwtest-subdirs,install)
+	$(call do-standaloneopen-subdirs,distclean)
+	$(call do-standaloneopen-subdirs,download)
+	$(do-standaloneopen-subdirs)
+	$(call do-standaloneopen-subdirs,install)
 	$(do-compiled-bin-installs-binident)
 	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
 
 openmpi: 
 	$(MAKE) -C opensource/ompi distclean
 	$(MAKE) -C opensource/ompi 
-
-# more to test the flow of new tests to integrate... can remove later -cdm
-cbenchstandalonedirbins:
-	$(do-compiled-bin-installs-binident)
-	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
 #
 # END STANDALONE 
+#
 
 # targets to compile the Cbench standalone MPI
 mpich: opensource/mpich/lib/libmpich.a
