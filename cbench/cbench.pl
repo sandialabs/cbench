@@ -1812,7 +1812,7 @@ sub find_local_filesystems {
 	# block devices local to this node
 	#my @partitions = `/bin/cat /proc/partitions`;
 	#my @mounts = `/bin/cat /proc/mounts`;
-	my @mounts = `/bin//mount`;
+	my @mounts = `/bin/mount`;
 	my %fslist = ();
 	foreach (@mounts) {
 		chomp $_;
@@ -2179,6 +2179,23 @@ sub hash_to_pdshlist {
 	my $pre;
 	my $num;
 
+	if ( -x "$BENCH_HOME/sbin/hostlist" ) {
+		(defined $DEBUG) and print "DEBUG:pdshlist_to_hash() list=$nodelist found hostlist in $BENCH_HOME/sbin/hostlist ... tight!\n";
+		foreach my $node (keys (%{$hashref})) {
+			$nodelist .= $node . " ";
+		}
+		$nodelist = `$BENCH_HOME/sbin/hostlist -c $nodelist`;
+		chomp $nodelist;
+#		open (DATA, "$BENCH_HOME/sbin/hostlist -e $nodelist|") or die "Failed to run $BENCH_HOME/sbin/hostlist $nodelist ... $!";
+#		my @data = <DATA>;
+#		close DATA;
+		#foreach my $n (@data) {
+		#	chomp $n;
+		#	$hashref->{$n} = 1;
+			#$num++;
+		#}
+	} else {
+
 	foreach my $node (sort sort_by_nodename keys(%{$hashref})) {
 		($pre, $num) = $node =~ /(\D+)(\d+)/;
 		# ignore nodes that have been excluded from the hash, like
@@ -2232,6 +2249,8 @@ sub hash_to_pdshlist {
 	}
 	else {
 		$nodelist .= "\]";
+	}
+
 	}
 
 	return $nodelist;
