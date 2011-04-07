@@ -2248,6 +2248,19 @@ sub pdshlist_to_hash {
 	(defined $DEBUG) and print "DEBUG:pdshlist_to_hash() list=$nodelist\n";
 
 	my $num = 0;
+
+	if ( -x "$BENCH_HOME/sbin/hostlist" ) {
+		(defined $DEBUG) and print "DEBUG:pdshlist_to_hash() list=$nodelist found hostlist in $BENCH_HOME/sbin/hostlist ... tight!\n";
+		open (DATA, "$BENCH_HOME/sbin/hostlist -e $nodelist|") or die "Failed to run $BENCH_HOME/sbin/hostlist $nodelist ... $!";
+		my @data = <DATA>;
+		close DATA;
+		foreach my $n (@data) {
+			chomp $n;
+			$hashref->{$n} = 1;
+			$num++;
+		}
+	} else {
+
 	my $pre;
 	my @sub = split ',', $nodelist;
 	foreach (@sub) {
@@ -2318,6 +2331,8 @@ sub pdshlist_to_hash {
 			(defined $DEBUG and $DEBUG > 1) and print "DEBUG:pdshlist_to_hash() ".
 				"$_ did not match any cases...\n";
 		}
+	}
+
 	}
 
 	if (defined $DEBUG and $DEBUG > 2) {
