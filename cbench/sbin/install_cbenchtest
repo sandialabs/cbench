@@ -175,9 +175,9 @@ if (defined $testtop) {
 		"perllib",
 		"sbin/start_jobs.pl",
 		"sbin/gen_jobs.pl",
-		"templates/\*_header.in",
-		"templates/common\*.in",
 		"templates/cbench_functions",
+#		"templates/\*_header.in",
+#		"templates/common\*.in",
 	);
 
 	# only sync cluster.def if is the first time
