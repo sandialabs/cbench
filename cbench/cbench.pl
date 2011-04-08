@@ -780,7 +780,7 @@ sub build_job_templates {
 	my $testset_path = "$bench_test/$testset";
 
 	# read in the appropriate batch system header template
-	my $file = "$bench_test\/$batch_method\_header.in";
+	my $file = "$bench_test\/templates/$batch_method\_header.in";
 	open (IN,"<$file") or die
 		"Could not open $file ($!)";
 	undef $/;
@@ -789,7 +789,7 @@ sub build_job_templates {
 	$/ = "\n";
 
 	# read in the appropriate interactive job header template
-	$file = "$bench_test\/interactive_header.in";
+	$file = "$bench_test\/templates/interactive_header.in";
 	open (IN,"<$file") or die
 		"Could not open $file ($!)";
 	undef $/;
@@ -798,7 +798,7 @@ sub build_job_templates {
 	$/ = "\n";
 
 	# read in the appropriate common job header template
-	$file = "$bench_test\/common_header.in";
+	$file = "$bench_test\/templates/common_header.in";
 	open (IN,"<$file") or die
 		"Could not open $file ($!)";
 	undef $/;
@@ -807,7 +807,7 @@ sub build_job_templates {
 	$/ = "\n";
 
 	# read in the appropriate common job footer template
-	$file = "$bench_test\/common_footer.in";
+	$file = "$bench_test\/templates/common_footer.in";
 	open (IN,"<$file") or die
 		"Could not open $file ($!)";
 	undef $/;
