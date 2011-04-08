@@ -557,7 +557,18 @@ sub lsf_batchsubmit_cmdbuild {
 	return "$cmd ";
 }
 sub lsf_nodespec_build {
-	die "Error: UNIMPLEMENTED lsf_nodespec_build() ...";
+	# a reference to an array of nodes
+	my $nodearray = shift;
+
+	my $list;
+
+	foreach my $n (@$nodearray) {
+		$list .= "-R $n -R span[ptile=$procs_per_node] ";
+	}
+	# remove trailing '+'
+	$list =~ s/\+$//;
+
+	return $list;
 }
 sub lsf_query {
 	die "Error: UNIMPLEMENTED lsf_query() ...";

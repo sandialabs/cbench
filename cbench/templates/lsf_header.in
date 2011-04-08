@@ -4,7 +4,7 @@
 # Directives for LSF
 # NOTE: LSF may require that these directives be first...
 #
-#BSUB -n nodes=BSUB_NODESPEC_HERE
+#BSUB BSUB_NODESPEC_HERE
 #BSUB -l walltime=WALLTIME_HERE
 #
 # other attributes you might use but are hidded from LSF processing
