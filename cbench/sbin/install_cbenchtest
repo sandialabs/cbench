@@ -195,6 +195,14 @@ if (defined $testtop) {
 	print "  Syncing files in $bench_test/sbin...\n";
 	@files = ("sbin/get_*");
 	rsync_filelist(\@files,$CBENCHOME,"$bench_test/sbin");
+	@files = (
+		"sbin/dbuck",
+		"sbin/hostgrep",
+		"sbin/hostlist",
+		"sbin/hostlist.py",
+		"sbin/pshbak",
+	);
+	rsync_filelist(\@files,$CBENCHOME,"$bench_test/sbin");
 
 	# sync all of tools to CBENCHTEST/tools
 	print "  Syncing files in $bench_test/tools...\n";
