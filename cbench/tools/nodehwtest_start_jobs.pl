@@ -258,7 +258,9 @@ if (defined $nodebatch or defined $batch) {
 	(! -d "$testset_path\/$ident") and mkdir "$testset_path\/$ident",0750;
 
 	# read in the appropriate batch system header template
-	my $file = "$bench_test\/$batch_method\_header.in";
+	my $file = "$bench_test\/templates/$batch_method\_header.in";
+    (defined $DEBUG) and print "DEBUG: JOB TEMPLATE => $file\n";
+
 	open (IN,"<$file") or die
 		"Could not open $file ($!)";
 	undef $/;
@@ -319,6 +321,7 @@ if (defined $nodebatch or defined $batch) {
 			# update the batch job file with the nodespec
 			$outbuf =~ s/TORQUE_NODESPEC_HERE/$nodespec/gs;
 			$outbuf =~ s/SLURM_NODESPEC_HERE/-w $nodespec/gs;
+			$outbuf =~ s/BSUB_NODESPEC_HERE/-n $nodespec/gs;
 #		}
 #		else {
 #			# update the batch job file with a generic nodecount
