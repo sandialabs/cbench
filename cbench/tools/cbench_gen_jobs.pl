@@ -26,15 +26,23 @@
 
 # need to know where everything cbench lives!
 BEGIN {
-	die "Please define CBENCHOME!\n" if !defined($ENV{CBENCHOME});
+    # need to know where everything cbench lives!
+    our $cbbasedir = undef;
+    if (defined($ENV{CBENCHSTANDALONEDIR})) {
+      $cbbasedir = $ENV{CBENCHSTANDALONEDIR};
+    } elsif (defined($ENV{CBENCHTEST})) {
+      $cbbasedir = $ENV{CBENCHTEST};
+    } elsif (defined($ENV{CBENCHOME})) {
+      $cbbasedir = $ENV{CBENCHOME};
+    } else {
+      die "Please define CBENCHOME or CBENCHTEST or CBENCHSTANDALONEDIR!\n"; 
+    }
 }
-use lib $ENV{CBENCHOME};
-require "cbench.pl";
-$CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
-# add Cbench perl library to the Perl search path
-use lib "$ENV{CBENCHOME}\/perllib";
-# enable/disable color support appropriately
+use lib $cbbasedir;
+use lib "$cbbasedir/perllib";
+require "cbench.pl";
+$CBENCHOME = $BENCH_HOME = $cbbasedir;
 
 detect_color_support();
 
