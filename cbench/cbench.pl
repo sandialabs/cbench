@@ -2734,8 +2734,13 @@ sub get_bench_test {
 		debug_print(2,"DEBUG: found CBENCHTEST environment variable\n");
 		return $ENV{CBENCHTEST};
 	}
+	elsif ($ENV{CBENCHOME}) {
+		debug_print(2,"DEBUG: found CBENCHHOME environment variable\n");
+		return "$ENV{CBENCHOME}";
+	}
 	else {
-		return "$ENV{CBENCHOME}\-test";
+		debug_print(2,"DEBUG: Failed to find appropriate CBENCHOME environment variable\n");
+		exit 1;
 	}
 }
 
