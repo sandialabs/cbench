@@ -797,6 +797,15 @@ sub build_job_templates {
 	close(IN);
 	$/ = "\n";
 
+	# read in the preamble job header template
+	$file = "$bench_test\/templates/preamble_header.in";
+	open (IN,"<$file") or die
+		"Could not open $file ($!)";
+	undef $/;
+	my $preamble_header = <IN>;
+	close(IN);
+	$/ = "\n";
+
 	# read in the appropriate common job header template
 	$file = "$bench_test\/templates/common_header.in";
 	open (IN,"<$file") or die
@@ -865,6 +874,9 @@ sub build_job_templates {
 		$templates->{$jobname}{'batch'} = $batch_header;
 		$templates->{$jobname}{'interactive'} = $interactive_header;
 
+		# add the preamble header
+		$templates->{$jobname}{'batch'} .= $preamble_header;
+		$templates->{$jobname}{'interactive'} .= $preamble_header;
 		# add the common header
 		$templates->{$jobname}{'batch'} .= "\n######## Cbench $bench_test\/common_header.in ########\n";
 		$templates->{$jobname}{'batch'} .= $common_header;

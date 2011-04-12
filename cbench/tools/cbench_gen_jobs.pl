@@ -72,6 +72,7 @@ GetOptions(
 	'testdir|scratchdir=s' => \$testdir,
 	'jobcbenchtest=s' => \$JOBCBENCHTEST,
 	'testset=s' => \$testset,
+	'preamble=s' => \$preamble,
 	'match=s' => \$match,
 	'exclude=s' => \$exclude,
 	'debug:i' => \$DEBUG,
@@ -493,6 +494,8 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				$outbuf =~ s/XHPL2_BIN_HERE/xhpl2/gs;
 				$outbuf =~ s/XHPLINTEL_BIN_HERE/xhplintel/gs;
 				$outbuf =~ s/HPCC_BIN_HERE/$hpccbin/gs;
+
+				$outbuf =~ s/^#PREAMBLE_HERE/$preamble/gs if defined $preamble;
 
 				# run any custom generation inner loop work, passing a reference to $outbuf so custom
 				# innerloops can modify it
