@@ -495,7 +495,11 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				$outbuf =~ s/XHPLINTEL_BIN_HERE/xhplintel/gs;
 				$outbuf =~ s/HPCC_BIN_HERE/$hpccbin/gs;
 
-				$outbuf =~ s/^#PREAMBLE_HERE/$preamble/gs if defined $preamble;
+				# preamble 
+				if (defined $preamble) {
+					$outbuf =~ s/#PREAMBLE_HERE/$preamble/gs;
+					debug_print(9,"DEBUG: Writing $preamble for $jobname\n");
+				}
 
 				# run any custom generation inner loop work, passing a reference to $outbuf so custom
 				# innerloops can modify it
@@ -1322,6 +1326,10 @@ sub usage {
           "   --testset <name> Override the name of the testset (optional).\n".
           "   --ident          Identifying string for the test\n".
 		  "   --binident       Binary tree identifier\n".
+		  "   --preamble           Command string to execute before running the\n".
+		  "                        actual hardware tests on each node. For example\n".
+		  "                        to pickup the right environment:\n".
+		  "                            --preamble '. /etc/profile'\n".
 	#	  "   --binname        Use a non-default binary name\n".
 	#	  "                      e.g. --binname xhpl.superoptimized\n".
 		  "   --xhplbin        Use a non-default Linpack binary name\n".
