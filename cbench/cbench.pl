@@ -2476,7 +2476,7 @@ sub std_substitute {
 	$string =~ s/BENCHMARK_NAME_HERE/$benchmark/gs;
 	$string =~ s/IDENT_HERE/$ident/gs;
 	$string =~ s/TORQUE_NODESPEC_HERE/$numnodes\:ppn\=$procs_per_node/gs;
-	$temp = calc_num_threads($numnodes,$procs_per_node);
+	$temp = $numnodes * $procs_per_node;
 	$string =~ s/BSUB_NODESPEC_HERE/-n $temp -R span[ptile=$procs_per_node]/gs;
 	$string =~ s/SLURM_NODESPEC_HERE/-N $numnodes/gs;
 	$temp =join(',',@memory_util_factors);
