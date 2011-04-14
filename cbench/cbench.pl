@@ -968,6 +968,11 @@ sub start_jobs {
 	my $batchargs = shift;
 	my $optdata = shift; # optional, additional option data starting modes might need
 
+	# lsf wants the submit script to be redirected to the submission program bsub
+	if ( $batch_extension = "lsf" ) {
+		$batchargs = $batchargs . " < ";
+	}
+
 	debug_print(1,"DEBUG:start_jobs() method=$start_method delay=$delay repeat=$repeat ".
 		"max=$maxprocs min=$minprocs polldelay=$poll_delay match=\'$match\'\n");
 
