@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-############ Cbench moab_header.in ######################
+############ Cbench lsf_header.in ######################
 # Directives for LSF
 # NOTE: LSF may require that these directives be first...
 #
 #BSUB BSUB_NODESPEC_HERE
-#BSUB -l walltime=WALLTIME_HERE
+#BSUB -W WALLTIME_HERE
 #
 # other attributes you might use but are hidded from LSF processing
 #HIDE -q somequeue
@@ -17,7 +17,7 @@
 CBENCH_RUN_TYPE=RUN_TYPE_HERE
 
 # grab the BSUB_NODEFILE nodelist
-NODELIST=`cat $BSUB_NODEFILE | uniq | xargs`
+NODELIST=$(CBENCHTEST_HERE/sbin/hostlist -c $LSB_HOSTS)
 
 # this tells us details of the Cbench job in the job output
 cbench_echo "Cbench numprocs: NUM_PROCS_HERE"
@@ -27,9 +27,8 @@ cbench_echo "Cbench benchmark: BENCHMARK_NAME_HERE"
 cbench_echo "Cbench jobname: JOBNAME_HERE"
 cbench_echo "Cbench testset: TESTSET_NAME_HERE"
 cbench_echo "Cbench joblaunchmethod: JOBLAUNCHMETHOD_HERE"
-cbench_echo "Cbench moab nodelist: $NODELIST"
+cbench_echo "Cbench lsf nodelist: $NODELIST"
 cbench_echo ""
 
 # grap the LSF jobid
-JOBID=`echo $BSUB_JOBID | cut -f1 -d'.'`
-
+JOBID=$LSB_JOBID

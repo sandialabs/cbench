@@ -548,9 +548,7 @@ sub lsf_batchsubmit_cmdbuild {
 		$cmd = "bsub";
 	}
 
-	# make moab's output filename look like PBS's
-	# and make sure we don't requeue
-	$cmd .= " -o 'lsf.o\%j'";
+	$cmd .= " -o 'lsf.o\%J' ";
 	
 	(length $batch_extraargs > 1) and $cmd .= " $batch_extraargs";
 	
@@ -2478,7 +2476,7 @@ sub std_substitute {
 	$string =~ s/BENCHMARK_NAME_HERE/$benchmark/gs;
 	$string =~ s/IDENT_HERE/$ident/gs;
 	$string =~ s/TORQUE_NODESPEC_HERE/$numnodes\:ppn\=$procs_per_node/gs;
-	$string =~ s/BSUB_NODESPEC_HERE/$numnodes*$procs_per_node/gs;
+	$string =~ s/BSUB_NODESPEC_HERE/-n $numprocs -R span[ptile=$procs_per_node]/gs;
 	$string =~ s/SLURM_NODESPEC_HERE/-N $numnodes/gs;
 	$temp =join(',',@memory_util_factors);
 	$string =~ s/MEM_UTIL_FACTORS_HERE/$temp/gs;

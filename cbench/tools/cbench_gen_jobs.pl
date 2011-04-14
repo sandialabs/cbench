@@ -1314,6 +1314,13 @@ sub walltime_to_seconds {
 
 		return $sec;
 	}
+	elsif ($str =~ /(\d+):(\d+)/ ) {
+		my ($hour, $min, $sec) = ($1,$2,0);
+		$sec += $min * 60;
+		$sec += $hour * 3600;
+
+		return $sec;
+	}
 	else {
 		warning_print("default_walltime is in an unknown format, using 24:00:00");
 		return (3600 * 24);
