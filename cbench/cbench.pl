@@ -561,7 +561,7 @@ sub lsf_nodespec_build {
 	my $list;
 
 	foreach my $n (@$nodearray) {
-		$list .= "-m $n -R span[ptile=$procs_per_node] ";
+		$list .= "-m $n ";
 	}
 	# remove trailing '+'
 	$list =~ s/\+$//;

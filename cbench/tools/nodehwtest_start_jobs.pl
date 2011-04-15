@@ -321,7 +321,7 @@ if (defined $nodebatch or defined $batch) {
 			# update the batch job file with the nodespec
 			$outbuf =~ s/TORQUE_NODESPEC_HERE/$nodespec/gs;
 			$outbuf =~ s/SLURM_NODESPEC_HERE/-w $nodespec/gs;
-			$outbuf =~ s/BSUB_NODESPEC_HERE/$nodespec/gs;
+			$outbuf =~ s/BSUB_NODESPEC_HERE/$nodespec -R span[ptile=$procs_per_node]/gs;
 #		}
 #		else {
 #			# update the batch job file with a generic nodecount
