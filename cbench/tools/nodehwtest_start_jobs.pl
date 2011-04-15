@@ -321,7 +321,7 @@ if (defined $nodebatch or defined $batch) {
 			# update the batch job file with the nodespec
 			$outbuf =~ s/TORQUE_NODESPEC_HERE/$nodespec/gs;
 			$outbuf =~ s/SLURM_NODESPEC_HERE/-w $nodespec/gs;
-			$outbuf =~ s/BSUB_NODESPEC_HERE/-n $nodespec/gs;
+			$outbuf =~ s/BSUB_NODESPEC_HERE/$nodespec/gs;
 #		}
 #		else {
 #			# update the batch job file with a generic nodecount
@@ -358,7 +358,16 @@ if (defined $nodebatch or defined $batch) {
 
 		my $cmd = batch_submit_cmdbuild();
 		(defined $batchargs) and $cmd .= " $batchargs ";
-		$cmd .= "$outfile";
+
+		# lsf wants the submit script to be redirected to the submission program bsub
+		if ( $batch_extension = "lsf" ) {
+			$cmd .= "< $outfile";
+		}
+		else {
+			$cmd .= "$outfile";
+		}
+
+
 		$DEBUG and print "DEBUG: cmd=$cmd\n";
 		system($cmd) unless $DRYRUN;
 
