@@ -78,6 +78,7 @@ GetOptions(
 	'debug:i' => \$DEBUG,
 	'help' => \$help,
 	'redundant' => \$redundant,
+	'unevenspan' => \$unevenspan,
 	'joblaunch_extraargs=s' => \$joblaunchargs,
 	'memory_util_factors|mem_factors=s' => \$new_memory_util_factors,
 	'threads|ompthreads|ompnumthreads=i' => \$OMPNUMTHREADS,
@@ -401,6 +402,10 @@ foreach $ppn (sort {$a <=> $b} keys %max_ppn_procs) {
 				# mpiexec -npernode 8 -np 2 ...
 				# mpiexec -npernode 4 -np 2 ...
 				($ppn > $numprocs) and next;
+			}
+			if ($numprocs % $ppn and !$unevenspan) {
+				debug_print(2,"DEBUG: Found $numprocs not really modulo by $ppn for $job");
+				next;
 			}
 
 			# build the full job name
@@ -1372,6 +1377,7 @@ sub usage {
 		  "                           a different path where the jobs are run, like a \n".
 		  "                           lightweight initramfs Linux node for instance\n".
 		  "   --redundant      Generate redundant ppn/np combinations (not on by default)\n".
+		  "   --unevenspan      Generate uneven ppn/np span combinations (not on by default)\n".
 		  "   --joblaunch_extraargs <args>  Override the joblaunch_extraargs setting in cluster.def\n".
 		  "   --memory_util_factors  Override the cluster.def \@memory_util_factors array.\n".
 		  "                          For example:\n".
