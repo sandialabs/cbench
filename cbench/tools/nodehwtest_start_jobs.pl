@@ -360,7 +360,7 @@ if (defined $nodebatch or defined $batch) {
 		(defined $batchargs) and $cmd .= " $batchargs ";
 
 		# lsf wants the submit script to be redirected to the submission program bsub
-		if ( $batch_extension = "lsf" ) {
+		if ( $batch_extension eq "lsf" ) {
 			$cmd .= "< $outfile";
 		}
 		else {
