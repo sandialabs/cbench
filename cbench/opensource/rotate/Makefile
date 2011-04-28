@@ -4,8 +4,6 @@ DEFINES =
 CFLAGS += 
 LIBS = $(MPILIB) -lm
 
-CC = tau_cc.sh
-
 EXEC = rotate rotate_latency
 
 INSTALLDIR = $(bin_dir)
