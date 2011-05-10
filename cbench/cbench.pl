@@ -675,7 +675,7 @@ sub torque_query {
 		'TOTAL' => 0,
 	);
 
-	my $cmd = 'qstat -a';
+	my $cmd = "qstat -u $ENV{USER}";
 	(defined $DEBUG) and print "DEBUG:torque_query() cmd=$cmd\n";
 	my @buf = `$cmd`;
 	(defined $DEBUG and $DEBUG > 3) and print "DEBUG:torque_query() buffer dump:@buf";
@@ -691,16 +691,24 @@ sub torque_query {
 		if ($l =~ /(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/) {
 			my $state = $10;
 			my $name = $4;
-			(defined $DEBUG and $DEBUG > 2) and print "DEBUG:torque_query() l=$l state=$state name=$name\n";
+			my ($jobid) = $1 =~ /(\d+)\./;
+			(defined $DEBUG and $DEBUG > 2) and print "DEBUG:torque_query() l=$l state=$state name=$name jobid=$jobid\n";
 
 			if ($state eq 'Q') {
 				$jobdata{$name} = 'queued';
+				$jobdata{$jobid} = 'queued';
 				$jobdata{'QUEUED'}++;
 				$jobdata{'TOTAL'}++;
 			}
 			elsif ($state eq 'R') {
 				$jobdata{$name} = 'running';
+				$jobdata{$jobid} = 'running';
 				$jobdata{'RUNNING'}++;
+				$jobdata{'TOTAL'}++;
+			}
+			elsif ($state eq 'C') {
+				$jobdata{$name} = 'completing';
+				$jobdata{$jobid} = 'completing';
 				$jobdata{'TOTAL'}++;
 			}
 			else {
@@ -2548,8 +2556,10 @@ sub print_job_err {
 	$status =~ s/\n$//;
 
 	# check cached jobdata from Slurm, job might be RUNNING and thus in an
-	# ERROR state with respect to what an output_parse module is looking for
-	if (exists $main::slurm_jobdata{$JOBID} and $main::slurm_jobdata{$JOBID} eq 'running') {
+	# ERROR state with respect to what an output_parse module is looking for.
+	#
+	# updated with more generic support to recognize RUNNING jobs
+	if (exists $main::batch_jobdata{$JOBID} and $main::batch_jobdata{$JOBID} eq 'running') {
 		print BOLD RED "**DIAG**";
 		print BOLD WHITE "(";
 		print GREEN "$fileid";

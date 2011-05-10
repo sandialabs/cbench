@@ -57,7 +57,7 @@ my $cache_file = '.cbench_parse_cache';
 # these are globals that print_job_err() has to look at
 our $SHOWNOTICES = 0;
 our $JOBID;
-our %slurm_jobdata = ();
+our %batch_jobdata = ();
 
 # this is a string buffer to hold interesting details of what output_parse
 # was asked to do and what data it found. we'll use this later to possibly record
@@ -910,7 +910,8 @@ sub parse_output_file {
 		$/ = "\n";
 		if ($embedded_info_buf =~ /Cbench \S+\:/) {
 			# found embedded Cbench info
-			
+			debug_print(3,"DEBUG:parse_output_file() dumping embedded info: $embedded_info_buf\n");
+
 			# extract jobname
 			my ($tmpjob) = $embedded_info_buf =~ /\nCbench jobname: (\S+)\n/;
 			if ($tmpjob =~ /ppn/) {
@@ -970,9 +971,15 @@ sub parse_output_file {
 		# jobs with ERROR states and cull jobs that are running in slurm.  since slurm
 		# spools job stdout/stderr continually, it is hard to tell the difference between
 		# a running job which gets an error and a job that has finished but had an error.
-		if ($filename =~ /slurm\.o/ and (!exists $slurm_jobdata{TOTAL})) {
+		#
+		# updated with support for detecting running jobs with Torque
+		if ((!exists $batch_jobdata{TOTAL}) and ($filename =~ /slurm\.o/)) {
 			debug_print(2,"DEBUG:parse_output_file: Found Slurm output file, querying Slurm for running jobs\n");
-			%slurm_jobdata = slurm_query();
+			%batch_jobdata = slurm_query();
+		}
+		elsif ((!exists $batch_jobdata{TOTAL}) and ($filename =~ /\.pbs\.o/)) {
+			debug_print(2,"DEBUG:parse_output_file: Found Torque/PBS output file, querying Torque for running jobs\n");
+			%batch_jobdata = batch_query();
 		}
 
 		# the default parse module to use for parsing this benchmark is the
@@ -1043,7 +1050,7 @@ sub parse_output_file {
 
         	# open and slurp the output file unless the job is currently RUNNING
 			my @txtbuf;
-			if (exists $main::slurm_jobdata{$JOBID} and $main::slurm_jobdata{$JOBID} eq 'running') {
+			if (exists $main::batch_jobdata{$JOBID} and $main::batch_jobdata{$JOBID} eq 'running') {
 				$txtbuf[0] = "hi";
 			}
 			else {
@@ -1096,8 +1103,10 @@ sub parse_output_file {
 				# by querying the cached slurm_jobdata hash. a job that is still running
 				# in Slurm looks like a job with an error to the output parsing logic due
 				# to Slurm spooling stdout/stderr data from the job continually. if the
-				# job is still running, update is $status appropriately
-				if (exists $main::slurm_jobdata{$JOBID} and $main::slurm_jobdata{$JOBID} eq 'running') {
+				# job is still running, update is $status appropriately.
+				#
+				# updated with more generic support for detecting running jobs
+				if (exists $main::batch_jobdata{$JOBID} and $main::batch_jobdata{$JOBID} eq 'running') {
 					$status = 'RUNNING';
 					$filedata->{'STATUS'} = 'RUNNING';
 				}
