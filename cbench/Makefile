@@ -49,7 +49,7 @@ OPENEXTRAS_SUBDIRS = $(addprefix opensource/, $(OPENEXTRAS_TESTS))
 GPU_SUBDIRS	   = $(addprefix opensource/, $(GPU_TESTS))
 STANDALONEOPEN_SUBDIRS       = $(addprefix opensource/, $(STANDALONEOPEN_TESTS))
 
-SUBDIRS = $(OPEN_SUBDIRS) $(HWTEST_SUBDIRS)
+SUBDIRS = $(OPEN_SUBDIRS) $(HWTEST_SUBDIRS) $(GPU_SUBDIRS)
 
 ifndef BINIDENT
   BINDIR = bin
