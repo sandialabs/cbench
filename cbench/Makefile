@@ -23,7 +23,7 @@
 
 include make.def
 
-HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride stab 
+HW_TESTS = fpck ctcs memtester streams nodeperf llcbench stress matmult stride stab lmbench
 
 STANDALONEOPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck rotate IMB osutests stab perftest mpi_examples mpi_slowcpu \

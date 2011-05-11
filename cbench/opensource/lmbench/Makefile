@@ -28,8 +28,7 @@ $(SRC): $(TAR)
 	patch -p1 -d src < lmbench3.cbench.patch
 
 all: $(SRC)
-	$(MAKE) -C src
-	#$(MAKE) CB_CC=$(PLAINCC) CB_CFLAGS="$(CFLAGS)" -C src/cachebench cachebench
+	$(MAKE) CC=$(CC) CFLAGS='$(CFLAGS)' -C src
 
 clean:
 	$(MAKE) -C src clean
