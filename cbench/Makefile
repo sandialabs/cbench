@@ -36,7 +36,7 @@ OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck ior_bench iozone bonnie++ rotate HPLlinpack \
              IMB osutests lanl stab perftest mpi_examples mpi_slowcpu \
              mpi_malloc mpi_tokensmash phloem HPLinpack2 \
-             fdtree simul mdtest miranda_io graph500
+             fdtree simul mdtest miranda_io graph500 hwloc
 
 OPENEXTRAS_TESTS = NPB hpcc
 
