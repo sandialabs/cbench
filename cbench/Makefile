@@ -40,10 +40,13 @@ OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
 
 OPENEXTRAS_TESTS = NPB hpcc
 
+GPU_TESTS = shoc HPLinpack-gpu
+
 # all of these live in the opensource/ area
 HWTEST_SUBDIRS     = $(addprefix opensource/, $(HW_TESTS))
 OPEN_SUBDIRS       = $(addprefix opensource/, $(OPEN_TESTS))
 OPENEXTRAS_SUBDIRS = $(addprefix opensource/, $(OPENEXTRAS_TESTS))
+GPU_SUBDIRS	   = $(addprefix opensource/, $(GPU_TESTS))
 STANDALONEOPEN_SUBDIRS       = $(addprefix opensource/, $(STANDALONEOPEN_TESTS))
 
 SUBDIRS = $(OPEN_SUBDIRS) $(HWTEST_SUBDIRS)
@@ -148,6 +151,10 @@ hpcc:
 	$(MAKE) -C opensource/hpcc normal
 	$(MAKE) -C opensource/hpcc install
 
+# compile and install GPU Tests
+gpu: $(GPU_SUBDIRS)
+	$(do-gputests-subdirs) 
+
 # install all the default compiled binaries
 install uninstall: default
 	$(do-subdirs)
@@ -187,6 +194,7 @@ distclean: clean
 	$(MAKE) -C opensource/hpcc distclean
 	$(MAKE) -C opensource/NPB distclean
 	$(MAKE) -C opensource/mpich distclean
+	$(MAKE) -C opensource/shoc distclean
 	$(do-subdirs)
 
 # targets used for making tarballs
@@ -218,3 +226,4 @@ doitall:
 	$(MAKE) install
 	$(MAKE) hpcc
 	$(MAKE) nodehwtest
+	$(MAKE) gpu

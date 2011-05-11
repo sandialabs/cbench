@@ -593,6 +593,28 @@ define do-lammps-install
         $(MAKE) -C $(BENCH_HOME)/openapps/lammps;
 endef
 
+define do-gputests-subdirs
+	@for dir in $(GPU_SUBDIRS); \
+	do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $1 in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	$(MAKE) --no-print-directory -C $$dir $1; \
+	if [ $$? -ne 0 -a "$1" = all ] ; then exit 1 ; fi ; \
+	done
+endef
+
+# install the SHOC benchmarks by simply copying the compiled bin directory
+define do-install-shoc
+   @$(BENCH_HOME)/sbin/mkinstalldirs $(allinstalldirs); \
+   if [ ! -d $(INSTALLDIR) ]; then \
+        mkdir $(INSTALLDIR); \
+        echo "created $(INSTALLDIR)"; \
+    fi; \
+    cp -r $(INSTALLTARGETS) $(INSTALLDIR); \
+    echo "$(INSTALLTARGETS) installed in $(INSTALLDIR)"; 
+endef
+
 define download-url
 	@file=`basename $1`; url=`dirname $1`; \
 	for path in $$url http://cbench.sourceforge.net/common/tarballs https://synapse.sandia.gov/static/tarballs; do \
