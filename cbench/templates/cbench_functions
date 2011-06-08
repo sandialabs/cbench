@@ -89,19 +89,19 @@ cbench_echo()
 
  	# the simple batch mode case, we don't worry about catching any output
     if [ "$CBENCH_RUN_TYPE" == "BATCH" ]; then
-	    echo $string
+	    echo "$string"
 		return
 	fi
 
    	# the interactive mode case with echoing of the output requested
     if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a "$CBENCH_ECHO_OUTPUT" == "YES" ]; then
-	    echo $string 2>&1 | tee -a $STDOUT_FILE 
+	    echo "$string" 2>&1 | tee -a $STDOUT_FILE 
 		return
 	fi
 
 	# the simple interactive mode case with just catching the output to file
     if [ "$CBENCH_RUN_TYPE" == "INTERACTIVE" -a -z "$CBENCH_ECHO_OUTPUT" ]; then
-	    echo $string >> $STDOUT_FILE 2>&1
+	    echo "$string" >> $STDOUT_FILE 2>&1
 	fi
 }
 
@@ -112,11 +112,16 @@ cbench_check_for_bin() {
     if [ ! -e $cbench_bin ]; then
         cbench_echo "CBENCH NOTICE: $cbench_bin NOT BUILT"
         exit 1
-    fi
-
-    if [ ! -x $cbench_bin ]; then
+    elif [ ! -x $cbench_bin ]; then
         cbench_echo "CBENCH NOTICE: $cbench_bin NOT EXECUTABLE BY USER"
         exit 1
+    else
+        # use ldd to capture the dynamic libraries used by this binary
+        cbench_echo "============ ldd of Cbench binary ============"
+        cbench_echo "ldd $cbench_bin:"
+        cbench_echo "`ldd $cbench_bin`"
+        cbench_echo "==============================================="
+        cbench_echo ""
     fi
 }
 
