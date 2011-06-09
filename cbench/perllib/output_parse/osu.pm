@@ -135,7 +135,7 @@ sub parse {
     	}
 
 		# message rate benchmark format
-    	if ($l =~ /^\s*(\d+)\s+(\S+)\s+(\d+\.\d+)/) {
+    	if ($l =~ /^\s*(\d+)\s+(\S+)\s+[-]?(\d+\.\d+)/) {
 			$max = main::max($max,$3);
 			$status = 'FOUNDDATA';
 			($1 == 4194304) and $status = 'COMPLETED';
