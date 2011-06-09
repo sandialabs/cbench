@@ -30,7 +30,7 @@ my ($shortpackage) = $package =~ /output_parse::(\S+)/;
 
 =head1 NAME
 
-sweep3d
+graph500
 
 Cbench parse module responsible for parsing output files generated
 by the Graph500 Benchmark
@@ -104,6 +104,8 @@ sub parse {
     my $found_endrecord = 0;
 
     my $hmean_TEPS = 0;
+    my $median_TEPS = 0;
+    my $construction_time = 0;
 
     #use Data::Dumper;
     #print STDERR Dumper(\$txtbuf);
@@ -122,8 +124,14 @@ sub parse {
         #
         # this is where the data parsing takes place
         #
-        if ($l =~ /^harmonic_mean_TEPS:\s+(\d+\.\d+) TEPS\n$/) {
+        if ($l =~ /^harmonic_mean_TEPS:\s+(\S+) TEPS\n$/) {
             $hmean_TEPS = $1;
+        }
+        if ($l =~ /^median_TEPS:\s+(\S+) TEPS\n$/) {
+            $median_TEPS = $1;
+        }
+        if ($l =~ /^construction_time:\s+(\S+) s\n$/) {
+            $construction_time = $1;
         }
 
 #
@@ -134,7 +142,9 @@ sub parse {
 
     if ($status =~ /SUCCESSFUL/) {
         $data{'STATUS'} = "PASSED";
-        $data{hmean_TEPS} = $hmean_TEPS; 
+        #$data{hmean_TEPS} = $hmean_TEPS; 
+        $data{median_TEPS} = $median_TEPS; 
+        $data{construction_time} = $construction_time; 
     }
     elsif ($status =~ /UNSUCCESSFUL/) {
         $data{'STATUS'} = "FAILED VERIFICATION";
@@ -193,7 +203,7 @@ This routine is optional.
 sub alias_spec {
     my $self = shift;
 
-    return "mpi_one_sided";
+    return "mpi_one_sided|mpi_simple";
 }
 
 =item B<metric_units()> - Return a hash with a mapping of the
@@ -239,6 +249,8 @@ sub _init {
     # info
     %{$self->{METRIC_UNITS}} = (
             'hmean_TEPS' => 'TEPS',
+            'median_TEPS' => 'TEPS',
+            'construction_time' => 'seconds',
             );
 
     return 1;
