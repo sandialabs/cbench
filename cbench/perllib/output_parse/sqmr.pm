@@ -82,7 +82,7 @@ sub parse {
 			# sqmr doesn't have a good indication of being done...
 			($l =~ /Cbench end timestamp/ and !$err) and $status = 'COMPLETED';
 
-			if ($l =~ /(ERROR .*)$/) {
+			if ($l =~ /(^ERROR .*)$/) {
 				$err = 1;
 				#$status = "SQMR said \'$1\'";
 				$status = "SQMR ERROR";
