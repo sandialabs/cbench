@@ -9,9 +9,9 @@ The Cbench hw_test framework's goal is to provide the structure so that
 adding low-level hardware testing capability is as easy and encapsulated
 as possible.  The hw_test framework uses simple Perl object modules to
 provide "plug-in" hardware testing functionality.  Each module encapsulates
-the intelligence to run a certain hardrware test (or closely related tests)
+the intelligence to run a certain hardware test (or closely related tests)
 and also analyze the output from the tests. Thus each hw_test module is
-solely responsible for running and being able to understand it's tests.
+solely responsible for running and being able to understand its tests.
 Cbench utilities like node_hw_test use these modules.
 
 These hw_test modules are written as Perl objects simply because it was
@@ -21,16 +21,16 @@ are objects.  The object oriented usage is very basic.  Most of the methods
 are generic and won't need to be changed for any new hw_test modules that
 are written.
 
-The following methods require specfic implementation for to create a new
+The following methods require specific implementation for to create a new
 Cbench hw_test module:
 
 run() - Responsible for running any and all tests the module implements
 and sending the output to the output filehandle of the object
 ($self->{outhandle}).
 
-parse(\@buf) - Takes a reference to an array as it's input. Responsible
+parse(\@buf) - Takes a reference to an array as its input. Responsible
 for parsing the buffer passed into it (as an array reference) and returning
-a hash of key/value pairs containing the result data of the hardware tests.
+a hash of key/value pairs containing the resultant data of the hardware tests.
 For example, the cpuinfo.pm hw_test module's parse() routine parses the
 output of /proc/cpuinfo and returns a hash like:
 	{
