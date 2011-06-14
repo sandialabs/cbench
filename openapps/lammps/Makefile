@@ -14,11 +14,12 @@ all: $(EXECS)
 
 $(EXECS): $(SRC)
 	$(MAKE) -C $(SRC)/lib/poems -f Makefile.cbench -j$(MAKE_JOBS)
-	make -C $(SRC)/lib/meam -f Makefile.cbench
-	make -C $(SRC)/lib/reax -f Makefile.cbench -j$(MAKE_JOBS)
+	$(MAKE) -C $(SRC)/lib/meam -f Makefile.cbench
+	$(MAKE) -C $(SRC)/lib/reax -f Makefile.cbench -j$(MAKE_JOBS)
 	$(MAKE) -C $(SRC)/src yes-all
 	$(MAKE) -C $(SRC)/src no-gpu
 	$(MAKE) -C $(SRC)/src no-user-atc
+	$(MAKE) -C $(SRC)/src no-user-cuda
 	$(MAKE) -C $(SRC)/src cbench -j$(MAKE_JOBS)
 
 $(SRC): $(TAR)
@@ -39,6 +40,7 @@ $(TAR) download:
 clean:
 	-make -C $(SRC)/lib/poems -f Makefile.cbench clean
 	-make -C $(SRC)/lib/meam -f Makefile.cbench clean
+	-make -C $(SRC)/lib/reax -f Makefile.cbench clean
 	-make -C $(SRC)/src clean-all
 	-/bin/rm -f $(EXECS)
 
