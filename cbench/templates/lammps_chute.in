@@ -7,7 +7,7 @@
 cbench_check_for_bin CBENCHTEST_BIN_HERE/lmp_cbench
 
 CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/lmp_cbench"
-STDIN_FILE="$CBENCHTEST/lammps/bench/in.chute"
+STDIN_FILE="CBENCHTEST_HERE/lammps/bench/in.chute"
 
 cbench_run_cmd $CMD
 

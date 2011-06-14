@@ -21,7 +21,7 @@ ln -s ../data.rhodolong
 
 # run LAMMPS from timestep 0 
 cbench_echo "======= LAMMPS base run ======="
-STDIN_FILE="$CBENCHTEST/lammps/bench/in.rhodolong.scaled"
+STDIN_FILE="CBENCHTEST_HERE/lammps/bench/in.rhodolong.scaled"
 cbench_run_cmd $CMD
 
 # LAMMPS will exit based on the timesteps in the in.rhodolong.scaled input
@@ -34,6 +34,6 @@ cbench_echo ""
 sleep 60
 
 cbench_echo "======= LAMMPS restart run ======="
-STDIN_FILE="$CBENCHTEST/lammps/bench/in.rhodolong.scaled.restart"
+STDIN_FILE="CBENCHTEST_HERE/lammps/bench/in.rhodolong.scaled.restart"
 cbench_run_cmd $CMD
 
