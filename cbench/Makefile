@@ -181,7 +181,6 @@ download:
 lammps: install 
 	$(do-lammps-install)
 	@sbin/install_cbenchtest --testset lammps
-	$(BENCH_HOME)/openapps/lammps/install_lammps
 
 #cbench-tests-rpm: 
 
