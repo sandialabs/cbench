@@ -142,6 +142,9 @@ my %statvars = ();
 # from parsed data
 my %target = ();
 
+# hash to hold strings from parsed data
+my %stringvars = ();
+
 # string of tests that fall into the "pass/fail" category
 my $passfail = '(streams_failed)|(fpck_fail)|(hpcc_fail)|(memtester_fail)|(memtester_incomplete)|(nodeperf_error)|(npb_error)|(stress_disk_fail)|(stress_cpu_fail)|(ctcs_memtst_fail)|(ctcs_memtst_incomplete)';
 
@@ -268,6 +271,7 @@ if (! defined $noerrors) {
 	print RESET "\n" unless defined $quiet;
 	for $node (sort {$a cmp $b} keys %nodehash) {
 		for $k (sort {$a cmp $b} keys %{$nodehashref->{$node}}) {
+
 			($k =~ /maxrunid|iterations/) and next;
 			# the node's value for the given test may be a mean of a set of
 			# values, so compute that. clear any previous stats data first though
@@ -425,6 +429,28 @@ if (defined $dplot) {
 	exec "$cmd";
 }
 
+if (defined %stringvars) {
+    print "\n";
+    my $num_nodes = 0;
+    my $node_col_width = 25;
+    my $value_col_width = 10;
+
+    print sprintf("%-${node_col_width}s\t\t\t%-${value_col_width}s\n", "Node(s)", "Value");
+    print "-------------------------------------------------------------------\n";
+
+    for my $value (sort {$a cmp $b} keys %stringvars) {
+        my @node_vals = split(',', $stringvars{$value});
+        $num_nodes = @node_vals;
+
+        if ($num_nodes > 1) {
+            print sprintf("%-${node_col_width}s\t\t\t%-${value_col_width}s\n", "$num_nodes nodes", $value);
+        }
+        else {
+            print sprintf("%-${node_col_width}s\t\t\t%-${value_col_width}s\n", $stringvars{$value}, $value);
+        }
+    }
+    print "\n";
+}
 
 
 # Responsible for parsing and generating statistics for all output
@@ -690,6 +716,9 @@ sub parse_buf {
 	# parse will return a hash reference
 	my $data = $tobj->parse($bufref);
 
+        # turn off characterization for dmidecode data
+        ($tmod =~ /dmidecode/) and undef $characterize;
+
 	#
 	# Ok, now that we have true data, we need to store it away in
 	# the appropriate places. First, store it away in the node hash
@@ -702,8 +731,14 @@ sub parse_buf {
 	for $k (keys %{$data}) {
 		# adding to nodehash
 		if (! exists $nodehashref->{$node}->{$k}) {
+                    # handle non-numeric results a little differently
+                    if ($data->{$k} =~ /\D/){
+                        $stringvars{$data->{$k}} .= "$node,";
+                    }
+                    else {
 			my @newarray = ();
 			$nodehashref->{$node}->{$k} = \@newarray;
+                    }
 		}
 		push @{$nodehashref->{$node}->{$k}}, $data->{$k};
 		
