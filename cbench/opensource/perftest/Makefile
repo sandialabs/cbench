@@ -37,11 +37,15 @@ $(SRC): $(TAR)
 	fi
 	ln -sf $(SRC) src
 
-configure: $(SRC)
+src/Makefile: $(SRC)
 	echo ${COMPILERCOLLECTION} > src/.config
-	cd src; CC=$(PLAINCC) F77=$(PLAINF77) CFLAGS='$(CFLAGS)' FFLAGS='$(FFLAGS)' ./configure --with-mpi=$(MPIHOME)
+	cd src; MPICC=$(CC) MPIF77=$(F77) CC=$(PLAINCC) F77=$(PLAINF77) CFLAGS='$(CFLAGS)' FFLAGS='$(FFLAGS)' ./configure 
+	@if [ -f $(SRC)/Makefile ]; then \
+		sed -i 's/-O4 -Ofast//' $(SRC)/Makefile; \
+	fi
+	touch $@
 
-src/stress: configure
+src/stress: src/Makefile
 	make -C src stress
 
 clean:
