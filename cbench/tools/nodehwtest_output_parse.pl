@@ -731,13 +731,14 @@ sub parse_buf {
 	for $k (keys %{$data}) {
 		# adding to nodehash
 		if (! exists $nodehashref->{$node}->{$k}) {
-                    # handle non-numeric results a little differently
-                    if ($data->{$k} =~ /\D/){
+                    # handle non-numeric results a little differently (but don't classify decimal
+                    # values ad non-numeric :)
+                    if ($data->{$k} =~ /\D/ and $data->{$k} !~ /\d+\.\d+/){
                         $stringvars{$data->{$k}} .= "$node,";
                     }
                     else {
-			my @newarray = ();
-			$nodehashref->{$node}->{$k} = \@newarray;
+                        my @newarray = ();
+                        $nodehashref->{$node}->{$k} = \@newarray;
                     }
 		}
 		push @{$nodehashref->{$node}->{$k}}, $data->{$k};
