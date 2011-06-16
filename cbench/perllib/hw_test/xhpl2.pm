@@ -276,18 +276,16 @@ sub parse {
 		#main::debug_print(1,"$txtbuf->[$i+1]");
 		#main::debug_print(1,"$txtbuf->[$i+2]");
 		$pass = ($txtbuf->[$i++] =~ /Ax-b.*eps.*PASSED/);
-		$pass += ($txtbuf->[$i++] =~ /Ax-b.*eps.*PASSED/);
-		$pass += ($txtbuf->[$i] =~ /Ax-b.*eps.*PASSED/);
 
 		# if the parsed Gigaflops result passed and if the result is the max
 		# of any previous results from this file, then record it locally
 		# pending the determination whether the overall output file is deemed
 		# to pass (this check is done further down)
-		if ($pass == 3) {
+		if ($pass == 1) {
 			if ($gflops > $local_max_gflops) {
 				$local_max_gflops = $gflops;
 			}
-			main::debug_print(3,"DEBUG:$shortpackage.parse() RESULTCHECK $pass of 3 PASSED, $local_max_gflops\n");
+			main::debug_print(3,"DEBUG:$shortpackage.parse() RESULTCHECK $pass of 1 PASSED, $local_max_gflops\n");
 			$resultsok++;
 		}
 
