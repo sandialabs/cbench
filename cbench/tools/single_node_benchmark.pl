@@ -64,7 +64,10 @@ GetOptions(
 	'tests=s' => \$tests,
 	'dryrun|dry-run' => \$dryrun,
 	'debug=i' => \$DEBUG,
+        'help' => \$help,
 );
+
+(defined $help) and usage() and exit;
 
 (!defined $tests) and $tests = 'stream|cachebench|dgemm|mpistreams|linpack|npb';
 
@@ -89,7 +92,7 @@ chomp $hn;
 (defined $report and defined $node) and $hn = $node;
 
 # When we use other Cbench testsets we will create unique test identifiers
-# in each testset for whatever we are doing. This the basename for those
+# in each testset for whatever we are doing. This is the basename for those
 # test identifiers.
 my $identbase = "snb_$ident";
 
@@ -108,6 +111,17 @@ my $numcores = linux_num_cpus();
 # the number of cores read in from cpuinfo files generated during a run
 my $num_cores_counted = 0;
 
+# become the leader of a new process group so that all the child test
+# processes will see our signals
+setpgrp(0,0);
+$SIG{CHLD} = \&REAPER;
+$SIG{INT} = \&CATCH;
+$SIG{TERM} = \&CATCH;
+$SIG{KILL} = \&CATCH;
+$SIG{USR1} = \&CATCH;
+$SIG{USR2} = \&CATCH;
+
+
 (defined $run) and
 	logmsg("INITIATING Single Node Benchmarking RUN on node $hn, test identifier is $ident");
 (defined $report and !defined $run) and
@@ -118,6 +132,9 @@ if (defined $run) {
 	runcmd("/bin/uname -s -r -m -p -i -o","uname","overwrite");
 	runcmd("cat /proc/cpuinfo","cpuinfo","overwrite");
 	runcmd("cat /proc/meminfo","meminfo","overwrite");
+
+        # hwloc info
+        runcmd("$binpath/lstopo","hwloc","file");
 }
 if ($report) {
 	add_section("Basic Node Description");
@@ -132,20 +149,21 @@ if ($report) {
 
 	# cpu/core info
 	my @cpudata = `cat $destdir/$ident/$hn.snb.cpuinfo.out`;
-    my %cpumap = linux_parse_cpuinfo(\@cpudata);
+        my %cpumap = linux_parse_cpuinfo(\@cpudata);
 	(defined $DEBUG) and print Dumper(%cpumap);
-    # decode what the cpumap hash tells us
-    foreach (keys %cpumap) {
-		(/model/) and next;
-		$num_physical_cpus++;
-        $num_cores_counted += $cpumap{$_}{'cores'};
-        $num_logical_cpus += scalar @{$cpumap{$_}{'logical'}};
-    }
+        # decode what the cpumap hash tells us
+        foreach (keys %cpumap) {
+                    (/model/) and next;
+                    $num_physical_cpus++;
+            $num_cores_counted += $cpumap{$_}{'cores'};
+            $num_logical_cpus += scalar @{$cpumap{$_}{'logical'}};
+        }
 	# if no detailed core/socket info was found, fall back to just
 	# simple logical cpu count 
 	if (exists $cpumap{'COUNT'}) {
 		$num_physical_cpus = $num_cores_counted = $cpumap{'COUNT'};
 	}
+
 
 	$text .= "Number of Physical Processors: $num_physical_cpus\n".
 			"Number of Processing Cores: $num_cores_counted\n";
@@ -162,6 +180,7 @@ if ($report) {
 	add_text_raw($text);
 	# more processor info
 	add_list("Processor Models:",\@{$cpumap{'model'}});
+
 }
 
 #
@@ -295,6 +314,7 @@ if ($report) {
 #
 # dgemm memsize vs gflops, nodeperf2
 if ($tests =~ /dgemm/ and $run) {
+    
 	logmsg("Starting DGEMM (nodeperf2) testing");
 
 	# reset the output file
@@ -307,7 +327,11 @@ if ($tests =~ /dgemm/ and $run) {
 		(($i % 2) == 1) and $i++;
 		# run the dgemm test multiple times so we can average
 		for my $j (1..3) {
-			runcmd("export OMP_NUM_THREADS=$numcores; $binpath/nodeperf2-nompi -i $i -s $n","nodeperf2");
+                        $ENV{OMP_NUM_THREADS}=$numcores; # the exec("exec $cmd") command doesn't like 'export', so
+                                                         # set the environment variable here and hope it gets
+                                                         # inherited by the nodeperf2 process - RKB
+			runcmd("$binpath/nodeperf2-nompi -i $i -s $n","nodeperf2");
+                        #runcmd("export OMP_NUM_THREADS=$numcores; $binpath/nodeperf2-nompi -i $i -s $n","nodeperf2");
 		}
 		$n = int ($n * 1.5);
 	}
@@ -957,22 +981,53 @@ sub runcmd {
 	my $finalcmd = $cmd;
 	(defined $DEBUG) and $echo = 1;
 
-	# need to save the output intelligently
-	if (defined $options and $options =~ /overwrite/) {
-		$finalcmd .= " > $destdir/$ident/$hn.snb.$cmdtag.out 2>&1";
-	}
-	else {
-		$finalcmd .= " >> $destdir/$ident/$hn.snb.$cmdtag.out 2>&1";
-	}
+        # some commands generate files instead of text ouptu
+        if (defined $options and $options =~ /file/) {
+            if ($cmd =~ /lstopo/) {
+                runhwloc($cmd);
+            }
+        }
+        else {
+            # need to save the output intelligently
+            if (defined $options and $options =~ /overwrite/) {
+                    $finalcmd .= " > $destdir/$ident/$hn.snb.$cmdtag.out 2>&1";
+            }
+            else {
+                    $finalcmd .= " >> $destdir/$ident/$hn.snb.$cmdtag.out 2>&1";
+            }
 
-	if (defined $options and $options =~ /nosave/) {
-		logmsg("RUNCMD: $cmd",$echo);
-		system("$cmd") unless defined $dryrun;
-	}
-	else {
-		logmsg("RUNCMD: $finalcmd",$echo);
-		system("$finalcmd") unless defined $dryrun;
-	}
+            if (defined $options and $options =~ /nosave/) {
+                    logmsg("RUNCMD: $cmd",$echo);
+                    #system("$cmd") unless defined $dryrun;
+                    snb_fork("$cmd") unless defined $dryrun;
+            }
+            else {
+                    logmsg("RUNCMD: $finalcmd",$echo);
+                    #system("$finalcmd") unless defined $dryrun;
+                    snb_fork("$finalcmd") unless defined $dryrun;
+            }
+        }
+        ($main::INTsignalled) and exit(1);
+}
+
+sub snb_fork {
+
+    my $cmd = shift;
+
+    # use fork so that we can kill the child command if necessary
+    my $pid = fork();
+    if (not defined $pid) {
+        print "resources not avilable.\n";
+    } elsif ($pid == 0) {
+        exec("exec $cmd"); # the IO redirection in $cmd will cause Perl to create a 
+                           # sub-process unless 'exec' is prepended to the command
+                           # http://stackoverflow.com/questions/2965067/problem-with-fork-exec-kill-when-redirecting-output-in-perl
+        exit(0);
+    } else {
+        $main::childpids{$pid} = 1;
+        waitpid($pid,0);
+    }
+    delete($main::childpids{$pid}); # don't need to try to kill children that have finished
 }
 
 sub logmsg {
@@ -999,3 +1054,70 @@ sub get_log_timestamp {
     $stamp = sprintf "%04d/%02d/%02d %02d:%02d:%02d",$year,$mon+1,$day,$hour,$min,$sec;
     return $stamp;
 }
+
+sub runhwloc {
+    my $cmd = shift;
+
+    # Generate either a PDF or text file containing the memory hierarchy for a node
+    # default to txt
+    my $suffix = "txt";
+
+    # the lstopo help file shows avaliable file formats based on how it was configured and built
+    my $lstopo_help = `$cmd --help 2>&1`;
+    
+    # if it says it can make a pdf, make a pdf
+    if ($lstopo_help =~ /Supported output file formats:.*pdf.*/) {
+        $suffix = "pdf";
+    }
+
+    my $finalcmd = "$cmd $destdir/$ident/$hn.snb.lstopo.$suffix";
+
+    logmsg("RUNCMD: $finalcmd",$echo);
+    system("$finalcmd") unless defined $dryrun;
+}
+
+sub usage {
+    print "USAGE: $0 \n" .
+    "Cbench utility to benchmark a single node and generate a LaTeX report of the results\n" .
+    "\n" .
+    " General Cbench Options:\n" .
+    "   --tests <regex>     Run only tests whose test name is included in the\n".
+    "                       provided regex string. For example:\n".
+    "                         --tests 'stream|cachebench|linpack'\n".
+    "   --ident <string>    Identifier for the test group\n" .
+    "   --binident <string> Identifier for the set of binaries to use.\n" .
+    "                       Maps to $CBENCHTEST/<binident> .\n".
+    "   --numcpus <num>     Override the auto-detection of the number of CPU\n".
+    "                       cores\n".
+    "   --dryrun            Do everything but actually run the tests\n" .
+    "   --quiet             Output as little as possible during run\n".
+    "   --debug <level>     Turn on debugging at the specified level\n" .
+    "\n" .
+    " Single Node Benchmark Options:\n" .
+    "   --destdir           Specify the desitnation directory for the *.snb*.out files\n" .
+    "   --run               Actually run the tests, if defined (default=defined)\n" .
+    "   --report            Generate a report, if defined (default=undef)\n" .
+    "   --savepdfsrc        Save intermediate files when generating report, if defined (default=undef)\n" .
+    "   --pdftag            An arbitrary tag appended to the report pdf filename\n" .
+    "   --node              The hostname of a specific node that is to be tested\n" .
+    "   --help              Print this help information\n" .
+    "";
+
+# RKB: I think these would be useful features to have in the SNB script (particularly since
+# they're supported by node_hw_test)
+#    "   --iterations <num> Number of test iterations\n" .
+#    "   --exclude <regex>  Do NOT run hw_test modules that match the\n" .
+#    "                      the specified regex string. For example,\n" .
+#    "                         --exclude streams\n" .
+#    "                      would only run the streams hw_test module\n" .
+#    "   --maxmem <num>     Override the auto-detection of free memory to be\n".
+#    "                      used in testing. The value is the number of megabytes.\n".
+#    "                      For example,\n".
+#    "                         --maxmem 1024\n".
+#    "                      would only use 1024MB or 1GB of memory for any tests\n".
+#    "                      that utilize free memory detection.\n".
+#    "   --memory_util_factors  Override the cluster.def \@memory_util_factors array.\n".
+#    "                          For example:\n".
+#    "                            --memory_util_factors 0.10,0.77,0.85\n".
+}
+
