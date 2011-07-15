@@ -203,6 +203,8 @@ load_hwtest_modules(\%test_modules,$out_fh);
 setpgrp(0,0);
 $SIG{CHLD} = \&REAPER;
 $SIG{INT} = \&CATCH;
++$SIG{TERM} = \&CATCH;
++$SIG{KILL} = \&CATCH;
 $SIG{USR1} = \&CATCH;
 $SIG{USR2} = \&CATCH;
 
