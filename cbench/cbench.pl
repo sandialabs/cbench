@@ -3143,18 +3143,18 @@ sub REAPER {
 
 sub CATCH {
 	my $signame = shift;
-	if ($signame =~ /INT|QUIT/) {
+        #if ($signame =~ /INT|QUIT/) {
 		for (keys %main::childpids) {
-			print "CATCH(pid $$) Caught SIG$signame, Killing child $_\n";
-			kill(KILL, $_);
+			print "\nCATCH(pid $$) Caught SIG$signame, Killing child $_\n";
+			kill($signame, $_);
 		}
 		$main::INTsignalled = 1;
 		# make sure our whole process group gets the signal
-		kill(-INT,$$);
-	}
-	else {
-		print "CATCH(pid $$) Caught SIG$signame...\n";
-	}
+		kill(-$signame,$$);
+#	}
+#	else {
+#		print "CATCH(pid $$) Caught SIG$signame...\n";
+#	}
 }
 
 
