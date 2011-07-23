@@ -65,6 +65,8 @@ GetOptions(
 	'dryrun|dry-run' => \$dryrun,
 	'debug=i' => \$DEBUG,
         'help' => \$help,
+        'nodetonode' => \$nodetonode,
+        'coretonode' => \$coretonode,
 );
 
 (defined $help) and usage() and exit;
@@ -596,6 +598,96 @@ if ($report) {
 # interpretation...
 
 
+# NUMA Memory-Access Tests
+if ($tests =~ /numa-mem/ and $run) {
+    my $logstr = "Starting NUMA Memory-Access ";
+    $logstr .= ($coretonode) ? "Core-to-Node" : "Node-to-Node";
+    $logstr .= " Testing";
+    logmsg($logstr);
+
+    my $date = `date +%d%b%Y_%H%M`;
+    chomp($date);
+
+    # to test memory-access characteristics, we look at memory read latency and memory bandwidth
+    for my $metric ("latency", "bandwidth") {
+        logmsg("Running NUMA $metric tests");
+
+        my $cmdtag = "numa-$metric";
+        my $command = "none";
+        my @binlist = ();
+
+        # compile an array of binaries for this metric
+        if ($metric eq "latency") {
+            $command = "$binpath/hwtests/lat_mem_rd";
+            @binlist = "lat_mem_rd";
+        }
+        elsif ($metric eq "bandwidth") {
+            # run any stream binary
+            @binlist = `cd $binpath/hwtests;ls -1 stream*-* 2>/dev/null`;
+        }
+        else {
+            print STDERR "numa-mem metric $metric is invalid\n";
+            next;
+        }
+
+        # run the numa tests for each binary in the list
+        for my $bin (@binlist) {
+            ($main::INTsignalled) and last;
+            ($bin =~ /mpi/) and next; # we'll deal with mpi multi-threaded tests later
+            chomp $bin;
+            $command = "$binpath/hwtests/$bin";
+
+            # verify that the requested executable exists
+            $ret = `which $command`;
+            if ($ret =~ /^which: no/ or $ret =~ /^$/) {
+                print STDERR "run_numa_tests(): can't find $command\n";
+            }
+            # found the executable - let's run the tests!
+            else {
+
+                # need to set up the tests so that they save their output appropriately
+                #$command .= " >> $destdir/$ident/$hn.snb.$cmdtag.$date.out 2>&1";
+                my $filename = "$destdir/$ident/$hn.snb.$cmdtag.$date.out";
+
+                # default to node-to-node mode
+                my $mode = ($coretonode) ? "core-to-node" : "node-to-node";
+
+                # lat_mem_rd needs some additional parameters
+                # the stride parameter here probably isn't ideal - perhaps do a sort of stride test on new machines?
+                ($command =~ /lat_mem_rd/) and $command .= " -P 1 -S 1000 131072";
+
+                # some Cbench-built STREAM tests can use a lot of memory - do a quick check 
+                # before trying to run one of the '10G' or 'big' STREAM tests
+                my $free = `free | grep Mem | awk \'{print \$2}\' 2>&1`;
+                chomp($free);
+                if (($bin =~ /big/ and $free < 2**20) or ($bin =~ /10G/ and $free < 10* 2**30)) {
+                    logmsg("  NOT Starting $command: Only " . sprintf("%.2f", $free/(2**20)) . " GiB of memory in the system");
+                    next;
+                }
+
+                # run the command now
+                logmsg("  Starting $command >> $filename");
+                run_numa_tests("", $command, $mode, $filename);
+            }
+        }
+
+    }
+
+    # will need to deal with this stuff to get the multi-threaded stream results
+#    # need this for building mpi job launches
+#    my $funcname = "$joblaunch_method\_joblaunch_cmdbuild";
+#    *func = \&$funcname;
+#
+#    for my $np (1..$numcores) {
+#        system("echo '====> $np processes' >> $destdir/$ident/$hn.snb.mpistreams.out");
+#        my $jobcmd = func($np,$procs_per_node,1);
+#        $jobcmd .= "$binpath/hwtests/stream-mpi";
+#        runcmd("$jobcmd","mpistreams");
+#    }
+
+}
+
+# NUMA PCIe-Access Tests
 
 #
 # do the final report generation and such
@@ -981,7 +1073,7 @@ sub runcmd {
 	my $finalcmd = $cmd;
 	(defined $DEBUG) and $echo = 1;
 
-        # some commands generate files instead of text ouptu
+        # some commands generate files instead of text output
         if (defined $options and $options =~ /file/) {
             if ($cmd =~ /lstopo/) {
                 runhwloc($cmd);
@@ -1065,12 +1157,21 @@ sub runhwloc {
     # the lstopo help file shows avaliable file formats based on how it was configured and built
     my $lstopo_help = `$cmd --help 2>&1`;
     
+    # if it says it can make an xml file, do it (that way we can generate other output file types later)
+    if ($lstopo_help =~ /Supported output file formats:.*xml.*/) {
+        $suffix = "xml";
+    }
+    my $finalcmd = "$cmd $destdir/$ident/$hn.snb.lstopo.$suffix";
+
+    logmsg("RUNCMD: $finalcmd",$echo);
+    system("$finalcmd") unless defined $dryrun;
+
     # if it says it can make a pdf, make a pdf
     if ($lstopo_help =~ /Supported output file formats:.*pdf.*/) {
         $suffix = "pdf";
     }
 
-    my $finalcmd = "$cmd $destdir/$ident/$hn.snb.lstopo.$suffix";
+    $finalcmd = "$cmd $destdir/$ident/$hn.snb.lstopo.$suffix";
 
     logmsg("RUNCMD: $finalcmd",$echo);
     system("$finalcmd") unless defined $dryrun;
@@ -1101,6 +1202,8 @@ sub usage {
     "   --pdftag            An arbitrary tag appended to the report pdf filename\n" .
     "   --node              The hostname of a specific node that is to be tested\n" .
     "   --help              Print this help information\n" .
+    "   --nodetonode        Run NUMA tests from each memory node to each memory nodes (default)\n" .
+    "   --coretonode        Run NUMA tests from each core to each memory node\n" .
     "";
 
 # RKB: I think these would be useful features to have in the SNB script (particularly since
@@ -1119,5 +1222,94 @@ sub usage {
 #    "   --memory_util_factors  Override the cluster.def \@memory_util_factors array.\n".
 #    "                          For example:\n".
 #    "                            --memory_util_factors 0.10,0.77,0.85\n".
+}
+
+sub run_numa_tests {
+    my $prefix = shift;
+    my $test = shift;
+    my $mode = shift;
+    my $filename = shift;
+
+    debug_print(3,"DEBUG:In run_numa_tests()\n");
+    debug_print(3,"DEBUG:  prefix: $prefix\n");
+    debug_print(3,"DEBUG:  test: $test\n");
+    debug_print(3,"DEBUG:  mode: $mode\n");
+    debug_print(3,"DEBUG:  filename: $filename\n");
+
+    # find numactl
+    my $numactl = "numactl";
+
+    #   look for numactl in our current path
+    my $ret = `which $numactl`;
+    if ($ret =~ /^which: no/ or $ret =~ /^$/) {
+        # maybe it's in /usr/bin
+        if (-e "/usr/bin/numactl") {
+            $numactl = "/usr/bin/numactl";
+        }
+        # can't find it - abort this subroutine
+        else {
+            print STDERR "run_numa_tests(): can't find $numactl\n";
+            return;
+        }
+    }
+    debug_print(3, "DEBUG:  using $numactl\n");
+
+    # check numactl's capabilities
+    $ret = `$numactl 2>&1`;
+    my $bind_process_to_node = "cpunodebind";
+    ($ret =~ /--cpubind=/) and $bind_process_to_node = "cpubind";
+    if (($ret !~ /membind/) or ($ret !~ /preferred/) or ($ret !~ /physcpubind=/)) {
+        print STDERR "run_numa_tests(): some functionality of $numactl is missing\n";
+        return;
+    }
+
+    # since we're using numactl, gather the number of nodes and cores that numactl sees
+    my $numa_show = `$numactl --show 2>&1`;
+    my $numa_hardware = `$numactl --hardware 2>&1`;
+    my $numa_max_node = 1;
+    my $numa_max_core = 1;
+    my @cores = ();
+    my @nodes = ();
+    ($numa_show =~ /physcpubind: (.*)\n/) and @cores = split(' ',$1);
+    ($numa_show =~ /nodebind: (.*)\n/) and @nodes = split(' ',$1);
+    $numa_max_node = pop(@nodes);
+    $numa_max_core = pop(@cores);
+    debug_print(3, "DEBUG:  numa_max_core: $numa_max_core\n");
+    debug_print(3, "DEBUG:  numa_max_node: $numa_max_node\n");
+
+    # run the command according to the requested mode
+    if ($mode eq "node-to-node") {
+        debug_print(3, "DEBUG:  Running node-to-node tests\n");
+        # run the test command running on each memory node with its memory on each memory node
+        for my $cpu_node (0..$numa_max_node) {
+            for my $mem_node (0..$numa_max_node) {
+                my $command = "$prefix $numactl --$bind_process_to_node=$cpu_node --membind=$mem_node $test";
+                #print "run_numa_test() command: $command\n";
+                system("echo \"CBENCH RUN_NUMA_TEST COMMAND: $command\" >> $filename");
+                snb_fork("$command >> $filename 2>&1") unless defined $dryrun;
+
+
+#                system("echo \"CBENCH RUN_NUMA_TEST COMMAND: $command\" >> $filename; $command >> $filename 2>&1") unless $dryrun;
+            }
+        }
+
+    }
+    elsif ($mode eq "core-to-node") {
+        debug_print(3, "DEBUG:  Running core-to-node tests\n");
+
+        # run the test command running on each core with its memory on each memory node
+        for my $core (0..$numa_max_core) {
+            for my $mem_node (0..$numa_max_node) {
+                my $command = "$prefix $numactl --physcpubind=$core --membind=$mem_node $test";
+                system("echo \"CBENCH RUN_NUMA_TEST COMMAND: $command\" >> $filename");
+                snb_fork("$command >> $filename 2>&1") unless defined $dryrun;
+            }
+        }
+    }
+    else {
+        print STDERR "run_numa_tests(): Argument 3 must be either 'node-to-node' or 'core-to-node'\n";
+        return;
+    }
+
 }
 
