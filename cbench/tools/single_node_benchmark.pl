@@ -125,7 +125,7 @@ $SIG{USR2} = \&CATCH;
 
 
 (defined $run) and
-	logmsg("INITIATING Single Node Benchmarking RUN on node $hn, test identifier is $ident");
+	logmsg("INITIATING Single Node Benchmarking RUN on node $hn, test identifier is $ident, test regex: $tests");
 (defined $report and !defined $run) and
 	logmsg("INITIATING Single Node Benchmarking REPORT for node $hn, test identifier is $ident");
 
@@ -187,7 +187,7 @@ if ($report) {
 
 #
 # streams, via node_hw_test
-if ($tests =~ /streams/ and $run) {
+if ($tests =~ /stream/ and $run) {
 	logmsg("Starting STREAMS testing");
 	runcmd("$bench_test/nodehwtest/node_hw_test --ident $identbase $binidentopt --match streams --debug 1","streams","overwrite");
 }
@@ -601,12 +601,11 @@ if ($report) {
 # NUMA Memory-Access Tests
 if ($tests =~ /numa-mem/ and $run) {
     my $logstr = "Starting NUMA Memory-Access ";
-    $logstr .= ($coretonode) ? "Core-to-Node" : "Node-to-Node";
+    my $mode = "unknown";
+    $logstr .= $mode = ($coretonode) ? "core_to_node" : "node_to_node";
     $logstr .= " Testing";
     logmsg($logstr);
 
-    my $date = `date +%d%b%Y_%H%M`;
-    chomp($date);
 
     # to test memory-access characteristics, we look at memory read latency and memory bandwidth
     for my $metric ("latency", "bandwidth") {
@@ -647,7 +646,7 @@ if ($tests =~ /numa-mem/ and $run) {
 
                 # need to set up the tests so that they save their output appropriately
                 #$command .= " >> $destdir/$ident/$hn.snb.$cmdtag.$date.out 2>&1";
-                my $filename = "$destdir/$ident/$hn.snb.$cmdtag.$date.out";
+                my $filename = "$destdir/$ident/$hn.snb.$cmdtag.out";
 
                 # default to node-to-node mode
                 my $mode = ($coretonode) ? "core-to-node" : "node-to-node";
@@ -686,9 +685,146 @@ if ($tests =~ /numa-mem/ and $run) {
 #    }
 
 }
+# Parse and report on the NUMA tests
+if ($report) {
+    #runcmd("$bench_test/nodehwtest/nodehwtest_output_parse.pl --ident $identbase --noerrors | /bin/grep streams","streams_data","overwrite");
 
-# NUMA PCIe-Access Tests
+    # Try to 'require' the numa_bandwidth.pm module and see if
+    # we can use it properly.
+    my $modname = "hw_test::numa_bandwidth";
+    eval "require($modname)";
+    if ($@ =~ /Can't locate hw_test/) {
+        print "numa_bandwidth test module not supported.  ($modname not found)\n";
+    } elsif ($@) {
+        print "Error loading '$modname'.\n\n$@\n";
+    }
+    else {
+        my $tobj = "$modname"->new($ofh);
+        if ($tobj) {
+            # success! save the module name and object ref
+            $$href{$modname} = $tobj;
+            defined $DEBUG and print
+            "DEBUG: loaded $modname module, test_class=" .
+            $tobj->test_class . "\n";
+        }
+        else {
+            print "Error initializing $modname object!\n";
+        }
 
+        my $infile = "$destdir/$ident/$hn.snb.numa-bandwidth.out";
+        open (IN,"<$infile") or do {
+            print "Could not open $infile ($!)\n";
+        };
+        my @buffer = <IN>;
+        close(IN);
+        # use the numa_bandwidth.pm-parse() to create a hash full of our data
+        my $data = $tobj->parse(\@buffer);
+
+
+        # digest the raw data
+        # the data hash built in numa_bandwidth.pm looks like this:
+        # $data{$testname}{$cpu_location}{$mem_location}{$bin_name}->(Statistics::Descriptive object)
+        #
+        # let's do two things. First, create a row in the full-results table. Second, see if this result qualifies
+        # as the best we've seen so we can plot it later
+        my $text = "";
+        my %best_results = ();
+        my %br_range = ();  # parallel hash for %best_results to keep track of range of values
+        my %br_bin = (); # parallel hash for %best_results to keep track of which binary did it
+        my %full_results = (); # results for every test and every cpu/memory location
+        my $num_cpu_locs = 0;
+        my $num_mem_locs = 0;
+        my $first = 1;
+        my $column_headers = "";
+        for my $testname (keys %{$data}) {
+            ($testname !~ /triad/) and next; # for now we only care about Triad
+
+            $num_cpu_locs = keys(%{$data->{$testname}});
+
+            for my $cpu_loc (sort {$a cmp $b} keys %{$data->{$testname}}) {
+
+                $num_mem_locs = keys(%{$data->{$testname}{$cpu_loc}});
+
+                for my $mem_loc (sort {$a cmp $b} keys %{$data->{$testname}{$cpu_loc}}) {
+                    
+                    $column_headers .= ",$cpu_loc $mem_loc";
+
+                    for my $bin_name (sort {$a cmp $b} keys %{$data->{$testname}{$cpu_loc}{$mem_loc}}) {
+
+                        my $statref = $data->{$testname}{$cpu_loc}{$mem_loc}{$bin_name};
+
+                        #print "Test Name: $testname, CPU_Loc: $cpu_loc, MEM_Loc: $mem_loc, BIN_Name: $bin_name, mean value: " . $statref->mean() . "\n";
+                        ($cpu_loc =~ /\w+=(\d+)/) and my $cpu_num = $1;
+                        ($mem_loc =~ /\w+=(\d+)/) and my $mem_num = $1;
+
+                        # save the result as part of the appropriate row
+                        $full_results{$testname}{$bin_name} .= "," . $statref->mean();
+
+                        # save this result if it's the best we've seen so far
+                        if ((!defined $best_results{$cpu_loc}{$mem_loc}) or ($best_results{$cpu_loc}{$mem_loc} < $statref->mean())) {
+                            $best_results{$cpu_loc}{$mem_loc} = $statref->mean();
+                            $br_range{$cpu_loc}{$mem_loc} = $statref->sample_range();
+                            $br_bin{$cpu_loc}{$mem_loc} = $bin_name;
+                            #print "found " . $statref->mean() . " as the new best value for $cpu_loc-$mem_loc\n";
+                        }
+                            
+                    }
+                }
+            }
+        }
+        #print "num_cpu_locs: $num_cpu_locs, num_mem_locs: $num_mem_locs\n";
+        my $num_cols = $num_cpu_locs*$num_mem_locs;
+        #print Dumper (%data);
+        #print "Dump of %full_results: " . Dumper(\%full_results) . "\n";
+        my %column_values = ();
+
+        # TODO: RKB: come up with a better way to find the best value for each column
+        #            I've had the idea to create a 2-D matrix of arrays to keep track of each column,
+        #            then find the best value in each column and mark it somehow. This would
+        #            obviously require a re-work of the table generation code below.
+        #
+        #            Having a way to mark best or worst values in a large table seems pretty useful to me.
+        #
+        # take the %full_results hash and find the best value for each column
+#        for my $test (keys %full_results) {
+#            #print "test: $test\n";
+#            for my $label (keys %{$full_results{$test}}) {
+#                my @res_vals = split(',',$full_results{$test}{$label});
+#                my $columns = @res_vals;
+#                for my $idx (1..($columns-1)) {
+#                    $column_values{$idx} = Statistics::Descriptive::Full->new() unless (defined $column_values{$idx});
+#                    $column_values{$idx}->add_data($res_vals[$idx]);
+#                }
+#
+#            }
+#        }
+
+        #print "Dump of %column_values " . Dumper(\%column_values) . "\n";
+
+        add_section("NUMA Bandwidth Results");
+        add_subsection("STREAM Memory Bandwidth Results");
+
+        # build the full results table
+        add_table_init("Full NUMA Memory Bandwidth Test Results", $num_cols+1, "3em");
+
+        $column_headers =~ s/physcpubind=/Core~/g;
+        $column_headers =~ s/cpunodebind=/Node~/g;
+        $column_headers =~ s/membind=/to Node~/g;
+
+        for my $testname (sort {$a cmp $b} keys %full_results) {
+
+            ($testname =~ /triad/i) and add_table_spanning_row("\\textbf{STREAM Triad (MB/s)}");
+            add_table_row($column_headers);
+
+            for my $binname (sort {$a cmp $b} keys %{$full_results{$testname}}) {
+
+                add_table_row("$binname" . "$full_results{$testname}{$binname}");
+            }
+        }
+        add_table_conclusion();
+        add_text("\\clearpage\n");
+    }
+}
 #
 # do the final report generation and such
 if ($report) {
@@ -730,10 +866,14 @@ if ($report) {
 	close(OUT);
 
 	# try to generate a pdf from the latex input
-	system("pdflatex -interaction=nonstopmode $destdir/$basename.tex 1>/dev/null 2>&1");
-	(-f "$destdir/$basename.pdf") and
-		print "Created $destdir/$basename.pdf successfully.\n".
-		"Check $destdir/$basename.log for details from pdflatex.\n";
+	my $cmd_output = `pdflatex -interaction=nonstopmode $destdir/$basename.tex 2>&1`;
+	if ($cmd_output =~ /Output written on (.*)\.pdf/) {
+            print "Created $1.pdf successfully.\n".
+            "Check $1.log for details from pdflatex.\n";
+        }
+        elsif ($cmd_output =~ /LaTeX Error/) {
+            print "$cmd_output\n";
+        }
 	
 	# if specified save the raw pieces used to generate the pdf
 	if (defined $savepdfsrc) {
@@ -807,6 +947,12 @@ sub add_section {
 	push @report_core_buf, "\\section{$sect}\n";
 }
 
+sub add_subsection {
+	my $subsect = shift;
+
+	push @report_core_buf, "\\subsection{$subsect}\n";
+}
+
 sub add_text {
 	my $text = shift;
 
@@ -844,6 +990,55 @@ sub add_figure {
 	push @report_core_buf, "$text";
 }
 
+sub add_table_init {
+
+    my $caption = shift;
+    $table_num_columns = shift; # declare as global so that other table subroutines can use it
+    my $col_width = shift; #optional, if used the data cells will be set to use this width
+    my $init_text = "";
+
+    $init_text .= "\\begin{table}[hptb!]\n";
+    $init_text .= "\\begin{center}\n";
+    $init_text .= "\\caption{$caption}\n";
+    $init_text .= "\\begin{tabular}{|r|";
+    for my $col (1..($table_num_columns-1)) {
+        if (defined $col_width) {
+            $init_text .= ">{\\centering}m{$col_width}|";
+        }
+        else {
+            $init_text .= "c|";
+        }
+    }
+    $init_text .= "}\n";
+
+    #print "init_text: $init_text\n";
+    push @report_core_buf, $init_text;
+}
+
+sub add_table_row {
+    # expects a CSV for a row
+    my $row = shift;
+    $row =~ s/,/ \& /g;
+
+    push @report_core_buf, "$row\\tabularnewline \\hline\n";
+}
+
+sub add_table_spanning_row {
+    my $cell_text = shift;
+
+    my $spanning_text .= "\\cline{1-" . ($table_num_columns) . "}\n";
+    $spanning_text .= "\\multicolumn{" . ($table_num_columns) . "}{|l|}{$cell_text}\\\\ \\hline \\hline\n";
+
+    push @report_core_buf, $spanning_text;
+}
+
+sub add_table_conclusion {
+    my $concl_text .= "\\end{tabular}\n";
+    $concl_text .= "\\end{center}\n";
+    $concl_text .= "\\end{table}\n";
+
+    push @report_core_buf, $concl_text;
+}
 
 sub build_gnuplot_graph {
 	my $fileid = shift;
@@ -1158,7 +1353,7 @@ sub runhwloc {
     my $lstopo_help = `$cmd --help 2>&1`;
     
     # if it says it can make an xml file, do it (that way we can generate other output file types later)
-    if ($lstopo_help =~ /Supported output file formats:.*xml.*/) {
+    if ($lstopo_help =~ /Supported output file formats:.*xml/) {
         $suffix = "xml";
     }
     my $finalcmd = "$cmd $destdir/$ident/$hn.snb.lstopo.$suffix";
@@ -1229,6 +1424,8 @@ sub run_numa_tests {
     my $test = shift;
     my $mode = shift;
     my $filename = shift;
+    my $date = `date +%d%b%Y_%H%M`;
+    chomp($date);
 
     debug_print(3,"DEBUG:In run_numa_tests()\n");
     debug_print(3,"DEBUG:  prefix: $prefix\n");
@@ -1277,6 +1474,7 @@ sub run_numa_tests {
     debug_print(3, "DEBUG:  numa_max_core: $numa_max_core\n");
     debug_print(3, "DEBUG:  numa_max_node: $numa_max_node\n");
 
+    system("echo `date` >> $filename");
     # run the command according to the requested mode
     if ($mode eq "node-to-node") {
         debug_print(3, "DEBUG:  Running node-to-node tests\n");
