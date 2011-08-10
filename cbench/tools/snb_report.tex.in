@@ -39,6 +39,7 @@
 \usepackage[T1]{fontenc}
 \usepackage{multirow}
 \usepackage{array}
+\usepackage{caption}
 
 
 %\title{Cbench Single Node Benchmark Report for \texttt{}}

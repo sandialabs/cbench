@@ -801,11 +801,11 @@ if ($report) {
 
         #print "Dump of %column_values " . Dumper(\%column_values) . "\n";
 
-        add_section("NUMA Bandwidth Results");
-        add_subsection("STREAM Memory Bandwidth Results");
+        add_section("NUMA Characterization Results");
+        add_subsection("\\texttt{STREAM} Memory Bandwidth");
 
         # build the full results table
-        add_table_init("Full NUMA Memory Bandwidth Test Results", $num_cols+1, "3em");
+        add_table_init("NUMA \\texttt{STREAM} Bandwidth Test Results", $num_cols+1, "3em");
 
         $column_headers =~ s/physcpubind=/Core~/g;
         $column_headers =~ s/cpunodebind=/Node~/g;
@@ -997,8 +997,9 @@ sub add_table_init {
     my $col_width = shift; #optional, if used the data cells will be set to use this width
     my $init_text = "";
 
+    $init_text .= "\\begin{flushleft}\n";
     $init_text .= "\\begin{table}[hptb!]\n";
-    $init_text .= "\\begin{center}\n";
+    $init_text .= "\\captionsetup{singlelinecheck=off}\n"; # to allow the table caption to be left-justified
     $init_text .= "\\caption{$caption}\n";
     $init_text .= "\\begin{tabular}{|r|";
     for my $col (1..($table_num_columns-1)) {
@@ -1034,8 +1035,8 @@ sub add_table_spanning_row {
 
 sub add_table_conclusion {
     my $concl_text .= "\\end{tabular}\n";
-    $concl_text .= "\\end{center}\n";
     $concl_text .= "\\end{table}\n";
+    $concl_text .= "\\end{flushleft}\n";
 
     push @report_core_buf, $concl_text;
 }
