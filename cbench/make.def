@@ -241,6 +241,17 @@ ifeq ($(COMPILER),tau-pgi)
   NOUNROLL_FLAGS = -Mnounroll
   OPENMP_ENABLE = -mp
 endif
+ifeq ($(COMPILER),open64)
+  FORT = openf90
+  PLAINF77 = openf77
+  PLAINF90 = openf90
+  PLAINCC = opencc
+  PLAINCXX = openCC
+  NOOPT_FLAGS = -O0
+  NOUNROLL_FLAGS = -fno-unroll-loops -fno-unroll-all-loops
+  OPENMP_ENABLE = -fopenmp
+  DOUBLE_PRECISION = -fdefault-real-8 -fdefault-double-8
+endif
 
 
 # we should know our compilers now
@@ -400,6 +411,13 @@ ifeq ($(ARCH),x86_64)
   COMMON_FLAGS = 
   FFLAGS += -fno-second-underscore
   OPTFLAGS = -O3 -mtune=generic
+  MPILIB =
+  endif
+
+  ifeq ($(COMPILER),open64)
+  COMMON_FLAGS = 
+  FFLAGS += -fno-second-underscore
+  OPTFLAGS = -Ofast
   MPILIB =
   endif
 
