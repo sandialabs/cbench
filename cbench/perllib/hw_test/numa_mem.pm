@@ -21,7 +21,7 @@
 ###############################################################################
 
 
-package hw_test::numa_bandwidth;
+package hw_test::numa_mem;
 
 use strict;
 

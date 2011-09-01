@@ -29,6 +29,8 @@
 # This first pass won't address, in the interest of time and needing to see
 # how things develop, Marcus's monte carlo multi-node data gathering scenario...
 
+#use warnings;
+
 # need to know where everything cbench lives!
 BEGIN {
 	die "Please define CBENCHOME!\n" if !defined($ENV{CBENCHOME});
@@ -48,8 +50,8 @@ use Data::Dumper;
 use Statistics::Descriptive;
 use File::stat;
 use Term::ANSIColor qw(:constants color);
+use Algorithm::KMeans;
 $Term::ANSIColor::AUTORESET = 1;
-
 
 GetOptions(
 	'numcore|numcpu=i' => \$NUMCPUS,
@@ -64,16 +66,16 @@ GetOptions(
 	'tests=s' => \$tests,
 	'dryrun|dry-run' => \$dryrun,
 	'debug=i' => \$DEBUG,
-        'help' => \$help,
-        'nodetonode' => \$nodetonode,
-        'coretonode' => \$coretonode,
+    'help' => \$help,
+    'nodetonode' => \$nodetonode,
+    'coretonode' => \$coretonode,
 );
 
 (defined $help) and usage() and exit;
 
 (!defined $tests) and $tests = 'stream|cachebench|dgemm|mpistreams|linpack|npb';
 
-(!defined $run and !defined $report) and ($run = 1 and $report = 0);
+(!defined $run and !defined $report) and $run = 1 and $report = 0;
 
 (!defined $ident) and $ident = $cluster_name . "1";
 (!defined $destdir) and $destdir = ".";
@@ -197,7 +199,7 @@ if ($report) {
 
 	my $out = "$destdir/$ident/$hn.snb.streams_data.out";
 	open (IN,"<$out") or do {
-		print "Could not open $out ($!)\n";
+		print "WARNING: Could not open $out ($!)\n";
 	};
 	my @rawdata = <IN>;
 	close(IN);
@@ -242,7 +244,7 @@ if ($report) {
 		chomp $out;
 		my $file = "$destdir/$ident/$out";
 		open (IN,"<$file") or do {
-			"print Could not open $file ($!)\n";
+			print "WARNING: Could not open $file ($!)\n";
 		};
 		my @rawdata = <IN>;
 		close(IN);
@@ -278,7 +280,7 @@ if ($tests =~ /cachebench/ and $run) {
 if ($report) {
 	my $out = "$destdir/$ident/$hn.snb.cachebench.out";
 	open (IN,"<$out") or do {
-		"print Could not open $out ($!)\n";
+		print "WARNING: Could not open $out ($!)\n";
 	};
 	my @rawdata = <IN>;
 	close(IN);
@@ -296,7 +298,7 @@ if ($report) {
 	}
 	#print Dumper (%data);
 
-	# average the results at each vector lenght and put into a hash data
+	# average the results at each vector length and put into a hash data
 	# structure suitable for passing to the gnuplot generate
 	my %plotdata = ();
 	foreach my $len (sort {$a <=> $b} keys(%data)) {
@@ -342,7 +344,7 @@ if ($tests =~ /dgemm/ and $run) {
 if ($report) {
 	my $out = "$destdir/$ident/$hn.snb.nodeperf2.out";
 	open (IN,"<$out") or do {
-		print "Could not open $out ($!)\n";
+		print "WARNING: Could not open $out ($!)\n";
 	};
 	my @rawdata = <IN>;
 	close(IN);
@@ -395,7 +397,7 @@ if ($tests =~ /mpistreams/ and $run) {
 if ($report) {
 	my $out = "$destdir/$ident/$hn.snb.mpistreams.out";
 	open (IN,"<$out") or do {
-		print "Could not open $out ($!)\n";
+		print "WARNING: Could not open $out ($!)\n";
 	};
 	my @rawdata = <IN>;
 	close(IN);
@@ -463,7 +465,7 @@ if ($tests =~ /linpack/ and $run) {
 			(!power_of_two($threads) and ($threads > 1)) and next;
 
 			my $cmd = "$bench_test/linpack/linpack_start_jobs.pl --ident ".$identbase."_".
-				$threads."threads --procs $processes --interactive --match $processes\ppn";
+				$threads."threads --procs $processes --interactive --match ${processes}ppn";
 			#print "$cmd\n";
 			runcmd("$cmd",'linpack');
 		}
@@ -477,7 +479,7 @@ if ($report) {
 
 	my $out = "$destdir/$ident/$hn.snb.linpack_data.out";
 	open (IN,"<$out") or do {
-		print "Could not open $out ($!)\n";
+		print "WARNING: Could not open $out ($!)\n";
 	};
 	my @rawdata = <IN>;
 	close(IN);
@@ -509,8 +511,8 @@ if ($report) {
 	}
 	(defined $DEBUG) and print Dumper (%data);
 
-	my $out = "$destdir/$ident/$hn.snb.linpack.out";
-	my @rawdata = `cat $out`;
+	my $outl = "$destdir/$ident/$hn.snb.linpack.out";
+	@rawdata = `cat $outl`;
 	my $memfactors = 'unknown';
 	foreach (@rawdata) {
 		if (/MEM_UTIL_FACTORS:\s+(\S+)/) {
@@ -557,7 +559,7 @@ if ($tests =~ /npb/ and $run) {
 
 	# do our npb testing runs starting with the biggest memory runs first,
 	# i.e. the C class binaries
-	my $cmd = "$bench_test/npb/npb_start_jobs.pl --ident $identbase --minprocs 1".
+	$cmd = "$bench_test/npb/npb_start_jobs.pl --ident $identbase --minprocs 1".
 		" --maxprocs $numcores --match \'C-".$numcores."ppn\' --interactive";
 	runcmd("$cmd",'npb');
 }
@@ -607,94 +609,180 @@ if ($tests =~ /numa-mem/ and $run) {
     logmsg($logstr);
 
 
-    # to test memory-access characteristics, we look at memory read latency and memory bandwidth
-    for my $metric ("latency", "bandwidth") {
-        logmsg("Running NUMA $metric tests");
+    if ($tests !~ /numa-mem-mpi/) {
+        # to test memory-access characteristics, we look at memory read latency and memory bandwidth
+        for my $metric ("latency", "bandwidth") {
+            logmsg("Running NUMA $metric tests");
 
-        my $cmdtag = "numa-$metric";
+            my $cmdtag = "numa-$metric";
+            my $command = "none";
+            my @binlist = ();
+
+            # compile an array of binaries for this metric
+            if ($metric eq "latency") {
+                $command = "$binpath/hwtests/lat_mem_rd";
+                @binlist = "lat_mem_rd";
+            }
+            elsif ($metric eq "bandwidth") {
+                # run any stream binary
+                @binlist = `cd $binpath/hwtests;ls -1 stream*-* 2>/dev/null`;
+            }
+            else {
+                print STDERR "numa-mem metric $metric is invalid\n";
+                next;
+            }
+
+            # run the numa tests for each binary in the list
+            for my $bin (@binlist) {
+                ($main::INTsignalled) and exit;
+                ($bin =~ /mpi/) and next; # we'll deal with mpi multi-threaded tests later
+                chomp $bin;
+                ($bin =~ /~/) and next; # don't run backup versions of an executable
+                $command = "$binpath/hwtests/$bin";
+
+                # verify that the requested executable exists
+                $ret = `which $command`;
+                if ($ret =~ /^which: no/ or $ret =~ /^$/) {
+                    print STDERR "run_numa_tests(): can't find $command\n";
+                }
+                # found the executable - let's run the tests!
+                else {
+
+                    # need to set up the tests so that they save their output appropriately
+                    #$command .= " >> $destdir/$ident/$hn.snb.$cmdtag.$date.out 2>&1";
+                    my $filename = "$destdir/$ident/$hn.snb.$cmdtag.out";
+
+                    # default to node-to-node mode
+                    my $mode = ($coretonode) ? "core-to-node" : "node-to-node";
+
+                    # lat_mem_rd needs some additional parameters
+                    # the stride parameter here probably isn't ideal - perhaps do a sort of stride test on new machines?
+                    ($command =~ /lat_mem_rd/) and $command .= " -P 1 -S 1000 131072";
+
+                    # some Cbench-built STREAM tests can use a lot of memory - do a quick check 
+                    # before trying to run one of the '10G' or 'big' STREAM tests
+                    my $free = `free | grep Mem | awk \'{print \$2}\' 2>&1`;
+                    chomp($free);
+                    if (($bin =~ /big/ and $free < (2**20)/1024)){
+                        logmsg("  NOT Starting $command: Only " . sprintf("%.2f", $free/(2**20)) . " GiB of memory in the system");
+                        next;
+                    }
+                    if ($bin =~ /10G/ and $free < (10* 2**30)/1024) {
+                        print "free is $free, " . ((10*2**30)/1024) . "\n";
+                        logmsg("  NOT Starting $command: Only " . sprintf("%.2f", $free/(2**20)) . " GiB of memory in the system");
+                        next;
+                    }
+
+                    # run the command now
+                    logmsg("  Starting $command >> $filename");
+                    run_numa_tests("", $command, $mode, $filename);
+                }
+            }
+
+        }
+    }
+    if ($tests !~ /numa-mem-serial/) {
+
+        # Run the Multi-Threaded STREAM binaries
+        my $filename = "$destdir/$ident/$hn.snb.numa-mem_multithreaded.out";
+        @binlist = `cd $binpath/hwtests;ls -1 stream*mpi* 2>/dev/null`;
+
+        logmsg("Running Multi-Threaded NUMA Memory Bandwidth Tests");
+
+        for my $mpitest (@binlist) {
+            chomp($mpitest);
+            $mpitest = "$binpath/hwtests/$mpitest";
+            logmsg("  Starting $mpitest >> $filename");
+            run_multithreaded_numa_tests($mpitest, $filename);
+        }
+    }
+}
+
+# NUMA GPU-Access Tests
+if ($tests =~ /numa-gpu/ and $run) {
+    my $logstr = "Starting NUMA GPU-Access ";
+    my $mode = "unknown";
+    $logstr .= $mode = ($coretonode) ? "core_to_node" : "node_to_node";
+    $logstr .= " Testing";
+    logmsg($logstr);
+
+    # to test GPU-access characteristics, we use both the CUDA and OpenCL SHOC benchmarks
+    for my $framework ("CUDA", "OpenCL") {
+        logmsg("Running NUMA $framework tests");
+
+        my $cmdtag = "numa-SHOC_$framework";
         my $command = "none";
-        my @binlist = ();
-
-        # compile an array of binaries for this metric
-        if ($metric eq "latency") {
-            $command = "$binpath/hwtests/lat_mem_rd";
-            @binlist = "lat_mem_rd";
-        }
-        elsif ($metric eq "bandwidth") {
-            # run any stream binary
-            @binlist = `cd $binpath/hwtests;ls -1 stream*-* 2>/dev/null`;
-        }
-        else {
-            print STDERR "numa-mem metric $metric is invalid\n";
-            next;
-        }
+        my $shoc_src = "$binpath/shoc/shoc-1.1.1";
+        my @command_list = ("$shoc_src/tools/driver.pl");
 
         # run the numa tests for each binary in the list
-        for my $bin (@binlist) {
+        for my $command (@command_list) {
             ($main::INTsignalled) and last;
-            ($bin =~ /mpi/) and next; # we'll deal with mpi multi-threaded tests later
-            chomp $bin;
-            $command = "$binpath/hwtests/$bin";
 
             # verify that the requested executable exists
-            $ret = `which $command`;
-            if ($ret =~ /^which: no/ or $ret =~ /^$/) {
+            if (!(-e "$command")) {
                 print STDERR "run_numa_tests(): can't find $command\n";
             }
             # found the executable - let's run the tests!
             else {
 
-                # need to set up the tests so that they save their output appropriately
-                #$command .= " >> $destdir/$ident/$hn.snb.$cmdtag.$date.out 2>&1";
-                my $filename = "$destdir/$ident/$hn.snb.$cmdtag.out";
+                # so prepend perl and some libraries
+                my $LD_LIB_addition = "$ENV{OPENCLLIB}:$ENV{CUDALIB}:$ENV{MPIHOME}/lib64:$ENV{MPIHOME}/lib:$ENV{LD_LIBRARY_PATH}";
+                $ENV{LD_LIBRARY_PATH} = $LD_LIB_addition; 
 
-                # default to node-to-node mode
-                my $mode = ($coretonode) ? "core-to-node" : "node-to-node";
+                # need to get the number of GPU devices in the system
+                #  to do this we utilize the method used in driver.pl's printDevInfo() subroutine
+                my $numdev = 0;
+                my @retval = ();
+                if (-e "$shoc_src/bin/Serial/OpenCL/BusSpeedDownload" ) {
+                    @retval = `$shoc_src/bin/Serial/OpenCL/BusSpeedDownload -i 2>&1`;
+                    #@retval = `LD_LIBRARY_PATH=$LD_LIB_addition $shoc_src/bin/Serial/OpenCL/BusSpeedDownload -i 2>&1`;
+                }
+                else {
+                    @retval = `$shoc_src/bin/Serial/CUDA/BusSpeedDownload -i 2>&1`;
+                    #@retval = `LD_LIBRARY_PATH=$LD_LIB_addition $shoc_src/bin/Serial/CUDA/BusSpeedDownload -i 2>&1`;
+                }
+                for (@retval) {
+                    (/DeviceName/) and $numdev++;
+                }
+                logmsg("  Found $numdev GPU devices");
 
-                # lat_mem_rd needs some additional parameters
-                # the stride parameter here probably isn't ideal - perhaps do a sort of stride test on new machines?
-                ($command =~ /lat_mem_rd/) and $command .= " -P 1 -S 1000 131072";
-
-                # some Cbench-built STREAM tests can use a lot of memory - do a quick check 
-                # before trying to run one of the '10G' or 'big' STREAM tests
-                my $free = `free | grep Mem | awk \'{print \$2}\' 2>&1`;
-                chomp($free);
-                if (($bin =~ /big/ and $free < 2**20) or ($bin =~ /10G/ and $free < 10* 2**30)) {
-                    logmsg("  NOT Starting $command: Only " . sprintf("%.2f", $free/(2**20)) . " GiB of memory in the system");
-                    next;
+                my @d_list = ();
+                for (0..($numdev-1)) {
+                    push @d_list,$_;
                 }
 
-                # run the command now
-                logmsg("  Starting $command >> $filename");
-                run_numa_tests("", $command, $mode, $filename);
+                # the driver.pl script isn't executable by default, so invoke perl explicitly
+                ($command =~ /driver\.pl/) and $command = "perl $command -s 4 -bin-dir $shoc_src/bin -" . lc($framework);
+
+                # run the NUMA tests on each device
+                for my $device (@d_list) {
+
+                    # only run on each memory node with memory local to that node
+                    my $runmode = "only-mem-nodes";
+
+                    # need to set up the tests so that they save their output appropriately
+                    my $filename = "$destdir/$ident/$hn.snb.numa-gpu.out";
+
+                    # run the command now
+                    logmsg("  Starting $command -d $device >> $filename");
+                    run_numa_tests("", "$command -d $device", $runmode, $filename);
+                }
             }
         }
 
     }
-
-    # will need to deal with this stuff to get the multi-threaded stream results
-#    # need this for building mpi job launches
-#    my $funcname = "$joblaunch_method\_joblaunch_cmdbuild";
-#    *func = \&$funcname;
-#
-#    for my $np (1..$numcores) {
-#        system("echo '====> $np processes' >> $destdir/$ident/$hn.snb.mpistreams.out");
-#        my $jobcmd = func($np,$procs_per_node,1);
-#        $jobcmd .= "$binpath/hwtests/stream-mpi";
-#        runcmd("$jobcmd","mpistreams");
-#    }
-
 }
-# Parse and report on the NUMA tests
-if ($report) {
-    #runcmd("$bench_test/nodehwtest/nodehwtest_output_parse.pl --ident $identbase --noerrors | /bin/grep streams","streams_data","overwrite");
 
-    # Try to 'require' the numa_bandwidth.pm module and see if
+# Parse and report on the NUMA-mem tests
+if ($report) {
+
+    # Try to 'require' the numa_mem.pm module and see if
     # we can use it properly.
-    my $modname = "hw_test::numa_bandwidth";
+    my $modname = "hw_test::numa_mem";
     eval "require($modname)";
     if ($@ =~ /Can't locate hw_test/) {
-        print "numa_bandwidth test module not supported.  ($modname not found)\n";
+        print "numa_mem test module not supported.  ($modname not found)\n";
     } elsif ($@) {
         print "Error loading '$modname'.\n\n$@\n";
     }
@@ -711,118 +799,624 @@ if ($report) {
             print "Error initializing $modname object!\n";
         }
 
+        # Define the Gamma parameter for memory benchmark result normalization
+        my $Gamma = 17066;  #MB/s, DDR3-2133 SPEC
+
         my $infile = "$destdir/$ident/$hn.snb.numa-bandwidth.out";
+        my $havefile = 1;
         open (IN,"<$infile") or do {
-            print "Could not open $infile ($!)\n";
+            print "WARNING: Could not open $infile ($!)\n";
+            $havefile = 0;
         };
-        my @buffer = <IN>;
-        close(IN);
-        # use the numa_bandwidth.pm-parse() to create a hash full of our data
-        my $data = $tobj->parse(\@buffer);
+        # Algorithm::KMeans will terminate the script if it can't parse the data, so
+        # we only try to parse the data if there was a data file
+        if ($havefile) {
+
+            my @buffer = <IN>;
+            close(IN);
+            # use the numa_mem.pm-parse() to create a hash full of our data
+            my $data = $tobj->parse(\@buffer);
 
 
-        # digest the raw data
-        # the data hash built in numa_bandwidth.pm looks like this:
-        # $data{$testname}{$cpu_location}{$mem_location}{$bin_name}->(Statistics::Descriptive object)
-        #
-        # let's do two things. First, create a row in the full-results table. Second, see if this result qualifies
-        # as the best we've seen so we can plot it later
-        my $text = "";
-        my %best_results = ();
-        my %br_range = ();  # parallel hash for %best_results to keep track of range of values
-        my %br_bin = (); # parallel hash for %best_results to keep track of which binary did it
-        my %full_results = (); # results for every test and every cpu/memory location
-        my $num_cpu_locs = 0;
-        my $num_mem_locs = 0;
-        my $first = 1;
-        my $column_headers = "";
-        for my $testname (keys %{$data}) {
-            ($testname !~ /triad/) and next; # for now we only care about Triad
+            # digest the raw data
+            # the data hash built in numa_mem.pm looks like this:
+            # $data{$testname}{$cpu_location}{$mem_location}{$bin_name}->(Statistics::Descriptive object)
+            #
+            # let's do two things. First, create a row in the full-results table. Second, see if this result qualifies
+            # as the best we've seen so we can plot it later
+            my $text = "";
+            my %best_results = ();
+            my %full_results = (); # results for every test and every cpu/memory location
+            my $num_cpu_locs = 0;
+            my $num_mem_locs = 0;
+            my $column_headers = "";
+            my @all_data = ();
+            for my $testname (keys %{$data}) {
+                ($testname !~ /triad/) and next; # for now we only care about Triad
 
-            $num_cpu_locs = keys(%{$data->{$testname}});
+                $num_cpu_locs = keys(%{$data->{$testname}});
 
-            for my $cpu_loc (sort {$a cmp $b} keys %{$data->{$testname}}) {
+                for my $cpu_loc (sort {$a cmp $b} keys %{$data->{$testname}}) {
 
-                $num_mem_locs = keys(%{$data->{$testname}{$cpu_loc}});
+                    $num_mem_locs = keys(%{$data->{$testname}{$cpu_loc}});
 
-                for my $mem_loc (sort {$a cmp $b} keys %{$data->{$testname}{$cpu_loc}}) {
-                    
-                    $column_headers .= ",$cpu_loc $mem_loc";
+                    for my $mem_loc (sort {$a cmp $b} keys %{$data->{$testname}{$cpu_loc}}) {
 
-                    for my $bin_name (sort {$a cmp $b} keys %{$data->{$testname}{$cpu_loc}{$mem_loc}}) {
+                        $num_cols++;
+                        
+                        $column_headers .= " , $cpu_loc $mem_loc";
 
-                        my $statref = $data->{$testname}{$cpu_loc}{$mem_loc}{$bin_name};
+                        for my $bin_name (sort {$a cmp $b} keys %{$data->{$testname}{$cpu_loc}{$mem_loc}}) {
 
-                        #print "Test Name: $testname, CPU_Loc: $cpu_loc, MEM_Loc: $mem_loc, BIN_Name: $bin_name, mean value: " . $statref->mean() . "\n";
-                        ($cpu_loc =~ /\w+=(\d+)/) and my $cpu_num = $1;
-                        ($mem_loc =~ /\w+=(\d+)/) and my $mem_num = $1;
+                            my $statref = $data->{$testname}{$cpu_loc}{$mem_loc}{$bin_name};
 
-                        # save the result as part of the appropriate row
-                        $full_results{$testname}{$bin_name} .= "," . $statref->mean();
+                            #print "Test Name: $testname, CPU_Loc: $cpu_loc, MEM_Loc: $mem_loc, BIN_Name: $bin_name, mean value: " . $statref->mean() . "\n";
+                            ($cpu_loc =~ /\w+=(\d+)/) and my $cpu_num = $1;
+                            ($mem_loc =~ /\w+=(\d+)/) and my $mem_num = $1;
 
-                        # save this result if it's the best we've seen so far
-                        if ((!defined $best_results{$cpu_loc}{$mem_loc}) or ($best_results{$cpu_loc}{$mem_loc} < $statref->mean())) {
-                            $best_results{$cpu_loc}{$mem_loc} = $statref->mean();
-                            $br_range{$cpu_loc}{$mem_loc} = $statref->sample_range();
-                            $br_bin{$cpu_loc}{$mem_loc} = $bin_name;
-                            #print "found " . $statref->mean() . " as the new best value for $cpu_loc-$mem_loc\n";
+                            # save the result as part of the appropriate row
+                            $full_results{$testname}{$bin_name} .= "," . $statref->max();
+
+                            push (@all_data, ($statref->get_data()));
+
+                            # save this result if it's the best we've seen so far
+                            if ((!defined $best_results{$cpu_loc}{$mem_loc}) or ($best_results{$cpu_loc}{$mem_loc}{value} < $statref->max())) {
+                                $best_results{$cpu_loc}{$mem_loc}{value} = $statref->max();
+                                $best_results{$cpu_loc}{$mem_loc}{range} = $statref->sample_range();
+                                $best_results{$cpu_loc}{$mem_loc}{binary} = $bin_name;
+                            }
+                                
                         }
-                            
                     }
                 }
             }
-        }
-        #print "num_cpu_locs: $num_cpu_locs, num_mem_locs: $num_mem_locs\n";
-        my $num_cols = $num_cpu_locs*$num_mem_locs;
-        #print Dumper (%data);
-        #print "Dump of %full_results: " . Dumper(\%full_results) . "\n";
-        my %column_values = ();
+            #my $num_cols = $num_cpu_locs*$num_mem_locs;
 
-        # TODO: RKB: come up with a better way to find the best value for each column
-        #            I've had the idea to create a 2-D matrix of arrays to keep track of each column,
-        #            then find the best value in each column and mark it somehow. This would
-        #            obviously require a re-work of the table generation code below.
-        #
-        #            Having a way to mark best or worst values in a large table seems pretty useful to me.
-        #
-        # take the %full_results hash and find the best value for each column
-#        for my $test (keys %full_results) {
-#            #print "test: $test\n";
-#            for my $label (keys %{$full_results{$test}}) {
-#                my @res_vals = split(',',$full_results{$test}{$label});
-#                my $columns = @res_vals;
-#                for my $idx (1..($columns-1)) {
-#                    $column_values{$idx} = Statistics::Descriptive::Full->new() unless (defined $column_values{$idx});
-#                    $column_values{$idx}->add_data($res_vals[$idx]);
-#                }
-#
-#            }
-#        }
+            ### use k-means to find our equivalence classes
+            # the Algorithm::KMeans module wants a file containing the datapoints, so let's create a temporary file
+            my $pwd = `pwd`;
+            chomp($pwd);
+            my $tmp_filename =  "$pwd/snb_temp.txt";
+            open(KFILE, ">$tmp_filename");
 
-        #print "Dump of %column_values " . Dumper(\%column_values) . "\n";
+            # prune out values from poor-performing executables so k-means can do a better job
+            my @good_values = ();
+            for my $testname (keys %{$data}) {
+                ($testname !~ /triad/) and next; # for now we only care about Triad
+                for my $cpu_loc (sort {$a cmp $b} keys %{$data->{$testname}}) {
+                    for my $mem_loc (sort {$a cmp $b} keys %{$data->{$testname}{$cpu_loc}}) {
+                        for my $bin_name (sort {$a cmp $b} keys %{$data->{$testname}{$cpu_loc}{$mem_loc}}) {
 
-        add_section("NUMA Characterization Results");
-        add_subsection("\\texttt{STREAM} Memory Bandwidth");
+                            my $statref = $data->{$testname}{$cpu_loc}{$mem_loc}{$bin_name};
+                            my @testvals = $statref->get_data();
 
-        # build the full results table
-        add_table_init("NUMA \\texttt{STREAM} Bandwidth Test Results", $num_cols+1, "3em");
-
-        $column_headers =~ s/physcpubind=/Core~/g;
-        $column_headers =~ s/cpunodebind=/Node~/g;
-        $column_headers =~ s/membind=/to Node~/g;
-
-        for my $testname (sort {$a cmp $b} keys %full_results) {
-
-            ($testname =~ /triad/i) and add_table_spanning_row("\\textbf{STREAM Triad (MB/s)}");
-            add_table_row($column_headers);
-
-            for my $binname (sort {$a cmp $b} keys %{$full_results{$testname}}) {
-
-                add_table_row("$binname" . "$full_results{$testname}{$binname}");
+                            for (@testvals) {
+                                # only save results that are within 10% of the best value for this class of data-access
+                                ($_ > (0.9*$best_results{$cpu_loc}{$mem_loc}{value})) and push @good_values, $_;
+                            }
+                        }
+                    }
+                }
             }
+
+            # create a data file for Algorithm::KMeans to use
+            #  - use dummy symbolic names because the KMeans module doesn't like duplicate names, and
+            #    we use the same binary name for several results
+
+            # as a trick for using kmeans() on datasets less of fewer than 16 samples, just create multiple
+            # data points for each sample in the file (probably not the most official way of doing
+            # things, but at least kmeans() doesn't break
+            my $repeat = 0;
+            my $counter = 0;
+            if ( (@good_values) <= 1) {
+                $repeat = 17;
+            }
+            elsif ( (@good_values) <= 4) {
+                $repeat = 5;
+            }
+            elsif ( (@good_values) <= 8) {
+                $repeat = 3;
+            }
+            elsif ( (@good_values) <= 16) {
+                $repeat = 2;
+            }
+
+            for my $value (@good_values) {
+                for (0..$repeat) {
+                    print KFILE "result-$counter-$value $value\n";
+                    $counter++;
+                }
+            }
+            close(KFILE);
+
+            
+            # create the KMeans object; see http://search.cpan.org/~avikak/Algorithm-KMeans/lib/Algorithm/KMeans.pm
+            my $clusterer = Algorithm::KMeans->new( 
+                datafile => "$tmp_filename",
+                mask     => "N1",    
+                K        => 0,
+    #            Kmin     => 2,
+    #            Kmax     => $num_mem_locs,
+    #            terminal_output => 1,
+            );
+
+            # read in the data from the temporary file we created
+            $clusterer->read_data_from_file();
+
+            # analyze the data using Algorithm::KMeans
+            my ($clusters, $cluster_centers) = $clusterer->kmeans();
+
+            # find the maximum value for each cluster found by k-means
+            my @cluster_max_vals = ();
+            for my $found_clusters (@$clusters) {
+                my @this_cluster = ();
+                for my $cluster_val (@$found_clusters) {
+                    $cluster_val =~ s/result-\d+-//g;
+                    push @this_cluster, $cluster_val;
+                }
+                my @tmp_array = sort {$b <=> $a} @this_cluster;
+                push @cluster_max_vals, $tmp_array[0];
+            }
+
+            # some of the clusters that are found are really the same bandwidth class
+            # take any cluster centers that are within 10% of each other and combine them
+            my @our_cluster_max_vals = ();
+            my $prev = 100000000;
+            for (sort {$b <=> $a} @cluster_max_vals) {
+                ($_ < (0.9*$prev)) and push @our_cluster_max_vals, $_;
+                $prev = $_;
+            }
+
+            add_text("\\newpage\n");
+            add_section("NUMA Data-Access Memory Bandwidth Characterization Results");
+
+            add_table_init("\\textbf{Memory Data-Access Bandwidth Classes}", 2);
+            add_table_row("\$\\Gamma=17066\ MB/s\$ , \\cellcolor[gray]{0.8}\\texttt{STREAM Triad}");
+            my $class_num = 0;
+            for my $class (sort {$b <=> $a} @our_cluster_max_vals) {
+                my $classtext = "";
+                if ($class_num == 0) {
+                    $classtext = "\\cellcolor{snbgreen}\\textbf{Class $class_num}\\hspace{0.5em} (\$\\alpha_{m_{$class_num}}\$)";
+                }
+                elsif ($class_num == 1) {
+                    $classtext = "\\cellcolor{snbyellow}\\textbf{Class $class_num}\\hspace{0.5em} (\$\\alpha_{m_{$class_num}}\$)";
+                }
+                else {
+                    $classtext = "\\cellcolor{snbred}\\textbf{Class $class_num}\\hspace{0.5em} (\$\\alpha_{m_{$class_num}}\$)";
+                }
+                my $alpha_val = $class/$Gamma;
+                add_table_row("$classtext , " . sprintf("\$\\leq\%d\$", $class) . "\\hspace{.1em} MB/s" .
+                                         "\\hspace{0.5em} (" . sprintf("%.4f",$alpha_val) . ")");
+                $class_num++;
+            }
+            #add_table_space_between_rows();
+            add_table_conclusion();
+
+            # build the full results table
+            add_table_init("\\textbf{NUMA \\texttt{STREAM}\\hspace{.1em} Bandwidth Test Results} --- the best value in each column is highlighted", $num_cols+1, "3em");
+
+            my @col_header_array = split ',',$column_headers;
+
+            $column_headers =~ s/physcpubind=/Core~/g;
+            $column_headers =~ s/cpunodebind=/Node~/g;
+            $column_headers =~ s/membind=/to Node~/g;
+
+            for my $testname (sort {$a cmp $b} keys %full_results) {
+
+                ($testname =~ /triad/i) and add_table_spanning_row("\\cellcolor[gray]{0.8}\\textbf{STREAM Triad (MB/s)}");
+                add_table_row($column_headers);
+
+                # all of the nonsense in this loop is so that we can color the best-in-column cells
+                for my $binname (sort {$a cmp $b} keys %{$full_results{$testname}}) {
+
+                    my @row_values = split ',',$full_results{$testname}{$binname};
+                    my @print_values = ();
+                    my $col_num = 1;
+
+                    for my $cell_value (@row_values) {
+                        ($cell_value eq "") and next;
+                        my $cpu_loc = -1;
+                        my $mem_loc = -1;
+
+                        if ($col_header_array[$col_num] =~ /\s+(.*bind=\d+)\s+(membind=\d+)/) {
+                            $cpu_loc = $1;
+                            $mem_loc = $2;
+                        }
+
+                        if ( ($binname eq $best_results{$cpu_loc}{$mem_loc}{binary}) and ($cell_value == $best_results{$cpu_loc}{$mem_loc}{value})) {
+                            #print "found best-in-column for $binname $cpu_loc-$mem_loc: $cell_value\n";
+                            my $num_classes = @our_cluster_max_vals;
+                            if ($num_classes == 1) {
+                                $cell_value = "\\cellcolor{snbgreen} $cell_value";
+                            }
+                            elsif ($num_classes == 2) {
+                                if ($cell_value <= $our_cluster_max_vals[1]) {
+                                    $cell_value = "\\cellcolor{snbyellow} $cell_value";
+                                }
+                                else {
+                                    $cell_value = "\\cellcolor{snbgreen} $cell_value";
+                                }
+                            }
+                            else {
+                                if ($cell_value <= $our_cluster_max_vals[2]) {
+                                    $cell_value = "\\cellcolor{snbred} $cell_value";
+                                }
+                                elsif ($cell_value <= $our_cluster_max_vals[1]) {
+                                    $cell_value = "\\cellcolor{snbyellow} $cell_value";
+                                }
+                                else {
+                                    $cell_value = "\\cellcolor{snbgreen} $cell_value";
+                                }
+                            }
+                        }
+
+                        push @print_values, " , $cell_value";
+                        $col_num++;
+                        ($col_num > ($num_cols+1)) and $col_num = 1;
+                    }
+                    add_table_row("$binname@print_values");
+                }
+            }
+            add_table_conclusion();
+            add_text("\\clearpage\n");
         }
-        add_table_conclusion();
-        add_text("\\clearpage\n");
+    }
+}
+
+# Parse and report on the NUMA-gpu tests
+if ($report) {
+
+    # Try to 'require' the numa_gpu.pm module and see if
+    # we can use it properly.
+    my $modname = "hw_test::numa_gpu";
+    eval "require($modname)";
+    if ($@ =~ /Can't locate hw_test/) {
+        print "numa_gpu test module not supported.  ($modname not found)\n";
+    } elsif ($@) {
+        print "Error loading '$modname'.\n\n$@\n";
+    }
+    else {
+        my $tobj = "$modname"->new($ofh);
+        if ($tobj) {
+            # success! save the module name and object ref
+            $$href{$modname} = $tobj;
+            defined $DEBUG and print
+            "DEBUG: loaded $modname module, test_class=" .
+            $tobj->test_class . "\n";
+        }
+        else {
+            print "Error initializing $modname object!\n";
+        }
+
+        # the Phi value for the PCIe test result normalization
+        my $Phi = 12.8;  #GB/s, PCIe 2.0 SPEC (8/10 encoding of 16 GB/s)
+
+        # the SHOC tests generate one file for each mode/device combination
+        my @buffer = ();
+
+        #@filelist = `cd $destdir/$ident;ls -1 *snb.numa-SHOC* 2>/dev/null`;
+        my $infile = "$destdir/$ident/$hn.snb.numa-gpu.out";
+
+        #$infile = "$destdir/$ident/$infile";
+
+        my $havefile = 1;
+        open (IN,"<$infile") or do {
+            print "WARNING: Could not open $infile ($!)\n";
+            $havefile = 0;
+        };
+
+        # Algorithm::KMeans will terminate the script if it can't parse the data, so
+        # we only try to parse the data if there was a data file
+        if ($havefile) {
+            my @tmpbuffer = <IN>;
+            push @buffer, @tmpbuffer;
+            close(IN);
+            # Use the numa_mem.pm-parse() to create a hash full of our data
+            #
+            # Note that this parse() routine expects a reference to our data hash
+            # so that it can update the hash with the new data
+            my $data = $tobj->parse(\@buffer);
+
+            #print "Dump of %data" . Dumper($data) . "\n";
+
+            # digest the raw data
+            # the data hash built in numa_gpu.pm looks like this:
+            # $data{$testname}{BusSpeedDownload}{$mode}{"Device $device"}{$cpu_location}{$mem_location}->(Statistics::Descriptive object)
+            #
+            # let's do two things. First, create a row in the full-results table. Second, see if this result qualifies
+            # as the best we've seen so we can plot it later
+            my $text = "";
+            my %best_results = ();
+            my %full_results = (); # results for every test and every cpu/memory location
+            my $num_cpu_locs = 0;
+            my $num_mem_locs = 0;
+            my $column_headers = "";
+            my @all_data = ();
+            my $num_rows = 0;
+            for my $testname (keys %{$data}) {
+
+                for my $benchmark (sort {$a cmp $b} keys %{$data->{$testname}}) {
+
+                    for my $mode (sort {$a cmp $b} keys %{$data->{$testname}{$benchmark}}) {
+
+                        for my $device (sort {$a cmp $b} keys %{$data->{$testname}{$benchmark}{$mode}}) {
+
+                            $num_cpu_locs = keys(%{$data->{$testname}{$benchmark}{$mode}{$device}});
+
+                            for my $cpu_loc (sort {$a cmp $b} keys %{$data->{$testname}{$benchmark}{$mode}{$device}}) {
+
+                                $num_mem_locs = keys(%{$data->{$testname}{$benchmark}{$mode}{$device}{$cpu_loc}});
+
+                                for my $mem_loc (sort {$a cmp $b} keys %{$data->{$testname}{$benchmark}{$mode}{$device}{$cpu_loc}}) {
+
+                                    my $statref = $data->{$testname}{$benchmark}{$mode}{$device}{$cpu_loc}{$mem_loc};
+                        
+                                    my $header_val = "$cpu_loc $mem_loc";
+                                    ($column_headers !~ /$header_val/) and $column_headers .= " , $header_val";
+
+                                    #print "Test Name: $testname, CPU_Loc: $cpu_loc, MEM_Loc: $mem_loc, BIN_Name: $bin_name, mean value: " . $statref->mean() . "\n";
+                                    ($cpu_loc =~ /\w+=(\d+)/) and my $cpu_num = $1;
+                                    ($mem_loc =~ /\w+=(\d+)/) and my $mem_num = $1;
+
+                                    # save the result as part of the appropriate row
+                                    $full_results{$benchmark}{$mode}{$device} .= "," . $statref->max();
+
+                                    push (@all_data, ($statref->get_data()));
+
+                                    # save this result if it's the best we've seen so far
+                                    if ((!defined $best_results{$benchmark}{$mode}{$cpu_loc}{$mem_loc}) or ($best_results{$benchmark}{$mode}{$cpu_loc}{$mem_loc}{value} < $statref->max())) {
+                                        $best_results{$benchmark}{$mode}{$cpu_loc}{$mem_loc}{value} = $statref->max();
+                                        $best_results{$benchmark}{$mode}{$cpu_loc}{$mem_loc}{range} = $statref->sample_range();
+                                        $best_results{$benchmark}{$mode}{$cpu_loc}{$mem_loc}{device} = $device;
+                                    }
+                                }
+                            }
+                            $num_rows++;
+                        }
+                    }
+                }
+            }
+            my $num_cols = $num_cpu_locs*$num_mem_locs;
+
+            #print "Dump of %full_results:\n" . Dumper(\%full_results) . "\n";
+            #print "Dump of %best_results:\n" . Dumper(\%best_results) . "\n";
+
+            ### use k-means to find our equivalence classes
+            #
+            # prune out values from poor-performing executables so k-means can do a better job
+            my %good_values = ();
+            for my $testname (keys %{$data}) {
+                for my $benchmark (sort {$a cmp $b} keys %{$data->{$testname}}) {
+                    for my $mode (sort {$a cmp $b} keys %{$data->{$testname}{$benchmark}}) {
+                        for my $device (sort {$a cmp $b} keys %{$data->{$testname}{$benchmark}{$mode}}) {
+                            for my $cpu_loc (sort {$a cmp $b} keys %{$data->{$testname}{$benchmark}{$mode}{$device}}) {
+                                for my $mem_loc (sort {$a cmp $b} keys %{$data->{$testname}{$benchmark}{$mode}{$device}{$cpu_loc}}) {
+
+                                    my $statref = $data->{$testname}{$benchmark}{$mode}{$device}{$cpu_loc}{$mem_loc};
+                                    my @testvals = $statref->get_data();
+
+                                    for (@testvals) {
+                                        # only save results that are within 10% of the best value for this class of data-access
+                                        my @new_array;
+                                        $good_values{$benchmark} = \@new_array unless (exists $good_values{$benchmark});
+                                        ($_ > (0.9*$best_results{$benchmark}{$mode}{$cpu_loc}{$mem_loc}{value})) and push @{$good_values{$benchmark}}, $_;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            #print "Dump of %good_values:\n" . Dumper(\%good_values) . "\n";
+
+            my %our_cluster_max_vals = ();
+            my $kmeans = 0; # keep track of whether we actually complete the k-means analysis or not
+
+            for my $benchmark (sort {$a cmp $b} keys %good_values) {
+
+                    # create a data file for Algorithm::KMeans to use
+                    #  - use dummy symbolic names because the KMeans module doesn't like duplicate names, and
+                    #    we use the same binary name for several results
+                    my $counter = 0;
+
+                    # the Algorithm::KMeans module wants a file containing the datapoints, so let's create a temporary file
+                    my $tmp_filename =  "snb_temp.txt";
+                    open(KFILE, ">$tmp_filename");
+
+                    # as a trick for using kmeans() on datasets less of fewer than 16 samples, just create multiple
+                    # data points for each sample in the file (probably not the most official way of doing
+                    # things, but at least kmeans() doesn't break
+                    my $repeat = 0;
+                    if ( (@{$good_values{$benchmark}}) <= 1) {
+                        $repeat = 17;
+                    }
+                    elsif ( (@{$good_values{$benchmark}}) <= 4) {
+                        $repeat = 5;
+                    }
+                    elsif ( (@{$good_values{$benchmark}}) <= 8) {
+                        $repeat = 3;
+                    }
+                    elsif ( (@{$good_values{$benchmark}}) <= 16) {
+                        $repeat = 2;
+                    }
+
+                    for my $value (@{$good_values{$benchmark}}) {
+                        for (0..$repeat) {
+                            print KFILE "result-$counter-$value $value\n";
+                            $counter++;
+                        }
+                    }
+                    close(KFILE);
+
+                    
+                    # create the KMeans object; see http://search.cpan.org/~avikak/Algorithm-KMeans/lib/Algorithm/KMeans.pm
+                    my $clusterer = Algorithm::KMeans->new( 
+                        datafile => "$tmp_filename",
+                        mask     => "N1",    
+                        #            K        => 0,
+                        #Kmin     => 2,
+                        #Kmax     => 3,
+                        Kmax     => $num_cpu_locs,
+            #            terminal_output => 1,
+                    );
+
+                    # read in the data from the temporary file we created
+                    $clusterer->read_data_from_file();
+
+                    # analyze the data using Algorithm::KMeans
+                    my ($clusters, $cluster_centers) = $clusterer->kmeans();
+
+                    # find the maximum value for each cluster found by k-means
+                    my @cluster_max_vals = ();
+                    for my $found_clusters (@$clusters) {
+                        my @this_cluster = ();
+                        for my $cluster_val (@$found_clusters) {
+                            $cluster_val =~ s/result-\d+-//g;
+                            push @this_cluster, $cluster_val;
+                        }
+                        my @tmp_array = sort {$b <=> $a} @this_cluster;
+                        push @cluster_max_vals, $tmp_array[0];
+                    }
+
+
+                    # some of the clusters that are found are really the same bandwidth class
+                    # take any cluster centers that are within 10% of each other and combine them
+                    my $prev = 100000000;
+                    for (sort {$b <=> $a} @cluster_max_vals) {
+                        my @new_array;
+                        $our_cluster_max_vals{$benchmark} = \@new_array unless (exists $our_cluster_max_vals{$benchmark});
+                        ($_ < (0.95*$prev)) and push @{$our_cluster_max_vals{$benchmark}}, $_;
+                        $prev = $_;
+                    }
+                    $kmeans = 1;
+                    #print "Dump of %our_cluster_max_vals:\n" . Dumper(\%our_cluster_max_vals) . "\n";
+                    system("rm $tmp_filename");
+            }
+
+            add_text("\\newpage\n");
+            add_section("NUMA Data-Access GPU Bandwidth Characterization Results");
+            if ($kmeans) {
+                my $class_num = 0;
+                my @bwclass_rows = ();
+                my $header_row = "\$\\Phi=12.8\ GB/s\$";
+
+                #add_table_spanning_row("\\cellcolor[gray]{0.7}\\texttt{$benchmark}\\hspace{.1em} Benchmark");
+                for my $benchmark (sort keys %our_cluster_max_vals) {
+                    $header_row .= " , \\cellcolor[gray]{0.8}\\texttt{$benchmark}";
+
+
+                    for my $class (sort {$b <=> $a} @{$our_cluster_max_vals{$benchmark}}) {
+                        $classtext = "";
+                        if ($class_num == 0) {
+                            $classtext = "\\cellcolor{snbgreen}\\textbf{Class $class_num}\\hspace{0.5em} (\$\\alpha_{p_{$class_num}}\$)";
+                        }
+                        elsif ($class_num == 1) {
+                            $classtext = "\\cellcolor{snbyellow}\\textbf{Class $class_num}\\hspace{0.5em} (\$\\alpha_{p_{$class_num}}\$)";
+                        }
+                        else {
+                            $classtext = "\\cellcolor{snbred}\\textbf{Class $class_num}\\hspace{0.5em} (\$\\alpha_{p_{$class_num}}\$)";
+                        }
+
+                        # calculate the alpha value for this class
+                        my $alpha_val = $class/$Phi;
+                        $bwclass_rows[$class_num] = "\\multicolumn{1}{|c}{$classtext}" unless (exists $bwclass_rows[$class_num]);
+                        $bwclass_rows[$class_num] .= " , " . sprintf("\$\\leq\%.2f\$", $class) . "\\hspace{.1em} GB/s" . 
+                                                     "\\hspace{0.5em} (" . sprintf("%.4f",$alpha_val) . ")";
+                        #add_text("\\qquad $classtext: " . sprintf("\$\\leq\%.2f\$", $class) . " MB/s}\n\n");
+                        $class_num++;
+                    }
+                    $class_num = 0;
+                }
+                my $num_benchmarks = keys %our_cluster_max_vals;
+                add_table_init("\\textbf{GPU Data-Access Bandwidth Classes}", $num_benchmarks + 1);
+                add_table_row($header_row);
+                for (@bwclass_rows) {
+                    add_table_row($_);
+                }
+                #add_table_space_between_rows();
+                add_table_conclusion();
+            }
+
+
+            # build the full results table
+            add_table_init("\\textbf{NUMA \\texttt{SHOC}\\hspace{.1em} GPU Data-Access Bandwidth Test Results} --- the best value in each column is highlighted", $num_cols+1, "3em");
+
+            my @col_header_array = split ',',$column_headers;
+
+            $column_headers =~ s/physcpubind=/Core~/g;
+            $column_headers =~ s/cpunodebind=/Node~/g;
+            $column_headers =~ s/membind=/to Node~/g;
+
+            for my $benchmark (sort {$a cmp $b} keys %full_results) {
+
+                add_table_spanning_row("\\cellcolor[gray]{0.7}\\textbf{\\texttt{$benchmark (GB/s)}}");
+
+                # all of the nonsense in this loop is so that we can color the best-in-column cells
+                for my $mode (sort {$a cmp $b} keys %{$full_results{$benchmark}}) {
+                    add_table_spanning_row("\\cellcolor[gray]{0.9}\\textbf{" . uc($mode) . "}");
+                    add_table_row($column_headers);
+
+                    for my $device (sort {$a cmp $b} keys %{$full_results{$benchmark}{$mode}}) {
+
+                        my @row_values = split ',',$full_results{$benchmark}{$mode}{$device};
+                        my @print_values = ();
+                        my $col_num = 1;
+
+                        for my $cell_value (@row_values) {
+                            ($cell_value eq "") and next;
+                            my $cpu_loc = -1;
+                            my $mem_loc = -1;
+
+                            if ($col_header_array[$col_num] =~ /\s+(.*bind=\d+)\s+(membind=\d+)/) {
+                                $cpu_loc = $1;
+                                $mem_loc = $2;
+                            }
+
+                            if ($cell_value == $best_results{$benchmark}{$mode}{$cpu_loc}{$mem_loc}{value}) {
+                                #print "found best-in-column for $binname $cpu_loc-$mem_loc: $cell_value\n";
+                                if ($kmeans) {
+                                    my $num_classes = @{$our_cluster_max_vals{$benchmark}};
+                                    if ($num_classes == 1) {
+                                        $cell_value = "\\cellcolor{snbgreen} $cell_value";
+                                    }
+                                    elsif ($num_classes == 2) {
+                                        if ($cell_value <= $our_cluster_max_vals{$benchmark}[1]) {
+                                            $cell_value = "\\cellcolor{snbyellow} $cell_value";
+                                        }
+                                        else {
+                                            $cell_value = "\\cellcolor{snbgreen} $cell_value";
+                                        }
+                                    }
+                                    else {
+                                        if ($cell_value <= $our_cluster_max_vals{$benchmark}[2]) {
+                                            $cell_value = "\\cellcolor{snbred} $cell_value";
+                                        }
+                                        elsif ($cell_value <= $our_cluster_max_vals{$benchmark}[1]) {
+                                            $cell_value = "\\cellcolor{snbyellow} $cell_value";
+                                        }
+                                        else {
+                                            $cell_value = "\\cellcolor{snbgreen} $cell_value";
+                                        }
+                                    }
+                                }
+                                else {
+                                    $cell_value = "\\cellcolor{snbgreen} $cell_value";
+                                }
+                            }
+
+                            push @print_values, " , $cell_value";
+                            $col_num++;
+                            ($col_num > ($num_cols+1)) and $col_num = 1;
+                        }
+                        add_table_row("$device@print_values");
+                    }
+                    #add_table_space_between_rows();
+                }
+                add_tabular_midstream();
+            }
+            add_table_conclusion();
+            add_text("\\clearpage\n");
+        }
     }
 }
 #
@@ -859,7 +1453,7 @@ if ($report) {
 	my $basename = "snb_report_$hn";
 	(defined $pdftag) and $basename = "snb_report_$hn\_$pdftag";
 
-	my $tex = "$destdir/$basename.tex";
+	$tex = "$destdir/$basename.tex";
 	open (OUT,">$tex") or die
 		"Could not open $tex ($!)";
 	print OUT $template;
@@ -868,8 +1462,8 @@ if ($report) {
 	# try to generate a pdf from the latex input
 	my $cmd_output = `pdflatex -interaction=nonstopmode $destdir/$basename.tex 2>&1`;
 	if ($cmd_output =~ /Output written on (.*)\.pdf/) {
-            print "Created $1.pdf successfully.\n".
-            "Check $1.log for details from pdflatex.\n";
+            print "\nCreated $1.pdf successfully.\n".
+            "Check $1.log for details from pdflatex.\n\n";
         }
         elsif ($cmd_output =~ /LaTeX Error/) {
             print "$cmd_output\n";
@@ -994,32 +1588,43 @@ sub add_table_init {
 
     my $caption = shift;
     $table_num_columns = shift; # declare as global so that other table subroutines can use it
-    my $col_width = shift; #optional, if used the data cells will be set to use this width
+    my $col_width = shift; # optional, if used the data cells will be set to use this width
     my $init_text = "";
+
+    # RKB: The narrow environment allows us to shift a figure into the left margin.
+    # However, it is only available in newer distributions of TeXLive and therefore
+    # isn't included until I decide whether it's worth creating the dependency.
+#    if ($table_num_columns > 16) {
+#        $init_text .= "\\begin{narrow}{-.5cm}{0cm}\n";
+#        $narrow_env = 1;
+#    }
 
     $init_text .= "\\begin{flushleft}\n";
     $init_text .= "\\begin{table}[hptb!]\n";
     $init_text .= "\\captionsetup{singlelinecheck=off}\n"; # to allow the table caption to be left-justified
     $init_text .= "\\caption{$caption}\n";
-    $init_text .= "\\begin{tabular}{|r|";
+    $init_text .= "\\begin{tabular}{";
+
+    $tabular_args = "|r|";
     for my $col (1..($table_num_columns-1)) {
         if (defined $col_width) {
-            $init_text .= ">{\\centering}m{$col_width}|";
+            $tabular_args .= ">{\\centering}m{$col_width}|";
         }
         else {
-            $init_text .= "c|";
+            $tabular_args .= "c|";
         }
     }
-    $init_text .= "}\n";
+    $init_text .= "$tabular_args}\n";
+    $init_text .= "\\hline\n";
 
     #print "init_text: $init_text\n";
     push @report_core_buf, $init_text;
 }
 
 sub add_table_row {
-    # expects a CSV for a row
+    # expects a CSV *with spaces before and after each comma* for a row
     my $row = shift;
-    $row =~ s/,/ \& /g;
+    $row =~ s/ , / \& /g;
 
     push @report_core_buf, "$row\\tabularnewline \\hline\n";
 }
@@ -1027,8 +1632,10 @@ sub add_table_row {
 sub add_table_spanning_row {
     my $cell_text = shift;
 
-    my $spanning_text .= "\\cline{1-" . ($table_num_columns) . "}\n";
-    $spanning_text .= "\\multicolumn{" . ($table_num_columns) . "}{|l|}{$cell_text}\\\\ \\hline \\hline\n";
+    my $spanning_text .= "\\cline{1-$table_num_columns}\n";
+    $spanning_text .= "\\cline{1-$table_num_columns}\n";
+    $spanning_text .= "\\multicolumn{$table_num_columns}{|l|}{$cell_text}\\\\ \\hline\n";
+    #$spanning_text .= "\\multicolumn{" . ($table_num_columns) . "}{|l|}{$cell_text}\\\\ \\hline \\hline\n";
 
     push @report_core_buf, $spanning_text;
 }
@@ -1038,7 +1645,26 @@ sub add_table_conclusion {
     $concl_text .= "\\end{table}\n";
     $concl_text .= "\\end{flushleft}\n";
 
+    # RKB: see comment in add_table_init()
+#    if ($narrow_env) {
+#        $concl_text .= "\\end{narrow}\n";
+#    }
+
     push @report_core_buf, $concl_text;
+}
+
+sub add_table_space_between_rows {
+    # create an empty spanning row with its newline spacing adjusted to make the row thin
+    my $space_between_rows = "\\multicolumn{$table_num_columns}{c}{}\\\\[-0.5em]\\hline\n";
+    push @report_core_buf, "$space_between_rows";
+}
+
+sub add_tabular_midstream {
+    my $newtab = "\\end{tabular}\n" .
+                 "\\qquad\n" .
+                 "\\begin{tabular}{$tabular_args}\n";
+
+    push @report_core_buf, "$newtab";
 }
 
 sub build_gnuplot_graph {
@@ -1483,15 +2109,11 @@ sub run_numa_tests {
         for my $cpu_node (0..$numa_max_node) {
             for my $mem_node (0..$numa_max_node) {
                 my $command = "$prefix $numactl --$bind_process_to_node=$cpu_node --membind=$mem_node $test";
-                #print "run_numa_test() command: $command\n";
+                debug_print(3, "DEBUG: run_numa_test() command: $command\n");
                 system("echo \"CBENCH RUN_NUMA_TEST COMMAND: $command\" >> $filename");
                 snb_fork("$command >> $filename 2>&1") unless defined $dryrun;
-
-
-#                system("echo \"CBENCH RUN_NUMA_TEST COMMAND: $command\" >> $filename; $command >> $filename 2>&1") unless $dryrun;
             }
         }
-
     }
     elsif ($mode eq "core-to-node") {
         debug_print(3, "DEBUG:  Running core-to-node tests\n");
@@ -1500,15 +2122,126 @@ sub run_numa_tests {
         for my $core (0..$numa_max_core) {
             for my $mem_node (0..$numa_max_node) {
                 my $command = "$prefix $numactl --physcpubind=$core --membind=$mem_node $test";
+                debug_print(3, "DEBUG: run_numa_test() command: $command\n");
                 system("echo \"CBENCH RUN_NUMA_TEST COMMAND: $command\" >> $filename");
                 snb_fork("$command >> $filename 2>&1") unless defined $dryrun;
             }
+        }
+    }
+    elsif ($mode eq "only-mem-nodes") {
+        debug_print(3, "DEBUG:  Running only-mem-nodes tests\n");
+        # run the test command running on each memory node with its memory on the same memory node
+        # (memory is only ever local to the process; this expedites tests such as GPU tests)
+        for my $mem_node (0..$numa_max_node) {
+            my $command = "$prefix $numactl --$bind_process_to_node=$mem_node --membind=$mem_node $test";
+            debug_print(3, "DEBUG: run_numa_test() command: $command\n");
+            system("echo \"CBENCH RUN_NUMA_TEST COMMAND: $command\" >> $filename");
+            snb_fork("$command >> $filename 2>&1") unless defined $dryrun;
         }
     }
     else {
         print STDERR "run_numa_tests(): Argument 3 must be either 'node-to-node' or 'core-to-node'\n";
         return;
     }
+
+}
+
+sub run_multithreaded_numa_tests {
+
+    my $test = shift;
+    my $filename = shift;
+    my $date = `date +%d%b%Y_%H%M`;
+    chomp($date);
+    my $selfname = "run_multithreaded_numa_tests()";
+
+    debug_print(3,"DEBUG:In $selfname\n");
+    debug_print(3,"DEBUG:  test: $test\n");
+    debug_print(3,"DEBUG:  filename: $filename\n");
+
+    # find numactl
+    my $numactl = "numactl";
+
+    #   look for numactl in our current path
+    my $ret = `which $numactl`;
+    if ($ret =~ /^which: no/ or $ret =~ /^$/) {
+        # maybe it's in /usr/bin
+        if (-e "/usr/bin/numactl") {
+            $numactl = "/usr/bin/numactl";
+        }
+        # can't find it - abort this subroutine
+        else {
+            print STDERR "$selfname: can't find $numactl\n";
+            return;
+        }
+    }
+    debug_print(3, "DEBUG:  using $numactl\n");
+
+    # check numactl's capabilities
+    $ret = `$numactl 2>&1`;
+    my $bind_process_to_node = "cpunodebind";
+    ($ret =~ /--cpubind=/) and $bind_process_to_node = "cpubind";
+    if (($ret !~ /membind/) or ($ret !~ /preferred/) or ($ret !~ /physcpubind=/)) {
+        print STDERR "$selfname: some functionality of $numactl is missing\n";
+        return;
+    }
+
+    # since we're using numactl, gather the number of nodes and cores that numactl sees
+    my $numa_show = `$numactl --show 2>&1`;
+    my $numa_hardware = `$numactl --hardware 2>&1`;
+    my $numa_max_node = 1;
+    my $numa_max_core = 1;
+    my @cores = ();
+    my @nodes = ();
+    ($numa_show =~ /physcpubind: (.*)\n/) and @cores = split(' ',$1);
+    ($numa_show =~ /nodebind: (.*)\n/) and @nodes = split(' ',$1);
+    $numa_max_node = pop(@nodes);
+    $numa_max_core = pop(@cores);
+    my $cores_per_mem_node = ($numa_max_core + 1) / ($numa_max_node + 1);
+    debug_print(3, "DEBUG:  numa_max_core: $numa_max_core\n");
+    debug_print(3, "DEBUG:  numa_max_node: $numa_max_node\n");
+    debug_print(3, "DEBUG:  cores_per_mem_node: $cores_per_mem_node\n");
+
+    system("echo `date` >> $filename");
+
+    # Run the multi-threaded test between memory nodes
+    debug_print(3, "DEBUG:  Running node-to-node tests\n");
+    # run the test command running on each memory node with its memory on each memory node
+    for my $cpu_node (0..$numa_max_node) {
+        for my $mem_node (0..$numa_max_node) {
+            my $command = "$ENV{MPIHOME}/bin/mpirun -np 0 $numactl --$bind_process_to_node=$cpu_node " .
+                          "--membind=$mem_node $test";
+#            my $delta = 1000000;
+#            my $prev_result = 0;
+#            my $curr_result = 0;
+#            my $threshold = 0;      # the idea with the threshold is to allow an arbitrary cutoff for 
+#                                    # increasing the number of threads
+            #my $np = 1;
+            
+            #while ($delta > 0.0) and ($delta > $threshold) {
+
+            # run the MPI STREAM binary using increasing thread counts up to 
+            # one more than then number of cores on a memory node so that
+            # we can see the dropoff occur
+            for (my $np = 1; $np <= ($cores_per_mem_node+1); $np++) {
+                $command =~ s/-np \d+/-np $np/g;
+                debug_print(3, "DEBUG: $selfname command: $command\n");
+                system("echo \"CBENCH RUN_NUMA_TEST COMMAND: $command\" >> $filename");
+                snb_fork("$command >> $filename 2>&1") unless defined $dryrun;
+            }
+            #};
+        }
+    }
+    # will need to deal with this stuff to get the multi-threaded stream results
+#    # need this for building mpi job launches
+#    my $funcname = "$joblaunch_method\_joblaunch_cmdbuild";
+#    *func = \&$funcname;
+#
+#    for my $np (1..$numcores) {
+#        system("echo '====> $np processes' >> $destdir/$ident/$hn.snb.mpistreams.out");
+#        my $jobcmd = func($np,$procs_per_node,1);
+#        $jobcmd .= "$binpath/hwtests/stream-mpi";
+#        runcmd("$jobcmd","mpistreams");
+#    }
 
 }
 
