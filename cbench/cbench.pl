@@ -975,6 +975,7 @@ sub start_jobs {
 	my $repeat = shift;
 	my $batchargs = shift;
 	my $optdata = shift; # optional, additional option data starting modes might need
+        my $exclude = shift;
 
 	# lsf wants the submit script to be redirected to the submission program bsub
 	if ( $batch_extension eq "lsf" ) {
@@ -982,7 +983,7 @@ sub start_jobs {
 	}
 
 	debug_print(1,"DEBUG:start_jobs() method=$start_method delay=$delay repeat=$repeat ".
-		"max=$maxprocs min=$minprocs polldelay=$poll_delay match=\'$match\'\n");
+		"max=$maxprocs min=$minprocs polldelay=$poll_delay match=\'$match\' exclude=\'$exclude\'\n");
 
 	my %scripts = ();
 	my %bench_list = ();
@@ -1010,9 +1011,10 @@ sub start_jobs {
 		# check the format of the job name
 		($i !~ /^(\S+)\-(\S+)ppn\-(\d+)$/) and next;
 
-		# process the filename based on regex in $match
+		# process the filename based on regexes in $match and $exclude
 		my $matchstr = "$match";
-		next unless ($i =~ /$matchstr/);
+                my $excludestr = "$exclude";
+		next unless ($i =~ /$matchstr/) and ($i !~ /$excludestr/);
 
 		# number of processors in the job
 		my ($bench,$ppn,$num_proc) = ($i =~ /^(\S+)\-(\S+)ppn\-(\d+)$/);

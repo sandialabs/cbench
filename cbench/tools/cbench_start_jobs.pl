@@ -85,6 +85,7 @@ GetOptions( 'ident=s' => \$ident,
 		'dryrun' => \$DRYRUN,
 		'debug:i' => \$DEBUG,
 		'help' => \$help,
+                'exclude=s' => \$exclude,
 );
 
 $minprocs=1 unless $minprocs;
@@ -108,6 +109,7 @@ if (defined $waitall and !defined $throttledbatch) {
 }
 
 (!defined $match) and $match = ".*";
+(!defined $exclude) and $exclude = "\$^";
 (!defined $polldelay) and $polldelay = "120";
 (!defined $repeat) and $repeat = "1";
 (!defined $batchargs) and $batchargs = " ";
@@ -164,7 +166,7 @@ foreach my $i (@identlist) {
 
 	print "Starting jobs for test identifier \'$i\':\n";
 	$optdata{ident} = $i;
-	my $ret = start_jobs($start_method,$match,$delay,$polldelay,$maxprocs,$minprocs,$repeat,$batchargs,\%optdata);
+	my $ret = start_jobs($start_method,$match,$delay,$polldelay,$maxprocs,$minprocs,$repeat,$batchargs,\%optdata,$exclude);
 
 	chdir $pwd;
 
@@ -200,6 +202,10 @@ sub usage {
           "                           jobname that contains the specified string. For example,\n" .
           "                             --match 2ppn\n" .
           "                           would only start 2 ppn tests\n" .
+          "    --exclude <regex>      This limits the starting up of jobs to only those jobs with a\n" .
+          "                           jobname that does not contain the specified string. For example,\n" .
+          "                             --exclude 'io.*' \n" .
+          "                           would start all tests except 'io.*' tests\n" .
           "    --minprocs <num>       The minimum number of processes to use to run jobs\n" .
           "                           NOTE: to run 1 processor jobs you MUST specify\n".
           "                             --minprocs 1\n".
