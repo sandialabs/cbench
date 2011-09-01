@@ -47,7 +47,8 @@ URL=http://ft.ornl.gov/doku/_media/shoc/$(TAR)
 SHOC=$(CBENCHOME)/opensource/shoc
 
 # NORMAL MPI COMPILE
-EXECS = $(SRC)/bin/* $(SRC)/tools/driver.pl
+EXECS = $(SRC)
+#EXECS = $(SRC)/bin/* $(SRC)/tools/driver.pl
 default_tgt := all
 
 INSTALLDIR = $(bin_dir)/shoc
