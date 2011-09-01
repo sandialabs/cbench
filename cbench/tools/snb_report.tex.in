@@ -13,11 +13,11 @@
 
 % Set margins
 %%% for landscape mode %%%
-\setlength{\textwidth}{10in}
-\setlength{\textheight}{7.5in}
-\setlength{\evensidemargin}{0in}
-\setlength{\oddsidemargin}{0in}
-\setlength{\topmargin}{0in}
+%\setlength{\textwidth}{10in}
+%\setlength{\textheight}{7.5in}
+%\setlength{\evensidemargin}{0in}
+%\setlength{\oddsidemargin}{0in}
+%\setlength{\topmargin}{0in}
 
 %%% for portrait mode %%%
 %\topmargin=-0.45in          %
@@ -40,6 +40,9 @@
 \usepackage{multirow}
 \usepackage{array}
 \usepackage{caption}
+\usepackage[cm]{fullpage} % use small (1.5 cm) margins
+\usepackage{colortbl}
+%\usepackage{nonfloat} % only exists in newer versions of TeXLive
 
 
 %\title{Cbench Single Node Benchmark Report for \texttt{}}
@@ -67,6 +70,10 @@ TITLE_HERE
 % N.B.: floatpagefraction MUST be less than topfraction !!
 \renewcommand{\dblfloatpagefraction}{0.7}   % require fuller float pages
 % remember to use [htp] or [htpb] for placement
+
+\definecolor{snbgreen}{RGB}{102,228,128}
+\definecolor{snbyellow}{RGB}{255,255,118}
+\definecolor{snbred}{RGB}{255,124,124}
 
 \maketitle
 
