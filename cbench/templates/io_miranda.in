@@ -8,11 +8,16 @@
 
 cbench_check_for_bin CBENCHTEST_BIN_HERE/miranda_io
 
-cbench_runin_tempdir
+# miranda does it's file i/o to the current working directory
+# and we want to support the --scratchdir/--testdir options to
+# cbench_gen_jobs.pl
+TESTDIR="TESTDIR_HERE/miranda/$JOBID"
+mkdir -p $TESTDIR
+cd $TESTDIR
 
 CMD="JOBLAUNCH_CMD_HERE CBENCHTEST_BIN_HERE/miranda_io 10"
 cbench_run_cmd $CMD
 
 # remove the test files
-sync
 /bin/rm -f miranda_io.out.*
+sync
