@@ -69,7 +69,11 @@ our %parse_filters = (
 
 	'= Backtrace: =' => 'ALPS generated backtrace',
 
-	'PE \d+ exit signal Segmentation fault' => 'application segmentation fault'
+	'PE \d+ exit signal Segmentation fault' => 'application segmentation fault',
+
+	'Failed to allocate memory for an unexpected message.\s+(\d+ unexpected messages queued)' =>
+		'MPI unexpected message failure - $1',
+
 );
 
 1;
