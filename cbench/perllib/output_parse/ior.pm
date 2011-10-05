@@ -137,7 +137,7 @@ sub parse {
 			$status = 'FILE OPEN ERRORS';
 			main::debug_print(3,"DEBUG:$shortpackage\.parse() cannot open file error\n");
 		}
-		elsif ($l =~ /ERROR/) {
+		elsif ($l =~ /ERROR/ and $l !~ /MPICH/) {
 			$errors++;
 			$status = 'ERRORS DETECTED' unless $status =~ /FILE OPEN/;
 			main::debug_print(3,"DEBUG:$shortpackage\.parse() found IOR error\n");
