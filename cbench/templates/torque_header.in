@@ -7,6 +7,7 @@
 #
 #PBS -l nodes=TORQUE_NODESPEC_HERE
 #PBS -l walltime=WALLTIME_HERE
+#PBS -j oe
 #
 # other attributes you might use but are hidded from Torque processing
 #HIDE -q somequeue
