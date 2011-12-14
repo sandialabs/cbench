@@ -1,6 +1,6 @@
 include ../../make.def
 
-SRC=hpcc-1.4.0
+SRC=hpcc-1.4.1
 TAR=$(SRC).tar.gz
 HPL=$(SRC)/hpl
 MPICH_CH=ch_shmem
