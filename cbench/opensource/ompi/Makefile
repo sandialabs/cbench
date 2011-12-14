@@ -1,9 +1,9 @@
 include ../../make.def
 
-VERSION = 1.4.3
+VERSION = 1.4.4
 OPENMPI = openmpi-$(VERSION)
 
-SRC=openmpi-1.4.3
+SRC=openmpi-1.4.4
 TAR=$(SRC).tar.bz2
 URL=http://www.open-mpi.org/software/ompi/v1.4/downloads/$(TAR)
 
