@@ -87,17 +87,23 @@ nodehwtest: hwtest standalone standaloneinstall
 #
 # BEGIN STANDALONE 
 #
-cbenchstandalonedir: openmpi
+cbenchstandalonedirdistclean:
+	$(MAKE) -C opensource/ompi distclean
+	$(MAKE) -C opensource/GotoBLAS2 distclean
+	$(call do-hwtest-subdirs,distclean)
+	$(call do-standaloneopen-subdirs,distclean)
+
+cbenchstandalonedirdownload: 
+	$(MAKE) -C opensource/ompi download
+	$(call do-hwtest-subdirs,download)
+	$(call do-standaloneopen-subdirs,download)
+
+cbenchstandalonedir: 
 	@sbin/install_cbenchtest --testtop
 	$(MAKE) -C opensource/ompi install
-	$(MAKE) -C opensource/GotoBLAS2 distclean
 	$(MAKE) -C opensource/GotoBLAS2 install
-	$(call do-hwtest-subdirs,distclean)
-	$(call do-hwtest-subdirs,download)
 	$(do-hwtest-subdirs)
 	$(call do-hwtest-subdirs,install)
-	$(call do-standaloneopen-subdirs,distclean)
-	$(call do-standaloneopen-subdirs,download)
 	$(do-standaloneopen-subdirs)
 	$(call do-standaloneopen-subdirs,install)
 	$(do-compiled-bin-installs-binident)
@@ -115,9 +121,8 @@ cbenchstandalonedirprogs:
 	$(do-compiled-bin-installs-binident)
 	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
 
-openmpi: 
-	$(MAKE) -C opensource/ompi distclean
-	$(MAKE) -C opensource/ompi 
+cbenchstandalone: cbenchstandalonedirdistclean cbenchstandalonedirdownload cbenchstandalonedir
+
 #
 # END STANDALONE 
 #
