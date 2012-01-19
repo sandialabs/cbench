@@ -9,10 +9,12 @@ URL=http://www.open-mpi.org/software/ompi/v1.4/downloads/$(TAR)
 
 default: .make-$(OPENMPI)
 
-$(TAR) download:
+$(TAR):
 	@echo "Downloading $(OPENMPI)"
 	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
+
+download: $(TAR)
 
 .make-$(OPENMPI): .configure-$(OPENMPI)
 	@echo "make $(OPENMPI)"
@@ -35,7 +37,7 @@ $(OPENMPI): $(TAR)
 		exit 1; \
 	fi
 
-install:
+install: .make-$(OPENMPI)
 	cd $(OPENMPI) && make PREFIX=$(CBENCHTEST)/openmpi install
 
 clean:
