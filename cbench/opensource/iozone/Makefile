@@ -1,6 +1,6 @@
 include ../../make.def
 
-VERSION=3_373
+VERSION=3_398
 SRC=iozone$(VERSION)
 TAR=$(SRC).tar
 URL="http://www.iozone.org/src/current/$(TAR)"

@@ -1,5 +1,5 @@
---- iozone3_373/src/current/makefile.orig	2011-03-18 16:59:53.980613826 -0600
-+++ iozone3_373/src/current/makefile	2011-03-18 17:00:59.470742087 -0600
+--- iozone3_398/src/current/makefile.orig	2011-03-18 16:59:53.980613826 -0600
++++ iozone3_398/src/current/makefile	2011-03-18 17:00:59.470742087 -0600
 @@ -762,12 +762,12 @@
  	@echo ""
  	@echo "Building iozone for Linux"
