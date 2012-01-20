@@ -30,7 +30,7 @@ STANDALONEOPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhea
              mpi_malloc mpi_tokensmash phloem simul graph500 \
              hdparm dt iozone bonnie++ ior_bench miranda_io \
              fdtree mdtest lanl \
-             HPLinpack hpcc HPLinpack2 NPB \
+             HPLinpack hpcc HPLinpack2 NPB 
 
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck ior_bench iozone bonnie++ rotate HPLlinpack \
@@ -87,41 +87,53 @@ nodehwtest: hwtest standalone standaloneinstall
 #
 # BEGIN STANDALONE 
 #
-cbenchstandalonedirdistclean:
+cbench_standalone_sysprogs_distclean:
 	$(MAKE) -C opensource/ompi distclean
 	$(MAKE) -C opensource/GotoBLAS2 distclean
-	$(call do-hwtest-subdirs,distclean)
-	$(call do-standaloneopen-subdirs,distclean)
-
-cbenchstandalonedirdownload: 
+cbench_standalone_sysprogs_clean:
+	$(MAKE) -C opensource/ompi clean
+	$(MAKE) -C opensource/GotoBLAS2 clean
+cbench_standalone_sysprogs_download:
 	$(MAKE) -C opensource/ompi download
-	$(call do-hwtest-subdirs,download)
-	$(call do-standaloneopen-subdirs,download)
-
-cbenchstandalonedir: 
+	$(MAKE) -C opensource/GotoBLAS2 download
+cbench_standalone_sysprogs_compile:
+	$(MAKE) -C opensource/ompi 
+	$(MAKE) -C opensource/GotoBLAS2 
+cbench_standalone_sysprogs_install:
 	@sbin/install_cbenchtest --testtop
 	$(MAKE) -C opensource/ompi install
 	$(MAKE) -C opensource/GotoBLAS2 install
-	$(do-hwtest-subdirs)
-	$(call do-hwtest-subdirs,install)
-	$(do-standaloneopen-subdirs)
-	$(call do-standaloneopen-subdirs,install)
-	$(do-compiled-bin-installs-binident)
-	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
 
-cbenchstandalonedirprogs: 
+cbench_standalone_hwtestdirs_distclean: 
 	$(call do-hwtest-subdirs,distclean)
+cbench_standalone_hwtestdirs_clean:
+	$(call do-hwtest-subdirs,clean)
+cbench_standalone_hwtestdirs_download:
 	$(call do-hwtest-subdirs,download)
+cbench_standalone_hwtestdirs_compile:
 	$(do-hwtest-subdirs)
+cbench_standalone_hwtestdirs_install:
 	$(call do-hwtest-subdirs,install)
+
+cbench_standalonedir_alldistclean: cbench_standalone_sysprogs_distclean cbench_standalone_hwtestdirs_distclean
 	$(call do-standaloneopen-subdirs,distclean)
+cbench_standalonedir_distclean: cbench_standalone_hwtestdirs_distclean
+	$(call do-standaloneopen-subdirs,distclean)
+	$(MAKE) -C opensource/HPLintel distclean
+cbench_standalonedir_clean: cbench_standalone_hwtestdirs_clean
+	$(call do-standaloneopen-subdirs,clean)
+	$(MAKE) -C opensource/HPLintel clean
+cbench_standalonedir_download: cbench_standalone_sysprogs_download cbench_standalone_hwtestdirs_download
 	$(call do-standaloneopen-subdirs,download)
+cbench_standalonedir_compile: cbench_standalone_sysprogs_install cbench_standalone_hwtestdirs_compile
 	$(do-standaloneopen-subdirs)
+cbench_standalonedir_install: cbench_standalone_sysprogs_install cbench_standalone_hwtestdirs_install
 	$(call do-standaloneopen-subdirs,install)
 	$(do-compiled-bin-installs-binident)
 	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)
 
-cbenchstandalone: cbenchstandalonedirdistclean cbenchstandalonedirdownload cbenchstandalonedir
+cbench_standalone: cbench_standalonedir_download cbench_standalonedir_install
+cbench_standalone_nonet: cbench_standalonedir_clean cbench_standalonedir_install
 
 #
 # END STANDALONE 
