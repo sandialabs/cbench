@@ -7,6 +7,8 @@ TAR = $(SOURCE)_bsd.tar.gz
 
 default: .make-$(NAME)
 
+download: 
+
 .make-$(NAME): $(NAME)
 	@if [ $(ARCH) = "x86_64" ]; then cd $(NAME) && ./quickbuild.64bit; touch $@; \
 	elif [ $(ARCH) = "x86" ]; then  cd $(NAME) && ./quickbuild.32; touch $@; \
