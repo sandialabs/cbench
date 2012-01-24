@@ -29,8 +29,8 @@ $(SRC): $(TAR)
 
 
 .make-$(SRC): $(SRC)
-	@if [ $(ARCH) = "x86_64" ]; then cd src && ./quickbuild.64bit; touch $@; \
-	elif [ $(ARCH) = "x86" ]; then  cd src && ./quickbuild.32; touch $@; \
+	@if [ $(ARCH) = "x86_64" ]; then cd src && /bin/sh ./quickbuild.64bit; touch $@; \
+	elif [ $(ARCH) = "x86" ]; then  cd src && /bin/sh ./quickbuild.32; touch $@; \
 	else \
 		echo No $(ARCH) found for $(SRC); \
 		exit 1;	\
@@ -38,15 +38,12 @@ $(SRC): $(TAR)
 
 install: .make-$(SRC)
 	mkdir -p $(CBENCHTEST)/$(SRC)
-	cp -a src/libgoto* $(CBENCHTEST)/$(SRC) 
+	cd src && make PREFIX=$(CBENCHTEST)/$(SRC) install
+	cd $(CBENCHTEST) && ln -sf $(SRC) OpenBLAS
 
 distclean: 
-	@if [ -f .make-$(SRC) ]; then rm -f .make-$(SRC) ; fi
-	@if [ -f ._$(SRC) ]; then rm -f ._$(SRC) ; fi
-	@if [ -d $(SRC) ]; then rm -rf $(SRC) ; fi
-	@if [ -f $(TAR) ]; then rm -f $(TAR) ; fi
-	-/bin/rm -f src
+	rm -fr .make-$(SRC) ._$(SRC) $(SRC) src $(TAR)
 
 clean:
-	$(MAKE) -C src clean
+	rm -fr .make-$(SRC) ._$(SRC) $(SRC) src
 
