@@ -32,7 +32,7 @@ $(SRC): $(TAR)
 
 .configure-$(SRC): $(SRC)
 	@echo "Configuring $(SRC)"
-	cd $(SRC) && ./configure --enable-static --enable-static-modules --with-ssh --with-exec --with-readline --without-pam; make -C src CC=$(PLAINCC)
+	cd $(SRC) && ./configure --prefix=$(CBENCHTEST)/$(SRC) --enable-static --enable-static-modules --with-ssh --with-exec --with-readline --without-pam; make -C src CC=$(PLAINCC)
 	@touch $@
 
 clean:
@@ -42,5 +42,9 @@ clean:
 distclean:
 	rm -fr .make-$(SRC) .configure-$(SRC) src $(TAR) $(SRC)
 
-install uninstall: .make-$(SRC)
-	$(do-$@)
+install: .make-$(SRC)
+	cd src && make install
+	@for progs in dshbak  pdcp  pdsh  rpdcp; do \
+		ln -sf $(CBENCHTEST)/$(SRC)/bin/$$progs $(CBENCHTEST)/sbin/$$progs; \
+	done
+
