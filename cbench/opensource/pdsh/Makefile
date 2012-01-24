@@ -6,16 +6,15 @@ TAR=$(SRC).tar.bz2
 URL="http://sourceforge.net/projects/pdsh/files/pdsh/pdsh-$(VERSION)/$(TAR)"
 
 INSTALLDIR = $(bin_dir)
-INSTALLTARGETS = src/pdsh
+INSTALLTARGETS = src/src/pdsh/pdsh
 
-default: $(SRC)
-	cd $(SRC) && ./configure; make -C src CC=$(PLAINCC)
+default: .make-$(SRC)
+
+download: $(TAR)
 
 $(TAR):
 	@echo "Downloading $(TAR)"
 	$(call download-sf-url,$(URL))
-
-download: $(TAR)
 
 $(SRC): $(TAR)
 	@echo "Extracting $(SRC)"
@@ -26,12 +25,22 @@ $(SRC): $(TAR)
 	fi
 	ln -sf $(SRC) src
 
+.make-$(SRC): .configure-$(SRC)
+	@echo "make $(SRC)"
+	cd $(SRC) && make -C src CC=$(PLAINCC)
+	@touch $@
+
+.configure-$(SRC): $(SRC)
+	@echo "Configuring $(SRC)"
+	cd $(SRC) && ./configure --enable-static --enable-static-modules --with-ssh --with-exec --with-readline --without-pam; make -C src CC=$(PLAINCC)
+	@touch $@
+
 clean:
-	-[ -d $(SRC) ] && /bin/rm -fr $(SRC)
+	@if [ -f src/Makefile ] ; then $(MAKE) -C src clean; fi
+	rm -f .make-$(SRC) .configure-$(SRC)
 
 distclean:
-	-/bin/rm -rf $(SRC) $(TAR) src
+	rm -fr .make-$(SRC) .configure-$(SRC) src $(TAR) $(SRC)
 
-install uninstall:
+install uninstall: .make-$(SRC)
 	$(do-$@)
-
