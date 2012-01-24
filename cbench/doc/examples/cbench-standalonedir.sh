@@ -1,11 +1,11 @@
 # the required variables
 export CBENCHSTANDALONEDIR=$HOME/cbench-test
-export CBENCHOME=$HOME/svn/cbench
+export CBENCHOME=$HOME/cbench
 
 export PATH=$CBENCHSTANDALONEDIR/openmpi/bin:$PATH
-export LD_LIBRARY_PATH=$CBENCHSTANDALONEDIR/GotoBLAS2:$CBENCHSTANDALONEDIR/openmpi/lib:$LD_LIBRARY_PATH
-export BLASLIB="-L$CBENCHSTANDALONEDIR/GotoBLAS2 -lgoto2 -lgfortran -lm"
-export LAPACKLIB="-L$CBENCHSTANDALONEDIR/GotoBLAS2 -lgoto2"
+export LD_LIBRARY_PATH=$CBENCHSTANDALONEDIR/OpenBLAS/lib/:$CBENCHSTANDALONEDIR/openmpi/lib:$LD_LIBRARY_PATH
+export BLASLIB="-L$CBENCHSTANDALONEDIR/OpenBLAS/lib -lopenblas -lgfortran -lm"
+export LAPACKLIB="-L$CBENCHSTANDALONEDIR/OpenBLAS/lib -lopenblas"
 
 # add the Cbench tools directory to the path to pickup
 # cbench commands more easily
