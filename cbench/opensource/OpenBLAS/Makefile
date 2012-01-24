@@ -8,7 +8,7 @@ URL=http://github.com/xianyi/OpenBLAS/tarball/v0.1alpha2.4
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = src/OpenBLAS
 
-default: make-$(SRC)
+default: .make-$(SRC)
 
 $(TAR):
 	@echo "Downloading $(TAR)"
