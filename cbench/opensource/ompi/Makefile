@@ -15,15 +15,15 @@ $(TAR):
 download: $(TAR)
 
 .make-$(SRC): .configure-$(SRC)
-	@echo "make $(SRC)"
-	cd $(SRC) && make -j 3
+	@echo "Compiling $(SRC)"
+	cd $(SRC) && make -j 3 > ../.make-$(SRC) 2>&1
 	@touch $@
 
 .configure-$(SRC): $(SRC)
 	@echo "Configuring $(SRC)"
 	(cd $(SRC); export CC=$(PLAINCC); export F77=$(PLAINF77); \
 	 export FC=$(PLAINF77); export CXX=$(PLAINCXX); \
-	 ./configure --enable-orterun-prefix-by-default --enable-mpi-threads --prefix=$(BENCH_TEST)/openmpi)
+	 ./configure --enable-orterun-prefix-by-default --enable-mpi-threads --prefix=$(BENCH_TEST)/openmpi > ../.configure-$(SRC) 2>&1)
 	@touch $@
 
 # target to untar the openmpi distribution
@@ -36,7 +36,8 @@ $(SRC): $(TAR)
 	fi
 
 install: .make-$(SRC)
-	cd $(SRC) && make PREFIX=$(CBENCHTEST)/openmpi install
+	@echo "Installing $(SRC)"
+	cd $(SRC) && make PREFIX=$(CBENCHTEST)/openmpi install >> ../.make-$(SRC) 2>&1
 
 clean:
 	@if [ -f $(SRC)/Makefile ] ; then $(MAKE) -C $(SRC) clean; fi

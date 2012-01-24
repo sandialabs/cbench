@@ -29,16 +29,18 @@ $(SRC): $(TAR)
 
 
 .make-$(SRC): $(SRC)
-	@if [ $(ARCH) = "x86_64" ]; then cd src && /bin/sh ./quickbuild.64bit; touch $@; \
-	elif [ $(ARCH) = "x86" ]; then  cd src && /bin/sh ./quickbuild.32; touch $@; \
+	@echo "Compiling $(SRC)"
+	@if [ $(ARCH) = "x86_64" ]; then cd src && /bin/sh ./quickbuild.64bit > ../.make-$(SRC) 2>&1; touch $@; \
+	elif [ $(ARCH) = "x86" ]; then  cd src && /bin/sh ./quickbuild.32 > ../.make-$(SRC) 2>&1; touch $@; \
 	else \
 		echo No $(ARCH) found for $(SRC); \
 		exit 1;	\
 	fi
 
 install: .make-$(SRC)
+	@echo "Installing $(SRC)"
 	mkdir -p $(CBENCHTEST)/$(SRC)
-	cd src && make PREFIX=$(CBENCHTEST)/$(SRC) install
+	cd src && make PREFIX=$(CBENCHTEST)/$(SRC) install >> ../.make-$(SRC) 2>&1
 	cd $(CBENCHTEST) && ln -sf $(SRC) OpenBLAS
 
 distclean: 
