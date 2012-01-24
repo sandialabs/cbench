@@ -88,21 +88,26 @@ nodehwtest: hwtest standalone standaloneinstall
 # BEGIN STANDALONE 
 #
 cbench_standalone_sysprogs_distclean:
+	$(MAKE) -C opensource/pdsh distclean
 	$(MAKE) -C opensource/ompi distclean
-	$(MAKE) -C opensource/GotoBLAS2 distclean
+	$(MAKE) -C opensource/OpenBLAS distclean
 cbench_standalone_sysprogs_clean:
+	$(MAKE) -C opensource/pdsh clean
 	$(MAKE) -C opensource/ompi clean
-	$(MAKE) -C opensource/GotoBLAS2 clean
+	$(MAKE) -C opensource/OpenBLAS clean
 cbench_standalone_sysprogs_download:
+	$(MAKE) -C opensource/pdsh download
 	$(MAKE) -C opensource/ompi download
-	$(MAKE) -C opensource/GotoBLAS2 download
+	$(MAKE) -C opensource/OpenBLAS download
 cbench_standalone_sysprogs_compile:
+	$(MAKE) -C opensource/pdsh 
 	$(MAKE) -C opensource/ompi 
-	$(MAKE) -C opensource/GotoBLAS2 
+	$(MAKE) -C opensource/OpenBLAS 
 cbench_standalone_sysprogs_install:
 	@sbin/install_cbenchtest --testtop
+	$(MAKE) -C opensource/pdsh install
 	$(MAKE) -C opensource/ompi install
-	$(MAKE) -C opensource/GotoBLAS2 install
+	$(MAKE) -C opensource/OpenBLAS install
 
 cbench_standalone_hwtestdirs_distclean: 
 	$(call do-hwtest-subdirs,distclean)
@@ -117,6 +122,7 @@ cbench_standalone_hwtestdirs_install:
 
 cbench_standalonedir_alldistclean: cbench_standalone_sysprogs_distclean cbench_standalone_hwtestdirs_distclean
 	$(call do-standaloneopen-subdirs,distclean)
+	$(MAKE) -C opensource/HPLintel distclean
 cbench_standalonedir_distclean: cbench_standalone_hwtestdirs_distclean
 	$(call do-standaloneopen-subdirs,distclean)
 	$(MAKE) -C opensource/HPLintel distclean
