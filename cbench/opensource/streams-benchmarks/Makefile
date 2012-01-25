@@ -8,36 +8,44 @@ EXEC = $(SRC)/src/stress
 INSTALLDIR = $(hwtest_bin_dir)
 INSTALLTARGETS = $(EXEC)
 
-default: stream_f stream_c stream_c_5_10
-.make-$(SRC): $(SRC)
+default: .make-$(SRC)
+
 
 download: $(SRC)
 
 $(SRC):
 	@echo "Downloading $(FILES)"
 	@for f in $(FILES); do \
-		if [ ! -f $$f ]; then  $(call download-sf-url, "$(URL)/$$f");  fi \
+		if [ ! -f $$f ]; then  echo "Downloading $$f"; $(call download-sf-url, "$(URL)/$$f");  fi \
 	done
 
-mysecond.o:
+mysecond.o: $(SRC)
+	FILES=mysecond.c
 	$(PLAINCC) $(CCFLAGS) -c mysecond.c
 
-stream_f: mysecond.o
+stream_f: $(SRC) mysecond.o
+	FILES="mysecond.c stream.f"
 	$(PLAINF77) $(FFLAGS) -c stream.f
 	$(PLAINF77) $(FFLAGS) stream.o mysecond.o -o stream_f
 
-stream_c: 
+stream_c: $(SRC)
+	FILES=stream.c
 	$(PLAINCC) $(CCFLAGS) stream.c -o stream_c
 
-stream_c_5_10: 
+stream_c_5_10: $(SRC)
+	FILES=stream.c.5.10
 	ln -sf stream.c.5.10 stream_5_10.c
 	$(PLAINCC) $(CCFLAGS) stream_5_10.c -o stream_c.5.10
 
+.make-$(SRC): stream_f stream_c 
+	touch $@
+
 clean: 
-	rm -f mysecond.o  stream_c  stream.c.5.10  stream_f  stream.o
+	rm -f mysecond.o  stream_c  stream_f  stream.o .make-$(SRC)
 
 distclean: clean
-	rm -f $(FILES)
+	FILES="stream.c mysecond.c stream.f stream.c.5.10"
+	rm -f $(FILES) .make-$(SRC) stream_5_10.c
 
 
 #install uninstall:
