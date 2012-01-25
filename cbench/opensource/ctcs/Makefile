@@ -23,7 +23,8 @@ install uninstall:
 	$(do-$@)
 
 $(TAR):
+	@echo "Downloading $(TAR)"
 	$(call download-sf-url,$(URL),$(TAR))
 	-[ -e $(TAR) ] && touch $(TAR)
 
-download:
+download: $(TAR)
