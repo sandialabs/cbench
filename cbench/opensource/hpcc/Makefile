@@ -70,6 +70,7 @@ $(TAR):
 	$(call download-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
+download: $(TAR)
 
 .patched:
 	for patch in *.patch ; do \
