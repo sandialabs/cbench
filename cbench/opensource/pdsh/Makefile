@@ -27,12 +27,12 @@ $(SRC): $(TAR)
 
 .make-$(SRC): .configure-$(SRC)
 	@echo "Compiling $(SRC)"
-	cd $(SRC) && make -C src CC=$(PLAINCC) > ../.make-$(SRC) 2>&1
+	cd src && make -C src CC=$(PLAINCC) > ../.make-$(SRC) 2>&1
 	@touch $@
 
 .configure-$(SRC): $(SRC)
 	@echo "Configuring $(SRC)"
-	cd $(SRC) && ./configure --prefix=$(CBENCHTEST)/$(SRC) --enable-static --enable-static-modules --with-ssh --with-exec --with-readline --without-pam > ../.configure-$(SRC) 2>&1
+	cd src && ./configure --prefix=$(CBENCHTEST)/$(SRC) --enable-static --enable-static-modules --with-ssh --with-exec --with-readline --without-pam > ../.configure-$(SRC) 2>&1
 	@touch $@
 
 clean:
