@@ -10,6 +10,8 @@ EXEC = mpi_routecheck
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXEC) $(EXEC)-cpumask
 
+download:
+
 all: $(INSTALLTARGETS)
 
 $(EXEC): $(SRC) meminfo.o

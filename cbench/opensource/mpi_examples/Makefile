@@ -19,6 +19,8 @@ LIBS =
 FLIBS =
 EXECS = cpi 
 
+download:
+
 default: cpi pi3 cpip pi3p
 
 # 

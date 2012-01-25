@@ -9,6 +9,8 @@ EXEC = rotate rotate_latency
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXEC)
 
+download: 
+
 default: $(EXEC)
 
 rotate: rotate.c

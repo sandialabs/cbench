@@ -10,6 +10,8 @@ EXEC = mpi_tokensmash
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXEC)
 
+download:
+
 $(EXEC): $(SRC)
 	$(CC) $(CFLAGS) $(DEFINES) -o $@ $< $(LIBS)
 

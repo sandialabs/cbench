@@ -8,6 +8,8 @@ URL="http://sourceforge.net/projects/hdparm/files/hdparm/$(TAR)"
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = src/hdparm
 
+download: $(TAR)
+
 default: $(SRC)
 	make -C src CC=$(PLAINCC) 
 

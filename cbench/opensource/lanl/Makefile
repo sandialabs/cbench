@@ -17,6 +17,8 @@ endif
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
+download:
+
 default: $(default_tgt)
 normal: psnap
 

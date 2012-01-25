@@ -29,6 +29,8 @@ default_tgt := mpi
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
+download: $(TAR)
+
 default: $(default_tgt) 
 
 all: mpi 

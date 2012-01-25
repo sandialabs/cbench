@@ -31,6 +31,7 @@ UNZIPPED_LIBS = $(patsubst %.so.gz,%.gz,$(ZIPPED_LIBS))
 CLEAN_LIBS_UNZIPPED = $(wildcard *.so)
 CLEAN_LIBS_ZIPPED = $(patsubst %.so,%.so.gz,$(CLEAN_LIBS_UNZIPPED))
 
+download:
 
 default: linpack-size $(default_tgt)
 

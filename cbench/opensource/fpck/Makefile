@@ -9,6 +9,8 @@ INSTALLTARGETS = $(EXEC)
 
 all: shared
 
+download:
+
 shared: $(EXEC)
 
 $(EXEC): $(OBJS)

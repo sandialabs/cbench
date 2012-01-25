@@ -9,6 +9,8 @@ EXEC = mpi_malloc
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXEC)
 
+download:
+
 $(EXEC): $(SRC) meminfo.o
 	$(CC) $(CFLAGS) $(DEFINES) -o $@ $< $(LIBS) meminfo.o
 
