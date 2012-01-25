@@ -9,6 +9,7 @@ TAR=$(SRC).tar.gz
 MPIDIR=$(SRC)/NPB3.2-MPI
 SERDIR=$(SRC)/NPB3.2-SER
 
+download:
 
 all: serial mpi
 

@@ -28,6 +28,8 @@ ifeq ($(CBENCH_STANDALONE),yes)
 default: stream-mpi.$(MPICH_CH)
 endif
 
+download:
+
 all: $(EXECS)
 
 stream-c: stream.c

@@ -15,6 +15,8 @@ EXECS = osu_bw osu_bibw osu_latency osu_bcast osu_mbw_mr large_osu_bw large_osu_
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
+download:
+
 default: $(EXECS)
 
 osu_bw: osu_bw.c 
