@@ -30,7 +30,7 @@ STANDALONEOPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhea
              mpi_malloc mpi_tokensmash phloem simul graph500 \
              hdparm dt iozone bonnie++ ior_bench miranda_io \
              fdtree mdtest lanl \
-             HPLinpack hpcc HPLinpack2 NPB 
+             HPLlinpack hpcc HPLinpack2 NPB 
 
 OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_routecheck ior_bench iozone bonnie++ rotate HPLlinpack \
@@ -115,9 +115,9 @@ cbench_standalone_hwtestdirs_clean:
 	$(call do-hwtest-subdirs,clean)
 cbench_standalone_hwtestdirs_download:
 	$(call do-hwtest-subdirs,download)
-cbench_standalone_hwtestdirs_compile:
+cbench_standalone_hwtestdirs_compile: cbench_standalone_sysprogs_install
 	$(do-hwtest-subdirs)
-cbench_standalone_hwtestdirs_install:
+cbench_standalone_hwtestdirs_install: cbench_standalone_sysprogs_install
 	$(call do-hwtest-subdirs,install)
 
 cbench_standalonedir_alldistclean: cbench_standalone_sysprogs_distclean cbench_standalone_hwtestdirs_distclean
