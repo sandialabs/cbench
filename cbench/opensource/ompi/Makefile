@@ -7,26 +7,12 @@ URL=http://www.open-mpi.org/software/ompi/v1.5/downloads/$(TAR)
 
 default: .make-$(SRC)
 
-$(TAR):
-	@echo "Downloading $(SRC)"
-	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
-
 download: $(TAR)
 
-.make-$(SRC): .configure-$(SRC)
-	@echo "Compiling $(SRC)"
-	cd $(SRC) && make -j 3 > ../.make-$(SRC) 2>&1
-	@touch $@
+$(TAR):
+	@echo "Downloading $(SRC)"
+	$(call download-sf-url,$(URL))
 
-.configure-$(SRC): $(SRC)
-	@echo "Configuring $(SRC)"
-	(cd $(SRC); export CC=$(PLAINCC); export F77=$(PLAINF77); \
-	 export FC=$(PLAINF77); export CXX=$(PLAINCXX); \
-	 ./configure --enable-orterun-prefix-by-default --enable-mpi-threads --prefix=$(BENCH_TEST)/openmpi > ../.configure-$(SRC) 2>&1)
-	@touch $@
-
-# target to untar the openmpi distribution
 $(SRC): $(TAR)
 	@echo "Extracting $(SRC)"
 	@if [ -f $(TAR) ] ; then tar -jxf $(TAR); \
@@ -34,15 +20,29 @@ $(SRC): $(TAR)
 		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
 		exit 1; \
 	fi
+	ln -sf $(SRC) src
+
+# from ompi 1.4.X&& export CC=$(PLAINCC) && F77=$(PLAINF77) && FC=$(PLAINF77) && CXX=$(PLAINCXX) && \ 
+#	 ./configure --enable-orterun-prefix-by-default --enable-mpi-threads --prefix=$(BENCH_TEST)/openmpi > ../.configure-$(SRC) 2>&1)
+.configure-$(SRC): $(SRC)
+	@echo "Configuring $(SRC)"
+	(cd src && export CC=$(PLAINCC) && export F77=$(PLAINF77) && export FC=$(PLAINF77) && export CXX=$(PLAINCXX) && ./configure --enable-orterun-prefix-by-default --with-threads=posix --enable-mpi-thread-multiple --enable-opal-multi-threads --prefix=$(CBENCHTEST)/openmpi > ../.configure-$(SRC) 2>&1)
+	@touch $@
+
+
+.make-$(SRC): .configure-$(SRC)
+	@echo "Compiling $(SRC)"
+	cd src && make -j 3 > ../.make-$(SRC) 2>&1
+	@touch $@
 
 install: .make-$(SRC)
 	@echo "Installing $(SRC)"
-	cd $(SRC) && make PREFIX=$(CBENCHTEST)/openmpi install >> ../.make-$(SRC) 2>&1
+	cd src && make PREFIX=$(CBENCHTEST)/openmpi install >> ../.make-$(SRC) 2>&1
 
 clean:
-	@if [ -f $(SRC)/Makefile ] ; then $(MAKE) -C $(SRC) clean; fi
+	@if [ -f src/Makefile ] ; then $(MAKE) -C src clean; fi
 	rm -f .make-$(SRC) .configure-$(SRC)
 
-distclean: 
-	rm -f .make-$(SRC) .configure-$(SRC)
-	rm -rf $(SRC) $(TAR)
+distclean:
+	rm -fr .make-$(SRC) .configure-$(SRC) src $(TAR) $(SRC)
+
