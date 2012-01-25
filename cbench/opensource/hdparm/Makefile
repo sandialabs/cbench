@@ -5,13 +5,15 @@ SRC=hdparm-$(VERSION)
 TAR=$(SRC).tar.gz
 URL="http://sourceforge.net/projects/hdparm/files/hdparm/$(TAR)"
 
+BUILDLOG=cbench_buildlog_$(SRC).log
+
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = src/hdparm
 
-download: $(TAR)
-
 default: $(SRC)
-	make -C src CC=$(PLAINCC) 
+	make -C src CC=$(PLAINCC) > $(BUILDLOG) 2>&1
+
+download: $(TAR)
 
 $(TAR):
 	@echo "Downloading $(TAR)"
@@ -27,10 +29,10 @@ $(SRC): $(TAR)
 	ln -sf $(SRC) src
 
 clean:
-	-[ -d $(SRC) ] && /bin/rm -fr $(SRC)
+	cd src && make clean 
 
 distclean:
-	-/bin/rm -rf $(SRC) $(TAR) src
+	-/bin/rm -rf $(SRC) $(TAR) src $(BUILDLOG)
 
 install uninstall:
 	$(do-$@)
