@@ -11,18 +11,12 @@ INSTALLTARGETS = src/OpenBLAS
 default: .make-$(SRC)
 
 $(TAR):
-	@echo "Downloading $(TAR)"
 	$(call download-url,$(URL))
 
 download: $(TAR)
 
 $(SRC): $(TAR)
-	@echo "Extracting $(SRC)"
-	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
-	else \
-		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
-		exit 1; \
-	fi
+	$(call untar-src,$(TAR))
 	mv survivegotoblas2-3.14 $(SRC)
 	ln -sf $(SRC) src
 
