@@ -17,21 +17,20 @@ INSTALLTARGETS = $(EXECS)
 CFLAGS += -DPRINT_ENV
 
 all normal: $(SRC)
-	$(MAKE) CC=$(CC) -C $(SRC)
-
-$(SRC): $(TAR)
-	-[ ! -d $(SRC) ] && tar zxf $(TAR)
-	-[ ! -s src ] && ln -sf $(SRC) src
+	$(MAKE) CC=$(CC) -C src > .make-$(SRC) 2>&1
 
 $(TAR) download:
-	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
+	$(call download-sf-url,$(URL))
+
+$(SRC): $(TAR)
+	$(call untar-src,$(TAR))
+	ln -sf $(SRC) src
 
 clean:
 	[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean || :
 
 distclean:
-	/bin/rm -rf $(SRC) $(TAR) src
+	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)
 
 install uninstall:
 	$(do-$@)

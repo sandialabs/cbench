@@ -58,20 +58,18 @@ ENV_SETUP = LD_LIBRARY_PATH=$(CUDALIB):$(OPENCLLIB):$(LD_LIBRARY_PATH) PATH=$(CU
 
 default: $(default_tgt)
 
+download: $(TAR)
+
 all: $(SRC)
 	@cd src; $(ENV_SETUP) ./configure $(CONFIGPARAMS) --with-mpi
 	$(ENV_SETUP) $(MAKE) -C $(SRC)
 
-$(SRC): $(TAR)
-	-[ ! -d $(SRC) ] && tar xzf $(TAR)
-	ln -sf $(SRC) src
-	touch $(SRC)
-
 $(TAR):
 	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
 
-download: $(TAR)
+$(SRC): $(TAR)
+	$(call untar-src,$(TAR))
+	ln -sf $(SRC) src
 
 clean:
 	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean

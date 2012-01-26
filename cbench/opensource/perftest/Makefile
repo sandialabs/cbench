@@ -22,37 +22,31 @@ INSTALLTARGETS = $(EXECS)
 
 default: $(EXECS)
 
-$(TAR):
-	@echo "Downloading $(TAR)"
-	$(call download-url,$(URL))
-
 download: $(TAR)
 
+$(TAR):
+	$(call download-sf-url,$(URL))
+
 $(SRC): $(TAR)
-	@echo "Extracting $(SRC)"
-	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
-	else \
-		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
-		exit 1; \
-	fi
+	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
 
 src/Makefile: $(SRC)
 	echo ${COMPILERCOLLECTION} > src/.config
-	cd src; MPICC=$(CC) MPIF77=$(F77) CC=$(PLAINCC) F77=$(PLAINF77) CFLAGS='$(CFLAGS)' FFLAGS='$(FFLAGS)' ./configure 
+	cd src && MPICC=$(CC) MPIF77=$(F77) CC=$(PLAINCC) F77=$(PLAINF77) CFLAGS='$(CFLAGS)' FFLAGS='$(FFLAGS)' ./configure > ../.configure-$(SRC) 2>&1
 	@if [ -f $(SRC)/Makefile ]; then \
 		sed -i 's/-O4 -Ofast//' $(SRC)/Makefile; \
 	fi
 	touch $@
 
 src/stress: src/Makefile
-	make -C src stress
+	make -C src stress > .make-$(SRC) 2>&1
 
 clean:
 	$(MAKE) -C src clean
 
 distclean:
-	-/bin/rm -rf $(SRC) $(TAR) src .config
+	/bin/rm -rf $(SRC) $(TAR) src .configure-$(SRC) .make-$(SRC)
 
 install uninstall:
 	$(do-$@)

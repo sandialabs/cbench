@@ -13,16 +13,10 @@ default: .make-$(SRC)
 download: $(TAR)
 
 $(TAR):
-	@echo "Downloading $(TAR)"
 	$(call download-sf-url,$(URL))
 
 $(SRC): $(TAR)
-	@echo "Extracting $(SRC)"
-	@if [ -f $(TAR) ] ; then tar -jxf $(TAR); \
-	else \
-		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
-		exit 1; \
-	fi
+	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
 
 .make-$(SRC): .configure-$(SRC)
