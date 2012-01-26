@@ -17,7 +17,7 @@ download: $(TAR)
 
 $(TAR):
 	@echo "Downloading $(TAR)"
-	$(call download-url,$(URL))
+	$(call download-sf-url,$(URL))
 
 $(SRC): $(TAR)
 	@echo "Extracting $(SRC)"

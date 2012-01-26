@@ -13,16 +13,10 @@ default: all
 download: $(TAR)
 
 $(TAR):
-	@echo "Downloading $(TAR)"
 	$(call download-sf-url,$(URL),$(TAR))
 
 $(SRC): $(TAR)
-	@echo "Extracting $(SRC)"
-	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
-	else \
-		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
-		exit 1; \
-	fi
+	$(call untar-src,$(TAR))
 	mv ctcs-1.3.1pre1 $(SRC)
 	ln -sf $(SRC) src
 

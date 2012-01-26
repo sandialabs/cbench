@@ -29,9 +29,17 @@ default_tgt := mpi
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
+default: $(default_tgt) 
+
 download: $(TAR)
 
-default: $(default_tgt) 
+$(TAR):
+	$(call download-sf-url,$(URL))
+
+$(SRC): $(TAR)
+	$(call untar-src, $(TAR))
+	ln -sf $(SRC) src
+	touch $(SRC)
 
 all: mpi 
 
@@ -41,22 +49,6 @@ mpi: $(SRC) src/make.inc clean
 
 src/make.inc:
 	ln -sf $(GRAPH500)/make.inc-cbench $(GRAPH500)/src/make.inc
-
-$(SRC): $(TAR)
-	file $(TAR) | grep -q bzip; \
-	if [ $$? -eq 0 ]; then \
-		[ ! -d $(SRC) ] && tar xjf $(TAR); \
-	else \
-		[ ! -d $(SRC) ] && tar xzf $(TAR); \
-	fi;
-	ln -sf $(SRC) src
-	touch $(SRC)
-
-$(TAR):
-	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
-
-download: $(TAR)
 
 clean:
 	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean

@@ -5,34 +5,28 @@ SRC=hdparm-$(VERSION)
 TAR=$(SRC).tar.gz
 URL="http://sourceforge.net/projects/hdparm/files/hdparm/$(TAR)"
 
-BUILDLOG=cbench_buildlog_$(SRC).log
-
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = src/hdparm
 
-default: $(SRC)
-	make -C src CC=$(PLAINCC) > $(BUILDLOG) 2>&1
+default: .make-$(SRC)
 
 download: $(TAR)
 
 $(TAR):
-	@echo "Downloading $(TAR)"
 	$(call download-sf-url,$(URL))
 
 $(SRC): $(TAR)
-	@echo "Extracting $(SRC)"
-	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
-	else \
-		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
-		exit 1; \
-	fi
+	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
 
+.make-$(SRC): $(SRC)
+	make -C src CC=$(PLAINCC) > .make-$(SRC) 2>&1
+
 clean:
-	cd src && make clean 
+	$(MAKE) -C src clean
 
 distclean:
-	-/bin/rm -rf $(SRC) $(TAR) src $(BUILDLOG)
+	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)
 
 install uninstall:
 	$(do-$@)

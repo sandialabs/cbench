@@ -8,33 +8,28 @@ URL="http://www.scsifaq.org/RMiller_Tools/ftp/dt/$(TAR)"
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = src/dt
 
-default: all
-
-$(TAR):
-	@echo "Downloading $(TAR)"
-	$(call download-url,$(URL))
+default: .make-$(SRC)
 
 download: $(TAR)
 
+$(TAR):
+	$(call download-sf-url,$(URL))
+
 $(SRC): $(TAR)
-	@echo "Extracting $(SRC)"
-	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
-	else \
-		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
-		exit 1; \
-	fi
+	$(call untar-src, $(TAR))
 	mv dt.d-WIP $(SRC)
 	ln -sf $(SRC) src
 
-all: $(SRC)
+.make-$(SRC): $(SRC)
+	@echo "Compiling $(SRC)"
 	cp -f src/Makefile.linux src/Makefile
-	$(MAKE) -C src CC=$(PLAINCC) 
+	$(MAKE) -C src CC=$(PLAINCC) > .make-$(SRC) 2>&1
 
 clean:
 	$(MAKE) -C src clean
 
 distclean:
-	-/bin/rm -rf $(SRC) $(TAR) src
+	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)
 
 install uninstall:
 	$(do-$@)
