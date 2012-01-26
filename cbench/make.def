@@ -633,6 +633,7 @@ define do-install-shoc
     echo "$(INSTALLTARGETS) installed in $(INSTALLDIR)"; 
 endef
 
+# downlad a url with wget
 define download-url
 	@file=`basename $1`; url=`dirname $1`; \
 	for path in $$url http://cbench.sourceforge.net/common/tarballs https://synapse.sandia.gov/static/tarballs; do \
@@ -644,7 +645,23 @@ endef
 # downlad a url with curl
 # works great for redirected sites like sf $1 is the sf download url
 define download-sf-url
-	curl --connect-timeout 10 --retry 2 -L -O $1 
+	@echo "Downloading: $1"
+	@curl --connect-timeout 10 --retry 2 -L -O $1 
+endef
+
+# common routing to unpack tgz/bzip
+define untar-src
+	@echo "Extracting: $1"
+	@if [ -f $1 ]; then \
+		file $1 | grep -q bzip; \
+		if [ $$? -eq 0 ]; then \
+			tar xjf $1; \
+		else \
+			tar xzf $1; \
+		fi; \
+	else \
+		echo "$1 not found, download manually or set http_proxy env variable?"; exit 1; \
+	fi;
 endef
 
 
