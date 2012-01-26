@@ -17,9 +17,10 @@ endif
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
+default: $(default_tgt)
+
 download:
 
-default: $(default_tgt)
 normal: psnap
 
 psnap: psnap-1.0/psnap
@@ -41,5 +42,8 @@ distclean: clean
 smallclean:
 	$(MAKE) -C psnap-1.0 clean
 	
-install uninstall:
+install: default
+	$(do-$@)
+
+uninstall:
 	$(do-$@)

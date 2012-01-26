@@ -13,11 +13,11 @@ GOTOBLAS2TAR="$(GOTOBLAS2DIR)/$(GOTOBLAS2SRC).tar.gz"
 
 default: all
 
+download: $(TAR)
+
 $(TAR):
 	@echo "Downloading $(TAR)"
 	$(call download-url,$(URL))
-
-download: $(TAR)
 
 $(SRC): $(TAR)
 	@echo "Extracting $(SRC)"
@@ -47,13 +47,11 @@ all: patchgoto2
 	make CC=$(PLAINCC) -C src 
 
 clean:
-	-[ -d $(SRC) ] && /bin/rm -fr $(SRC)
+	/bin/rm -fr $(SRC)
 
 distclean: clean
-	-[ -f $(TAR) ] && /bin/rm -f $(TAR) src
-	-[ -d GotoBLAS2 ] && /bin/rm -fr GotoBLAS2
-	-[ -L src ] && /bin/rm -f src
+	/bin/rm -fr $(TAR) src GotoBLAS2 
 
-install: $(SRC)
+install: default
 	$(do-$@)
 

@@ -9,11 +9,18 @@ EXEC = mpi_300mb
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXEC)
 
+default: $(EXEC)
+
 $(EXEC): $(SRC)
 	$(CC) $(CFLAGS) $(DEFINES) -o $@ $< $(LIBS)
 
 clean:
 	rm -f *.o $(EXEC)
 
-install uninstall:
+distclean: clean
+
+install: default
+	$(do-$@)
+
+uninstall:
 	$(do-$@)

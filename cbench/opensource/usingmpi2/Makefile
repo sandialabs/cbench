@@ -26,14 +26,14 @@ $(SRC): $(TAR)
 	fi
 	ln -sf $(SRC) src
 
-.make-$(SRC): .configure-$(SRC)
-	@echo "Compiling $(SRC)"
-	cd src && make -C src CC=$(PLAINCC) > ../.make-$(SRC) 2>&1
-	@touch $@
-
 .configure-$(SRC): $(SRC)
 	@echo "Configuring $(SRC)"
-	cd src && MPICC=$(CC) MPIF77=$(F77) CC=$(PLAINCC) F77=$(PLAINF77) CFLAGS='$(CFLAGS)' FFLAGS='$(FFLAGS)' ./configure  > ../.configure-$(SRC) 2>&1
+	cd src && MPICC=$(CC) MPIF77=$(F77) CC=$(PLAINCC) F77=$(PLAINF77) CFLAGS='$(CFLAGS)' FFLAGS='$(FFLAGS)' ./configure  --with-lammpi=$(MPIHOME) > ../.configure-$(SRC) 2>&1
+	@touch $@
+
+.make-$(SRC): .configure-$(SRC)
+	@echo "Compiling $(SRC)"
+	cd src && make > ../.make-$(SRC) 2>&1
 	@touch $@
 
 clean:

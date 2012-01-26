@@ -10,20 +10,18 @@ TAR=$(SRC).tgz
 #URL=http://www.coker.com.au/bonnie++/$(TAR)
 URL="http://www.coker.com.au/bonnie++/experimental/$(TAR)"
 
-EXECS = $(SRC)/bonnie++
+EXEC = $(SRC)/bonnie++
 
 INSTALLDIR = $(bin_dir)
-INSTALLTARGETS = $(EXECS)
+INSTALLTARGETS = $(EXEC)
 
-default: $(SRC)
-	make -C src CC=$(PLAINCC) CXX=$(PLAINCXX)
-#	cd src/; export CC=$(CC); export F77=$(F77); export MPILIB=$(MPICH)/lib; if [ ! -f config.status ]; then ./configure; fi; make
+default: $(EXEC)
+
+download: $(TAR)
 
 $(TAR):
 	@echo "Downloading $(TAR)"
 	$(call download-url,$(URL))
-
-download: $(TAR)
 
 $(SRC): $(TAR)
 	@echo "Extracting $(SRC)"
@@ -34,12 +32,18 @@ $(SRC): $(TAR)
 	fi
 	ln -sf $(SRC) src
 
+$(EXEC): $(SRC)
+	make -C src CC=$(PLAINCC) CXX=$(PLAINCXX)
+#	cd src/; export CC=$(CC); export F77=$(F77); export MPILIB=$(MPICH)/lib; if [ ! -f config.status ]; then ./configure; fi; make
+
 clean:
 	make -C src clean 
 
 distclean: 
-	-/bin/rm -rf $(SRC) $(TAR) src
+	/bin/rm -rf $(SRC) $(TAR) src
 
-install uninstall:
+install: default
 	$(do-$@)
 
+uninstall: 
+	$(do-$@)

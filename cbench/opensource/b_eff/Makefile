@@ -1,6 +1,6 @@
 include ../../make.def
 
-MEMORY = $(shell $(BENCH_HOME)/sbin/get_clusterdef_param --param memory_per_processor | sed 's/\..*//')
+MEMORY = $(shell $(CBENCHTEST)/sbin/get_clusterdef_param --param memory_per_processor | sed 's/\..*//')
 #MEMORY = 1024
 
 DEFINES = -DMEMORY_PER_PROCESSOR=$(MEMORY) -DPRINTLEVEL=1
@@ -14,6 +14,8 @@ EXEC = b_eff
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXEC)
 
+default: $(EXEC)
+
 download:
 
 $(EXEC): $(SRC)
@@ -24,5 +26,8 @@ clean:
 
 distclean: clean
 
-install uninstall:
+install: default
+	$(do-$@)
+
+uninstall:
 	$(do-$@)
