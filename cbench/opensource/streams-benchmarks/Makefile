@@ -10,13 +10,12 @@ INSTALLTARGETS = $(EXEC)
 
 default: .make-$(SRC)
 
-
 download: $(SRC)
 
 $(SRC):
 	@echo "Downloading $(FILES)"
 	@for f in $(FILES); do \
-		if [ ! -f $$f ]; then  echo "Downloading $$f"; $(call download-sf-url, "$(URL)/$$f");  fi \
+		if [ ! -f $$f ]; then $(call download-sf-url, "$(URL)/$$f");  fi \
 	done
 
 mysecond.o: $(SRC)

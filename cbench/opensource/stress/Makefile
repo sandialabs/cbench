@@ -15,17 +15,11 @@ $(EXEC): $(SRC) .patched
 	cd $(SRC) && ./configure
 	$(MAKE) -C $(SRC)
 
-clean: 
-	-$(MAKE) -C $(SRC) clean
-
-distclean:
-	-/bin/rm -rf $(SRC) $(TAR) .patched src
+download: $(TAR)
 
 $(TAR):
-	@echo "Downloading $(TAR)"
 	$(call download-url,$(URL))
 
-download: $(TAR)
 
 $(SRC): $(TAR)
 	@echo "Extracting $(SRC)"
@@ -45,7 +39,11 @@ $(SRC): $(TAR)
         done
 	-touch .patched
 
+clean: 
+	$(MAKE) -C $(SRC) clean
+
+distclean:
+	/bin/rm -rf $(SRC) $(TAR) .patched src
+
 install uninstall:
 	$(do-$@)
-
-

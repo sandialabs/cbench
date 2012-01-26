@@ -10,17 +10,17 @@ INSTALLTARGETS = $(EXECS)
 
 all normal: $(EXECS)
 
-$(EXECS): $(SRC)
-	$(CC) $(CFLAGS) -o simul $(SRC)/simul.c
+download: $(TAR)
+
+$(TAR):
+	$(call download-sf-url,$(URL))
 
 $(SRC): $(TAR)
-	-[ ! -d $(SRC) ] && tar zxf $(TAR)
-	-[ ! -s src ] && ln -sf $(SRC) src
-	@touch $(SRC) src
+	$(call untar-src,$(TAR))
+	ln -sf $(SRC) src
 
-$(TAR) download:
-	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
+$(EXECS): $(SRC)
+	$(CC) $(CFLAGS) -o simul $(SRC)/simul.c
 
 clean:
 	/bin/rm -f simul
