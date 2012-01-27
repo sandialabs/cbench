@@ -10,6 +10,10 @@ INSTALLTARGETS = $(shell ls IOR.*)
 
 all: $(SRC) IOR.posix IOR.mpiio
 
+download: $(TAR)
+
+$(TAR):
+	$(call download-curl-url,$(URL))
 
 IOR.posix:
 	$(MAKE) -C src CC.Linux=$(CC) posix
@@ -29,11 +33,6 @@ $(SRC): $(TAR)
 	mv IOR $(SRC)
 	ln -s $(SRC)/src/C src
 
-$(TAR):
-	@echo "Downloading $(TAR)"
-	$(call download-sf-url,$(URL))
-
-download: $(TAR)
 
 clean:
 	-[ -d $(SRC)/src/C ] && $(MAKE) -C src CC.Linux=$(CC) $@
@@ -44,4 +43,3 @@ distclean: clean
 
 install uninstall:
 	$(do-$@)
-

@@ -20,7 +20,7 @@ all normal: $(SRC)
 	$(MAKE) CC=$(CC) -C src > .make-$(SRC) 2>&1
 
 $(TAR) download:
-	$(call download-sf-url,$(URL))
+	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))

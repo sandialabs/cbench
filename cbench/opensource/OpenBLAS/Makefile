@@ -11,8 +11,7 @@ INSTALLTARGETS = src/OpenBLAS
 default: .make-$(SRC)
 
 $(TAR):
-	@echo "Downloading $(TAR)"
-	$(call download-url,$(URL))
+	$(call download-curl-url,$(URL))
 	mv v0.1alpha2.4 $(TAR)
 
 download: $(TAR)

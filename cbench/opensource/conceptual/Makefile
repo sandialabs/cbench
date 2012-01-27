@@ -10,8 +10,7 @@ default: .make-$(SRC)
 download: $(TAR)
 
 $(TAR):
-	@echo "Downloading $(TAR)"
-	$(call download-sf-url,$(URL))
+	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	@echo "Extracting $(SRC)"

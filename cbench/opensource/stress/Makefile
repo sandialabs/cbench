@@ -10,24 +10,16 @@ EXEC = $(SRC)/src/stress
 INSTALLDIR = $(hwtest_bin_dir)
 INSTALLTARGETS = $(EXEC)
 
-
-$(EXEC): $(SRC) .patched
-	cd $(SRC) && ./configure
-	$(MAKE) -C $(SRC)
+default: $(EXEC)
 
 download: $(TAR)
 
 $(TAR):
-	$(call download-url,$(URL))
+	$(call download-curl-url,$(URL))
 
 
 $(SRC): $(TAR)
-	@echo "Extracting $(SRC)"
-	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
-	else \
-		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
-		exit 1; \
-	fi
+	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
 
 .patched:
@@ -39,11 +31,15 @@ $(SRC): $(TAR)
         done
 	-touch .patched
 
+$(EXEC): $(SRC) .patched
+	cd $(SRC) && ./configure > ../.configure-$(SRC) 2>&1
+	$(MAKE) -C $(SRC) > .make-$(SRC) 2>&1
+
 clean: 
 	$(MAKE) -C $(SRC) clean
 
 distclean:
-	/bin/rm -rf $(SRC) $(TAR) .patched src
+	/bin/rm -rf $(SRC) $(TAR) .patched src .make-$(SRC) .configure-$(SRC)
 
 install uninstall:
 	$(do-$@)

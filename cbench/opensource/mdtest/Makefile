@@ -14,11 +14,10 @@ all normal: $(EXECS)
 $(EXECS): $(SRC)
 	$(MAKE) CC=$(CC) -C $(SRC)
 
-$(TAR):
-	@echo "Downloading $(TAR)"
-	$(call download-sf-url,$(URL))
-
 download: $(TAR)
+
+$(TAR):
+	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	@echo "Extracting $(SRC)"

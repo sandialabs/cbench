@@ -13,7 +13,7 @@ default: all
 download: $(TAR)
 
 $(TAR):
-	$(call download-sf-url,$(URL),$(TAR))
+	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))

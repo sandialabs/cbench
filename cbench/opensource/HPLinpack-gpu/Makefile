@@ -11,7 +11,7 @@ install: $(SRC)
 	$(do-$@)
 
 $(TAR):
-	@if [ ! -e $(TAR) ]; then $(call download-sf-url,$(URL)); fi
+	@if [ ! -e $(TAR) ]; then $(call download-curl-url,$(URL)); fi
 
 $(SRC): $(TAR)
 	-[ ! -d $(SRC) ] && tar jxf $(TAR)

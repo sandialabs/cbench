@@ -29,19 +29,17 @@ endif
 # this is for the second.c implicit rule to get the CC we want
 CC=$(PLAINCC) 
 
-all: $(SRC) second.o .patched
-	$(MAKE) FC=$(PLAINF90) CC=$(PLAINCC) CFLAGS="$(CFLAGS) -DDGEMM -DMXMD16 -DLINUX" \
-		FFLAGS="$(FFLAGS) -DLINUX" LDFLAGS="$(LDFLAGS)" -C src $@
+default: .make-$(SRC)
+
+download: $(TAR)
+
+$(TAR):
+	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
-	[ ! -d $(SRC) ] && tar zxf $(TAR)
-	touch $(SRC)
-	ln -s $(SRC)/matmult src
+	$(call untar-src,$(TAR))
+	ln -sf $(SRC)/matmult src
 	cd src; mv Makefile Makefile.orig;ln -s ../../Makefile.cbench Makefile
-
-$(TAR) download:
-	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
 
 .patched:
 	for patch in *.patch ; do \
@@ -51,6 +49,10 @@ $(TAR) download:
            cd - ; \
         done
 	-touch .patched
+
+.make-$(SRC): $(SRC) second.o .patched
+	$(MAKE) FC=$(PLAINF90) CC=$(PLAINCC) CFLAGS="$(CFLAGS) -DDGEMM -DMXMD16 -DLINUX" \
+		FFLAGS="$(FFLAGS) -DLINUX" LDFLAGS="$(LDFLAGS)" -C src $@
 
 clean:
 	[ -d $(SRC) ] && $(MAKE) -C src clean

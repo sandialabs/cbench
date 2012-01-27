@@ -20,7 +20,7 @@ default: $(EXEC)
 download: $(TAR)
 
 $(TAR):
-	$(call download-sf-url,$(URL))
+	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	$(call untar-src, $(TAR))

@@ -67,7 +67,7 @@ $(SRC): $(TAR)
 	ln -sf $(SRC) src
 
 $(TAR):
-	$(call download-url,$(URL))
+	$(call download-curl-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
 download: $(TAR)

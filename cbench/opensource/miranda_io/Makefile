@@ -13,6 +13,12 @@ all normal: $(EXECS)
 $(EXECS): $(SRC)
 	$(F90) $(FFLAGS) -o miranda_io $(SRC)/miranda_io.f90
 
+download: $(TAR)
+
+$(TAR) download:
+	$(call download-curl-url,$(URL))
+	-[ -e $(TAR) ] && touch $(TAR)
+
 $(SRC): $(TAR)
 	-[ ! -d $(SRC) ] && tar zxf $(TAR)
 	-[ ! -s src ] && ln -sf $(SRC) src
@@ -20,9 +26,6 @@ $(SRC): $(TAR)
 	patch -p0 < swl.patch
 	@touch $(SRC) src
 
-$(TAR) download:
-	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
 	/bin/rm -f $(EXECS)

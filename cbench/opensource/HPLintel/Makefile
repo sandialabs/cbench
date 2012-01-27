@@ -57,8 +57,7 @@ local: linpack
 	/bin/mv -f $(HPL2)/src/bin/cbench/xhplintel $(HPL2)/src/bin/cbench/xhplintel.$(MPICH_CH)
 
 $(TAR):
-	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
+	$(call download-curl-url,$(URL))
 
 extractnodeperf: $(SRC)
 

@@ -2,7 +2,7 @@ include ../../make.def
 
 SRC=streams
 FILES = stream.c mysecond.c stream.f stream.c.5.10
-URL="http://www.cs.virginia.edu/stream/FTP/Code"
+URL=http://www.cs.virginia.edu/stream/FTP/Code
 
 EXEC = $(SRC)/src/stress
 INSTALLDIR = $(hwtest_bin_dir)
@@ -15,7 +15,10 @@ download: $(SRC)
 $(SRC):
 	@echo "Downloading $(FILES)"
 	@for f in $(FILES); do \
-		if [ ! -f $$f ]; then $(call download-sf-url, "$(URL)/$$f");  fi \
+		if [ ! -f $$f ]; then \
+			echo $(URL)/$$f; \
+			$(call download-curl-url, $(URL)/$$f); \
+		 fi; \
 	done
 
 mysecond.o: $(SRC)

@@ -14,7 +14,7 @@ default: .make-$(SRC)
 download: $(TAR)
 
 $(TAR):
-	$(call download-sf-url,$(URL))
+	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	$(call untart-src,$(TAR))

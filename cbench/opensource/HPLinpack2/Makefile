@@ -51,11 +51,10 @@ xerbla:
 local: linpack
 	/bin/mv -f $(HPL2)/src/bin/cbench/xhpl2 $(HPL2)/src/bin/cbench/xhpl2.$(MPICH_CH)
 
-$(TAR):
-	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
-
 download: $(TAR)
+
+$(TAR):
+	$(call download-curl-url,$(URL))
 
 clean:
 	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean_arch_all arch=cbench

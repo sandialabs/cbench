@@ -9,24 +9,24 @@ EXECS = $(addprefix src/, cachec.Opt cachedot.Opt cache.Opt strid3c.Opt strid3.O
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
-normal: $(SRC)
-	$(MAKE) -C src -f Makefile.cbench
-
-$(SRC): $(TAR)
-	-[ ! -d $(SRC) ] && tar zxf $(TAR)
-	ln -sf $(SRC)/src src
-	cd src && ln -sf ../../Makefile.cbench
-	$(MAKE) -C src -f Makefile.cbench clean
+default: .make-$(SRC)
 
 $(TAR) download:
-	$(call download-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
+	$(call download-curl-url,$(URL))
+
+$(SRC): $(TAR)
+	$(call untar-src,$(TAR))
+	ln -sf $(SRC)/src src
+	cd src && ln -sf ../../Makefile.cbench
+
+.make-$(SRC): $(SRC)
+	$(MAKE) -C src -f Makefile.cbench > .make-$(SRC) 2>&1
 
 clean:
 	[ -d $(SRC) ] && $(MAKE) -C src -f Makefile.cbench clean || :
 
 distclean:
-	/bin/rm -rf $(SRC) $(SRCDIR) $(TAR) src
+	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)
 
 install uninstall:
 	$(do-$@)
