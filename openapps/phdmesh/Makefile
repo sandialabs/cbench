@@ -27,7 +27,7 @@ $(SRC): $(TAR)
 	patch -p0 < test_mesh_big.patch
 
 $(TAR) download:
-	$(call download-url,$(URL))
+	$(call download-wget-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:

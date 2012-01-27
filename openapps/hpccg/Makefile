@@ -19,7 +19,7 @@ $(SRC): $(TAR)
 	ln -sf $(SRC) src
 
 $(TAR) download:
-	$(call download-url,$(URL))
+	$(call download-wget-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:

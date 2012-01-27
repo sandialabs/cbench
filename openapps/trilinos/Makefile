@@ -37,11 +37,11 @@ $(SRC): $(TAR) $(BENCH_TAR)
 	cd $(SRC) && mkdir EPETRA_MPI_OPT && cd EPETRA_MPI_OPT && tar zxf ../../$(BENCH_TAR)
 
 $(TAR):
-	$(call download-url,$(URL))
+	$(call download-wget-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
 $(BENCH_TAR):
-	$(call download-url,$(BENCH_URL))
+	$(call download-wget-url,$(BENCH_URL))
 	-[ -e $(BENCH_TAR) ] && touch $(BENCH_TAR)
 
 download: $(TAR) $(BENCH_TAR)

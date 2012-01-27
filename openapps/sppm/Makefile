@@ -24,7 +24,7 @@ $(SRC) src: $(TAR)
 	touch $(SRC)
 
 $(TAR) download:
-	$(call download-url,$(URL))
+	$(call download-wget-url,$(URL))
 	-[ -e $(TAR) ] && touch $(TAR)
 
 clean:
