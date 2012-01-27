@@ -28,7 +28,7 @@ $(SRC): $(TAR)
 
 .make-$(SRC): .configure-$(SRC)
 	@echo "Compiling $(SRC)"
-	make -C src CC=$(PLAINCC) > .make-$(SRC) 2>&1
+	$(MAKE) -C src CC=$(PLAINCC) > .make-$(SRC) 2>&1
 	@touch $@
 
 clean:
@@ -40,7 +40,7 @@ distclean:
 
 install: .make-$(SRC)
 	@echo "Installing $(SRC)"
-	@make -C src install >> .make-$(SRC) 2>&1
+	@$(MAKE) -C src install >> .make-$(SRC) 2>&1
 	@for progs in dshbak  pdcp  pdsh  rpdcp; do \
 		ln -sf $(CBENCHTEST)/$(SRC)/bin/$$progs $(CBENCHTEST)/sbin/$$progs; \
 	done

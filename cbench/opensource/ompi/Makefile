@@ -11,30 +11,31 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
+	@touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
+	@touch $@
 
 # from ompi 1.4.X&& export CC=$(PLAINCC) && F77=$(PLAINF77) && FC=$(PLAINF77) && CXX=$(PLAINCXX) && \ 
 #	 ./configure --enable-orterun-prefix-by-default --enable-mpi-threads --prefix=$(BENCH_TEST)/openmpi > ../.configure-$(SRC) 2>&1)
 .configure-$(SRC): $(SRC)
 	@echo "Configuring $(SRC)"
 	(cd src && export CC=$(PLAINCC) && export F77=$(PLAINF77) && export FC=$(PLAINF77) && export CXX=$(PLAINCXX) && ./configure --enable-orterun-prefix-by-default --with-threads=posix --enable-mpi-thread-multiple --enable-opal-multi-threads --prefix=$(CBENCHTEST)/openmpi > ../.configure-$(SRC) 2>&1)
-	@touch $@
-
+	touch $@
 
 .make-$(SRC): .configure-$(SRC)
 	@echo "Compiling $(SRC)"
-	cd src && make -j 3 > ../.make-$(SRC) 2>&1
+	$(MAKE) -C src -j 3 > .make-$(SRC) 2>&1
 	@touch $@
 
 install: .make-$(SRC)
 	@echo "Installing $(SRC)"
-	cd src && make PREFIX=$(CBENCHTEST)/openmpi install >> ../.make-$(SRC) 2>&1
+	$(MAKE) -C src PREFIX=$(CBENCHTEST)/openmpi install >> .make-$(SRC) 2>&1
 
 clean:
-	@if [ -f src/Makefile ] ; then $(MAKE) -C src clean; fi
+	$(MAKE) -C src clean > .make-$(SRC) 2>&1
 	rm -f .make-$(SRC) .configure-$(SRC)
 
 distclean:
