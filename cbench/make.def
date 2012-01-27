@@ -634,7 +634,7 @@ define do-install-shoc
 endef
 
 # downlad a url with wget
-define download-url
+define download-wget-url
 	@file=`basename $1`; url=`dirname $1`; \
 	for path in $$url http://cbench.sourceforge.net/common/tarballs https://synapse.sandia.gov/static/tarballs; do \
 	   [ -f $$file ] && break; \
@@ -644,9 +644,13 @@ endef
 
 # downlad a url with curl
 # works great for redirected sites like sf $1 is the sf download url
-define download-sf-url
-	@echo "Downloading: $1"
-	@curl --connect-timeout 10 --retry 2 -L -O $1 
+define download-curl-url
+	@file=`basename $1`; url=`dirname $1`; \
+	for path in $$url http://cbench.sourceforge.net/common/tarballs https://synapse.sandia.gov/static/tarballs; do \
+		[ -f $$file ] && break; \
+		echo "Downloading: $$path/$$file"; \
+		curl -k --connect-timeout 10 --retry 2 -L -O $$path/$$file; \
+	done
 endef
 
 # common routing to unpack tgz/bzip
