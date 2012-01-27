@@ -62,15 +62,15 @@ make.def: $(SRC)
 	[ -d $(HPL) ] && cd $(HPL) && ln -sf $(CBENCHOME)/make.def .
 	[ -d $(SRC) ] && cd $(SRC); ln -sf $(CBENCHOME)/make.def
 
-$(SRC): $(TAR)
-	[ ! -d $(SRC) ] && tar zxf $(TAR) && rm -f .patched .debugpatched
-	ln -sf $(SRC) src
+download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
 
-download: $(TAR)
+$(SRC): $(TAR)
+	$(call untar-src,$(TAR))
+	rm -f .patched .debugpatched
+	ln -sf $(SRC) src
 
 .patched:
 	for patch in *.patch ; do \

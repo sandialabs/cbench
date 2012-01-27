@@ -23,7 +23,7 @@ $(TAR):
 	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
-	$(call untar-src, $(TAR))
+	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
 
 $(EXEC): $(SRC)

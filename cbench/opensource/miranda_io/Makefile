@@ -17,15 +17,12 @@ download: $(TAR)
 
 $(TAR) download:
 	$(call download-curl-url,$(URL))
-	-[ -e $(TAR) ] && touch $(TAR)
 
 $(SRC): $(TAR)
-	-[ ! -d $(SRC) ] && tar zxf $(TAR)
-	-[ ! -s src ] && ln -sf $(SRC) src
+	$(call untar-src,$(TAR))
+	ln -sf $(SRC) src
 	patch -p0 < fix-compile.patch
 	patch -p0 < swl.patch
-	@touch $(SRC) src
-
 
 clean:
 	/bin/rm -f $(EXECS)

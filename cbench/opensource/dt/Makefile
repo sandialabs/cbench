@@ -16,7 +16,7 @@ $(TAR):
 	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
-	$(call untar-src, $(TAR))
+	$(call untar-src,$(TAR))
 	mv dt.d-WIP $(SRC)
 	ln -sf $(SRC) src
 

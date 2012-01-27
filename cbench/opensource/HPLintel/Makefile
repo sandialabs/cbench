@@ -36,16 +36,15 @@ linpack: $(SRC) xerbla
 	$(MAKE) -C $(UNTARSRC)/benchmarks/mp_linpack arch=cbench
 	[ -e src/bin/cbench/xhpl ] && /bin/mv src/bin/cbench/xhpl src/bin/cbench/xhplintel
 
+download: $(TAR)
+
+$(TAR):
+	$(call download-curl-url,$(URL))
+
 $(SRC): $(TAR)
-	@echo "Extracting $(SRC)"
-	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
-	else \
-		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
-		exit 1; \
-	fi
+	$(call untar-src,$(TAR))
 	ln -sf $(UNTARSRC)/benchmarks/mp_linpack src
 	ln -sf $(HPL2)/Make.cbench $(HPL2)/$(UNTARSRC)/benchmarks/mp_linpack/Make.cbench
-	touch $(UNTARSRC)
 
 xerbla: 
 	$(CC) $(OPTFLAGS) -c xerbla.c
@@ -56,8 +55,6 @@ xerbla:
 local: linpack
 	/bin/mv -f $(HPL2)/src/bin/cbench/xhplintel $(HPL2)/src/bin/cbench/xhplintel.$(MPICH_CH)
 
-$(TAR):
-	$(call download-curl-url,$(URL))
 
 extractnodeperf: $(SRC)
 

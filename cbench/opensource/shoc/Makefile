@@ -65,7 +65,7 @@ all: $(SRC)
 	$(ENV_SETUP) $(MAKE) -C $(SRC)
 
 $(TAR):
-	$(call download-url,$(URL))
+	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))

@@ -36,11 +36,15 @@ linpack: $(SRC) xerbla
 	$(MAKE) -C $(SRC) arch=cbench
 	[ -e src/bin/cbench/xhpl ] && /bin/mv src/bin/cbench/xhpl src/bin/cbench/xhpl2
 
+download: $(TAR)
+
+$(TAR):
+	$(call download-curl-url,$(URL))
+
 $(SRC): $(TAR)
-	-[ ! -d $(SRC) ] && tar xzf $(TAR)
+	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
 	ln -sf $(HPL2)/Make.cbench $(HPL2)/$(SRC)/Make.cbench
-	touch $(SRC)
 
 xerbla: 
 	$(CC) $(OPTFLAGS) -c xerbla.c
@@ -50,11 +54,6 @@ xerbla:
 # hpl that will run just on a single node.
 local: linpack
 	/bin/mv -f $(HPL2)/src/bin/cbench/xhpl2 $(HPL2)/src/bin/cbench/xhpl2.$(MPICH_CH)
-
-download: $(TAR)
-
-$(TAR):
-	$(call download-curl-url,$(URL))
 
 clean:
 	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean_arch_all arch=cbench

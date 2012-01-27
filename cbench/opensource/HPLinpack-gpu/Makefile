@@ -11,13 +11,12 @@ install: $(SRC)
 	$(do-$@)
 
 $(TAR):
-	@if [ ! -e $(TAR) ]; then $(call download-curl-url,$(URL)); fi
+	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
-	-[ ! -d $(SRC) ] && tar jxf $(TAR)
+	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
 	ln -sf $(HPLGPU)/Make.cbench $(HPLGPU)/$(SRC)/Make.cbench
-	touch $(SRC)
 
 linpack: $(SRC)
 	$(MAKE) -C $(SRC) arch=cbench

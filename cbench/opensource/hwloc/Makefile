@@ -11,19 +11,13 @@ INSTALLTARGETS = $(EXECS)
 
 default: all
 
-$(TAR):
-	@echo "Downloading $(TAR)"
-	$(call download-url,$(URL))
-
 download: $(TAR)
 
+$(TAR):
+	$(call download-curl-url,$(URL))
+
 $(SRC): $(TAR)
-	@echo "Extracting $(SRC)"
-	@if [ -f $(TAR) ] ; then tar -xjf $(TAR); \
-	else \
-		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
-		exit 1; \
-	fi
+	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
 
 all: $(SRC) src/Makefile

@@ -10,10 +10,10 @@ INSTALLTARGETS = src/OpenBLAS
 
 default: .make-$(SRC)
 
-$(TAR):
-	$(call download-url,$(URL))
-
 download: $(TAR)
+
+$(TAR):
+	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
@@ -33,11 +33,7 @@ install: .make-$(SRC)
 	cp -a src/libgoto* $(CBENCHTEST)/$(SRC) 
 
 distclean: 
-	@if [ -f .make-$(SRC) ]; then rm -f .make-$(SRC) ; fi
-	@if [ -f ._$(SRC) ]; then rm -f ._$(SRC) ; fi
-	@if [ -d $(SRC) ]; then rm -rf $(SRC) ; fi
-	@if [ -f $(TAR) ]; then rm -f $(TAR) ; fi
-	-/bin/rm -f src
+	/bin/rm -fr src .make-$(SRC) ._$(SRC) $(SRC) $(TAR)
 
 clean:
 	$(MAKE) -C src clean

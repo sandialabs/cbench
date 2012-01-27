@@ -15,6 +15,11 @@ download: $(TAR)
 $(TAR):
 	$(call download-curl-url,$(URL))
 
+$(SRC): $(TAR)
+	$(call untar-src,$(TAR))
+	mv IOR $(SRC)
+	ln -s $(SRC)/src/C src
+
 IOR.posix:
 	$(MAKE) -C src CC.Linux=$(CC) posix
 	/bin/cp -f src/IOR $@
@@ -22,17 +27,6 @@ IOR.posix:
 IOR.mpiio:
 	$(MAKE) -C src CC.Linux=$(CC) mpiio
 	/bin/cp -f src/IOR $@
-
-$(SRC): $(TAR)
-	@echo "Extracting $(SRC)"
-	@if [ -f $(TAR) ] ; then tar -zxf $(TAR); \
-	else \
-		echo "$(TAR) not found, download manually or set http_proxy env variable?"; \
-		exit 1; \
-	fi
-	mv IOR $(SRC)
-	ln -s $(SRC)/src/C src
-
 
 clean:
 	-[ -d $(SRC)/src/C ] && $(MAKE) -C src CC.Linux=$(CC) $@
