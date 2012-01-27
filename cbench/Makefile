@@ -39,6 +39,8 @@ OPEN_TESTS = b_eff mpi_latency mpi_hello mpi_hello_ordered mpi_overhead \
              mpi_malloc mpi_tokensmash phloem HPLinpack2 \
              fdtree simul mdtest miranda_io graph500 hwloc
 
+OPEN_APP_TESTS = amg hpccg irs phdmesh sppm sweep3d trilinos
+
 OPENEXTRAS_TESTS = NPB hpcc
 
 GPU_TESTS = shoc HPLinpack-gpu
@@ -84,6 +86,25 @@ hwtest: $(HWTEST_SUBDIRS)
 nodehwtest: hwtest standalone standaloneinstall
 	$(MAKE) -C opensource/NPB serial
 	$(call do-hwtest-subdirs,install)
+
+#
+# BEGIN OPENAPPS
+#
+openapps_download:
+	for OAPP in $(OPEN_APP_TESTS); do \
+		[ -d openapps/$$OAPP ] && $(MAKE) -C openapps/$$OAPP download; \
+	done;
+openapps_compile: openapps_download
+	for OAPP in $(OPEN_APP_TESTS); do \
+		[ -d openapps/$$OAPP ] && $(MAKE) -C openapps/$$OAPP; \
+	done;
+openapps_install: openapps_compile
+	for OAPP in $(OPEN_APP_TESTS); do \
+		[ -d openapps/$$OAPP ] && $(MAKE) -C openapps/$$OAPP install; \
+	done;
+#
+# END OPENAPPS
+#
 
 #
 # BEGIN STANDALONE 
