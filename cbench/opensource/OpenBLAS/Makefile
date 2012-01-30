@@ -13,6 +13,7 @@ default: .make-$(SRC)
 $(TAR):
 	$(call download-curl-url,$(URL))
 	mv v0.1alpha2.4 $(TAR)
+	@touch $@
 
 download: $(TAR)
 
@@ -20,6 +21,7 @@ $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	mv xianyi-OpenBLAS-92ba8a7 $(SRC)
 	ln -sf $(SRC) src
+	@touch $@
 
 
 .make-$(SRC): $(SRC)
@@ -31,15 +33,17 @@ $(SRC): $(TAR)
 		exit 1;	\
 	fi
 
-install: .make-$(SRC)
-	@echo "Installing $(SRC)"
-	mkdir -p $(CBENCHTEST)/$(SRC)
-	cd src && make PREFIX=$(CBENCHTEST)/$(SRC) install >> ../.make-$(SRC) 2>&1
-	cd $(CBENCHTEST) && ln -sf $(SRC) OpenBLAS
-
 distclean: 
 	rm -fr .make-$(SRC) ._$(SRC) $(SRC) src $(TAR)
 
 clean:
 	rm -fr .make-$(SRC) ._$(SRC) $(SRC) src
 
+.install-$(SRC): .make-$(SRC)
+	@echo "Installing $(SRC)"
+	mkdir -p $(CBENCHTEST)/$(SRC)
+	cd src && make PREFIX=$(CBENCHTEST)/$(SRC) install >> ../.make-$(SRC) 2>&1
+	cd $(CBENCHTEST) && ln -sf $(SRC) OpenBLAS
+	@touch $@
+
+install: .install-$(SRC)
