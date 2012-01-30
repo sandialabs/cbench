@@ -19,6 +19,8 @@ ifeq ($(COMPILER),pgi)
   EXECS += stream-pgi-c stream-pgi2-c stream-pgi-f stream-pgi2-f stream-pgi3-f stream-pgi-openmp-f stream-pgi2-openmp-f stream-pgi3-openmp-f stream-pgi-openmp-c stream-pgi2-openmp-c stream-pgi3-openmp-c stream-pgi4-openmp-c stream-pgi4-openmp-f
 endif
 
+default: all
+
 MPICH_CH = ch_shmem
 ifeq ($(CBENCH_STANDALONE),yes)
   $(warning ================ STANDALONE MPI COMPILE)
