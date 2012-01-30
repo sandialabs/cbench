@@ -9,7 +9,7 @@ EXECS = lat_mem_rd
 INSTALLDIR = $(hwtest_bin_dir)
 INSTALLTARGETS = src/bin/x86_64-linux-gnu/$(EXECS)
 
-default: all
+default: .make-$(SRC)
 
 download: $(TAR)
 
@@ -21,14 +21,16 @@ $(SRC): $(TAR)
 	ln -sf $(SRC) src
 	patch -p1 -d src < lmbench3.cbench.patch
 
-all: $(SRC)
-	$(MAKE) CC=$(CC) CFLAGS='$(CFLAGS)' -C src
+.make-$(SRC): $(SRC)
+	$(MAKE) CC=$(CC) CFLAGS='$(CFLAGS)' -C src > .make-$(SRC) 2>&1
+	@touch $@
 
 clean:
-	$(MAKE) -C src clean
+	$(MAKE) -C src clean >> .make-$(SRC) 2>&1
+	rm -f .make-$(SRC)
 
 distclean:
-	-/bin/rm -rf $(SRC) $(TAR) src
+	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)
 
 install uninstall:
 	$(do-$@)
