@@ -26,10 +26,12 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
+	touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
+	touch $@
 
 src/Makefile: $(SRC)
 	echo ${COMPILERCOLLECTION} > src/.config

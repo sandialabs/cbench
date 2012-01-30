@@ -15,11 +15,13 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
+	@touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
 	patch -p1 -d src < lmbench3.cbench.patch
+	@touch $@
 
 .make-$(SRC): $(SRC)
 	$(MAKE) CC=$(CC) CFLAGS='$(CFLAGS)' -C src > .make-$(SRC) 2>&1
@@ -32,6 +34,6 @@ clean:
 distclean:
 	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)
 
-install uninstall:
+install uninstall: default
 	$(do-$@)
 

@@ -47,3 +47,8 @@ clean:
 	@touch $@
 
 install: .install-$(SRC)
+
+reinstall: clean_install install
+
+clean_install:
+	rm -f .install-$(SRC)

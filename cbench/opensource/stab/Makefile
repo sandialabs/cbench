@@ -9,6 +9,8 @@ INSTALLTARGETS = $(EXECS)
 
 default: .patched
 
+download:
+
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
@@ -27,7 +29,6 @@ $(SRC): $(TAR)
 clean distclean:
 	/bin/rm -rf $(SRC) .patched src
 
-install uninstall:
+install uninstall: default
 	$(do-$@)
 
-download:

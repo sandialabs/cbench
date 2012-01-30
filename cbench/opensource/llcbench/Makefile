@@ -35,6 +35,6 @@ clean:
 distclean:
 	/bin/rm -rf $(SRC) $(TAR) .patched src
 
-install uninstall:
+install uninstall: default
 	$(do-$@)
 

@@ -7,7 +7,7 @@ OBJS = fpck.o meminfo.o
 INSTALLDIR = $(hwtest_bin_dir)
 INSTALLTARGETS = $(EXEC)
 
-all: shared
+default: shared
 
 download:
 
@@ -28,5 +28,5 @@ clean:
 
 distclean: clean
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

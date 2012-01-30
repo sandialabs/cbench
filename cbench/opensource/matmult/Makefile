@@ -65,5 +65,5 @@ clean:
 distclean:
 	/bin/rm -rf $(SRC) $(TAR) src second.o .patched .make-$(SRC)
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

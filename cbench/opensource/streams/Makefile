@@ -132,5 +132,5 @@ clean:
 
 distclean: clean
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

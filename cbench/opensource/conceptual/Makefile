@@ -11,10 +11,12 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
+	touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
+	touch $@
 
 .configure-$(SRC): $(SRC)
 	@echo "Configuring $(SRC)"
@@ -23,11 +25,11 @@ $(SRC): $(TAR)
 
 .make-$(SRC): .configure-$(SRC)
 	@echo "Compiling $(SRC)"
-	cd src && make > ../.make-$(SRC) 2>&1
+	$(MAKE) -C src > .make-$(SRC) 2>&1; touch .configure-$(SRC)
 	@touch $@
 
 clean:
-	@if [ -f src/Makefile ] ; then $(MAKE) -C src clean; fi
+	@if [ -f src/Makefile ] ; then $(MAKE) -C src clean > .make-$(SRC) 2>&1; fi
 	rm -f .make-$(SRC) .configure-$(SRC)
 
 distclean:

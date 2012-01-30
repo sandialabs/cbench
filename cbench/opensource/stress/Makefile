@@ -52,5 +52,5 @@ clean:
 distclean:
 	/bin/rm -rf $(SRC) $(TAR) .patched src .make-$(SRC) .configure-$(SRC)
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

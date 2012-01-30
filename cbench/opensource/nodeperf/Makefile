@@ -62,5 +62,5 @@ clean:
 distclean: clean
 	rm -f nodeperf.c nodeperf2.c nodeperf2.c.orig
 
-install uninstall:
+install uninstall: default
 	$(do-$@)
