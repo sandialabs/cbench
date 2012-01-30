@@ -16,27 +16,38 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
-
+	@touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	ln -sf $(SRC) src
+	@touch $@
 
 .patched:
-	for patch in *.patch ; do \
-           cd $(SRC); \
-           echo "Applying patch [ $$patch ]"; \
-           patch -p1 <../$$patch; \
-           cd - ; \
+	@for patch in *.patch ; do \
+		[ ! -f $$patch ] && break; \
+		cd $(SRC); \
+		echo "Applying patch [ $$patch ]"; \
+		patch -p1 <../$$patch; \
+		cd - ; \
         done
-	-touch .patched
+	@touch $@
 
-$(EXEC): $(SRC) .patched
+.configure-$(SRC): $(SRC) .patched
+	@echo "Configuring: $(SRC)"
 	cd $(SRC) && ./configure > ../.configure-$(SRC) 2>&1
+	@touch $@
+
+$(EXEC): .make-$(SRC)
+
+.make-$(SRC): .configure-$(SRC)
+	@echo "Compiling: $(SRC)"
 	$(MAKE) -C $(SRC) > .make-$(SRC) 2>&1
+	@touch $@
 
 clean: 
-	$(MAKE) -C $(SRC) clean
+	$(MAKE) -C $(SRC) clean > .make-$(SRC) 2>&1
+	rm -f .make-$(SRC)
 
 distclean:
 	/bin/rm -rf $(SRC) $(TAR) .patched src .make-$(SRC) .configure-$(SRC)
