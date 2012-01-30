@@ -36,6 +36,7 @@ BEGIN {
 	die "Please define CBENCHOME!\n" if !defined($ENV{CBENCHOME});
 }
 use lib $ENV{CBENCHOME};
+use lib "/home/rkbrait/perl5/lib64/perl5";
 require "cbench.pl";
 $CBENCHOME = $BENCH_HOME = $ENV{CBENCHOME};
 
@@ -47,10 +48,9 @@ detect_color_support();
 
 use Getopt::Long;
 use Data::Dumper;
-use Statistics::Descriptive;
 use File::stat;
 use Term::ANSIColor qw(:constants color);
-use Algorithm::KMeans;
+use Statistics::Descriptive;
 $Term::ANSIColor::AUTORESET = 1;
 
 GetOptions(
@@ -93,7 +93,10 @@ my $binpath = "$bench_test/$bindir";
 
 my $hn = `/bin/hostname`;
 chomp $hn;
-(defined $report and defined $node) and $hn = $node;
+if (defined $report and defined $node) {
+    $hn = $node;
+}
+
 
 # When we use other Cbench testsets we will create unique test identifiers
 # in each testset for whatever we are doing. This is the basename for those
@@ -781,6 +784,7 @@ if ($report) {
     # we can use it properly.
     my $modname = "hw_test::numa_mem";
     eval "require($modname)";
+    require Algorithm::KMeans;
     if ($@ =~ /Can't locate hw_test/) {
         print "numa_mem test module not supported.  ($modname not found)\n";
     } elsif ($@) {
@@ -2006,7 +2010,7 @@ sub usage {
     " General Cbench Options:\n" .
     "   --tests <regex>     Run only tests whose test name is included in the\n".
     "                       provided regex string. For example:\n".
-    "                         --tests 'stream|cachebench|linpack'\n".
+    "                         --tests 'stream|cachebench|linpack|numa-mem|numa-gpu'\n".
     "   --ident <string>    Identifier for the test group\n" .
     "   --binident <string> Identifier for the set of binaries to use.\n" .
     "                       Maps to $CBENCHTEST/<binident> .\n".
