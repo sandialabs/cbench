@@ -8,24 +8,27 @@ URL="http://sourceforge.net/projects/va-ctcs/files/va-ctcs/$(VERSION)/$(TAR)"
 INSTALLDIR = $(hwtest_bin_dir)
 INSTALLTARGETS = src/runin/memtst
 
-default: all
+default: .make-$(SRC)
 
 download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
+	@touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	mv ctcs-1.3.1pre1 $(SRC)
-	ln -sf $(SRC) src
+	ln -sf src.old src
+	@touch $@
 
-all: $(SRC)
-	$(MAKE) -C src CC=$(PLAINCC) CLINKER='$(PLAINCC) $(LDFLAGS)' CFLAGS='$(CFLAGS)' MEMTST_CFLAGS='$(CFLAGS) $(NOUNROLL_FLAGS)' $@
+.make-$(SRC): $(SRC)
+	$(MAKE) -C src CC=$(PLAINCC) CLINKER='$(PLAINCC) $(LDFLAGS)' CFLAGS='$(CFLAGS)' MEMTST_CFLAGS='$(CFLAGS) $(NOUNROLL_FLAGS)' all > .make-$(SRC) 2>&1
+	@touch $@
 
 clean:
-	$(MAKE) -C src dist-clean
-	/bin/rm -rf src/runin/bin
+	$(MAKE) -C src dist-clean > .make-$(SRC) 2>&1
+	/bin/rm -rf src/runin/bin .make-$(SRC)
 
 distclean:
 	rm -fr $(SRC) $(TAR) src
