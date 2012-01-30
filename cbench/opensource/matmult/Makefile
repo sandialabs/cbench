@@ -29,37 +29,41 @@ endif
 # this is for the second.c implicit rule to get the CC we want
 CC=$(PLAINCC) 
 
-default: .make-$(SRC)
+default: $(EXECS)
+
+$(EXECS): .make-$(SRC)
 
 download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
+	@touch $(TAR)
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	ln -sf $(SRC)/matmult src
 	cd src; mv Makefile Makefile.orig;ln -s ../../Makefile.cbench Makefile
+	@touch $(SRC)
 
 .patched:
-	for patch in *.patch ; do \
+	@[ ! -f .patched ] && for patch in *.patch ; do \
            cd $(SRC); \
            echo "Applying patch [ $$patch ]"; \
            patch -p1 <../$$patch; \
            cd - ; \
         done
-	-touch .patched
+	@touch .patched
 
-.make-$(SRC): $(SRC) second.o .patched
+.make-$(SRC): $(SRC) .patched second.o
 	$(MAKE) FC=$(PLAINF90) CC=$(PLAINCC) CFLAGS="$(CFLAGS) -DDGEMM -DMXMD16 -DLINUX" \
-		FFLAGS="$(FFLAGS) -DLINUX" LDFLAGS="$(LDFLAGS)" -C src $@
+		FFLAGS="$(FFLAGS) -DLINUX" LDFLAGS="$(LDFLAGS)" -C src > .make-$(SRC) 2>&1
 
 clean:
-	[ -d $(SRC) ] && $(MAKE) -C src clean
-	/bin/rm -f second.o 
+	[ -d $(SRC) ] && $(MAKE) -C src clean > .make-$(SRC) 2>&1
+	/bin/rm -f second.o .make-$(SRC)
 
 distclean:
-	/bin/rm -rf $(SRC) $(TAR) src second.o .patched
+	/bin/rm -rf $(SRC) $(TAR) src second.o .patched .make-$(SRC)
 
 install uninstall:
 	$(do-$@)
