@@ -130,6 +130,11 @@ cbench_standalone_sysprogs_install:
 	$(MAKE) -C opensource/pdsh install
 	$(MAKE) -C opensource/ompi install
 	$(MAKE) -C opensource/OpenBLAS install
+cbench_standalone_sysprogs_reinstall:
+	@sbin/install_cbenchtest --testtop
+	$(MAKE) -C opensource/pdsh reinstall
+	$(MAKE) -C opensource/ompi reinstall
+	$(MAKE) -C opensource/OpenBLAS reinstall
 
 cbench_standalone_hwtestdirs_distclean: 
 	$(call do-hwtest-subdirs,distclean)

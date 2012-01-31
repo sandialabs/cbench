@@ -639,6 +639,7 @@ define download-wget-url
 	for path in $$url http://cbench.sourceforge.net/common/tarballs https://synapse.sandia.gov/static/tarballs; do \
 	   [ -f $$file ] && break; \
 	   wget --connect-timeout=10 --tries=2 --no-check-certificate $$path/$$file; \
+	   [ -f $$f ] && touch $$f ; \
 	done
 endef
 
@@ -650,6 +651,7 @@ define download-curl-url
 		[ -f $$file ] && break; \
 		echo "Downloading: $$path/$$file"; \
 		curl -k --connect-timeout 10 --retry 2 -L -O $$path/$$file; \
+		[ -f $$f ] && touch $$f ; \
 	done
 endef
 
