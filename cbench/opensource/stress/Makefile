@@ -6,7 +6,7 @@ SRC=stress-$(VERSION)
 TAR=$(SRC).tar.gz
 URL="http://weather.ou.edu/~apw/projects/stress/$(TAR)"
 
-EXEC = $(SRC)/src/stress
+EXEC=src/src/stress
 INSTALLDIR = $(hwtest_bin_dir)
 INSTALLTARGETS = $(EXEC)
 
@@ -22,34 +22,22 @@ $(SRC): $(TAR)
 	ln -sf $@ src
 	@[ -d $@ ] && touch $@
 
-.patched:
-	@for patch in *.patch ; do \
-		[ ! -f $$patch ] && break; \
-		cd $(SRC); \
-		echo "Applying patch [ $$patch ]"; \
-		patch -p1 <../$$patch; \
-		cd - ; \
-        done
-	@touch $@
-
-.configure-$(SRC): $(SRC) .patched
+.configure-$(SRC): $(SRC) 
 	@echo "Configuring: $(SRC)"
-	cd $(SRC) && ./configure > ../.configure-$(SRC) 2>&1
+	cd src && ./configure > ../.configure-$(SRC) 2>&1
 	@touch $@
 
-$(EXEC): .make-$(SRC)
-
-.make-$(SRC): .configure-$(SRC)
+$(EXEC) .make-$(SRC): .configure-$(SRC)
 	@echo "Compiling: $(SRC)"
-	$(MAKE) -C $(SRC) > .make-$(SRC) 2>&1
+	$(MAKE) -C src > .make-$(SRC) 2>&1
 	@touch $@
 
 clean: 
-	$(MAKE) -C $(SRC) clean > .make-$(SRC) 2>&1
+	$(MAKE) -C src clean > .make-$(SRC) 2>&1
 	rm -f .make-$(SRC)
 
 distclean:
-	/bin/rm -rf $(SRC) $(TAR) .patched src .make-$(SRC) .configure-$(SRC)
+	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC) .configure-$(SRC)
 
 install uninstall: default
 	$(do-$@)
