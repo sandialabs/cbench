@@ -19,7 +19,7 @@ clean:
 	$(MAKE) -C src -f make_cbench $@ > .make-$(SRC) 2>&1
 	rm -f src/make_cbench .make-$(SRC)
 
-distclean: clean .make-$(SRC)
+distclean: clean 
 
 install uninstall:
 	$(do-$@)

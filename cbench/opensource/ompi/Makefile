@@ -35,7 +35,7 @@ clean: .configure-$(SRC)
 	rm -f .make-$(SRC) 
 
 distclean:
-	rm -fr .make-$(SRC) .configure-$(SRC) src $(TAR) $(SRC)
+	rm -fr .make-$(SRC) .configure-$(SRC) src $(TAR) $(SRC) .install-$(SRC)
 
 .install-$(SRC): .make-$(SRC)
 	@echo "Installing $(SRC)"

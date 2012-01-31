@@ -66,7 +66,7 @@ cleanmpi:
 	/bin/rm -f bin/*.[ABCDSW].* mpi
 
 distclean:
-	/bin/rm -rf $(SRC) .patched src bin serial mpi
+	/bin/rm -rf $(SRC) .patched src bin serial mpi .make-$(SRC)
 
 install uninstall:
 	$(do-$@)

@@ -33,7 +33,7 @@ $(SRC): $(TAR)
 	fi
 
 distclean: 
-	rm -fr .make-$(SRC) ._$(SRC) $(SRC) src $(TAR)
+	rm -fr .make-$(SRC) ._$(SRC) $(SRC) src $(TAR) .install-$(SRC)
 
 clean:
 	rm -fr .make-$(SRC) ._$(SRC) $(SRC) src

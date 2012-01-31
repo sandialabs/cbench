@@ -29,8 +29,9 @@ clean:
 	$(MAKE) -C src dist-clean > .make-$(SRC) 2>&1
 	/bin/rm -rf src/runin/bin .make-$(SRC)
 
-distclean:
-	rm -fr $(SRC) $(TAR) src
+distclean: 
+	$(MAKE) -C src dist-clean > .make-$(SRC) 2>&1
+	rm -fr $(SRC) $(TAR) src .make-$(SRC)
 
 
 install: default

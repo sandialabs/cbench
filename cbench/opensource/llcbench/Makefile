@@ -32,7 +32,7 @@ clean:
 	rm -f .make-$(SRC)
 
 distclean:
-	/bin/rm -rf $(SRC) $(TAR) .patched src
+	/bin/rm -rf $(SRC) $(TAR) .patched src .make-$(SRC)
 
 install uninstall: default
 	$(do-$@)
