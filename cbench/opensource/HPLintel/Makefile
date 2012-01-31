@@ -33,7 +33,7 @@ default: $(default_tgt)
 all: linpack clean local
 
 linpack: $(SRC) xerbla
-	$(MAKE) -C $(UNTARSRC)/benchmarks/mp_linpack arch=cbench
+	$(MAKE) -C $(UNTARSRC)/benchmarks/mp_linpack arch=cbench > .make-$(SRC) 2>&1
 	[ -e src/bin/cbench/xhpl ] && /bin/mv src/bin/cbench/xhpl src/bin/cbench/xhplintel
 
 download: $(TAR)
@@ -60,7 +60,7 @@ local: linpack
 extractnodeperf: $(SRC)
 
 clean:
-	-[ -d $(UNTARSRC) ] && $(MAKE) -C $(UNTARSRC)/benchmarks/mp_linpack clean_arch_all arch=cbench
+	-[ -d $(UNTARSRC) ] && $(MAKE) -C $(UNTARSRC)/benchmarks/mp_linpack clean_arch_all arch=cbench > .make-$(SRC) 2>&1
 	/bin/rm -rf $(HPL2)/src/lib/* $(HPL2)/src/bin/*
 	/bin/rm -f xerbla.o
 
