@@ -4,6 +4,7 @@ VERSION=3.5
 SRC=osu-micro-benchmarks-$(VERSION)
 TAR=$(SRC).tar.gz
 URL="http://mvapich.cse.ohio-state.edu/benchmarks/$(TAR)"
+EXEC:=osu_acc_latency osu_bcast osu_bw osu_get_latency osu_latency_mt osu_multi_lat osu_passive_get_bw osu_passive_put_bw osu_put_bibw osu_put_latency osu_alltoall osu_bibw osu_get_bw osu_latency osu_mbw_mr osu_passive_acc_latency osu_passive_get_latency osu_passive_put_latency osu_put_bw
 
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = 
@@ -22,7 +23,7 @@ $(SRC): $(TAR)
 
 .configure-$(SRC): $(SRC)
 	@echo "Configuring $(SRC)"
-	cd src && ./configure --prefix=$(CBENCHTEST)$(SRC) > ../.configure-$(SRC) 2>&1
+	cd src && ./configure --prefix=$(CBENCHTEST)/$(SRC) > ../.configure-$(SRC) 2>&1
 	@touch $@
 
 .make-$(SRC): .configure-$(SRC)
@@ -40,7 +41,10 @@ distclean:
 install: .make-$(SRC)
 	@echo "Installing $(SRC)"
 	cd src && make install >> ../.make-$(SRC) 2>&1
-	@for progs in dshbak  pdcp  pdsh  rpdcp; do \
-		ln -sf $(CBENCHTEST)/$(SRC)/bin/$$progs $(CBENCHTEST)/sbin/$$progs; \
+	@for e in $(EXEC); do \
+		echo "$(CBENCHTEST)/$(SRC)/libexec/osu-micro-benchmarks/$$e -> $(CBENCHTEST)/bin/$$e-$(VERSION)"; \
+		ln -sf $(CBENCHTEST)/$(SRC)/libexec/osu-micro-benchmarks/$$e $(CBENCHTEST)/bin/$$e-$(VERSION); \
 	done
+
+
 
