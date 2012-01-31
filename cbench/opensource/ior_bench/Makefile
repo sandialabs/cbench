@@ -38,5 +38,5 @@ clean:
 distclean: clean
 	/bin/rm -rf $(TAR) $(SRC) src .make-$(SRC)
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

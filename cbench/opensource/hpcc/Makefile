@@ -97,5 +97,5 @@ $(SRC): $(TAR)
         done
 	@touch $@
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

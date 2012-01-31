@@ -18,5 +18,5 @@ $(EXEC): $(SRC)
 clean:
 	rm -f *.o $(EXEC)
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

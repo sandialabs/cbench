@@ -9,6 +9,8 @@ EXEC = mpiGraph
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXEC) crunch_mpiGraph
 
+default: $(EXEC)
+
 $(EXEC): $(SRC)
 	$(CC) -o $@ $<
 #	$(CC) $(CFLAGS) $(DEFINES) -o $@ $< $(LIBS)
@@ -20,5 +22,5 @@ debug:
 clean:
 	rm -f *.o $(EXEC)
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

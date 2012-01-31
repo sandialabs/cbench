@@ -61,5 +61,5 @@ clean:
 distclean: clean
 	rm -f .make-$(SRC)
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

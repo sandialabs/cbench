@@ -8,7 +8,7 @@ EXECS = simul
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
-all normal: $(EXECS)
+default all normal: $(EXECS)
 
 download: $(TAR)
 
@@ -29,5 +29,5 @@ clean:
 distclean: clean
 	/bin/rm -rf $(SRC) $(TAR) src
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

@@ -42,5 +42,5 @@ distclean: clean
 smallclean:
 	$(MAKE) -C psnap-1.0 clean > .make-$(SRC) 2>&1
 	
-install uninstall: 
+install uninstall: default
 	$(do-$@)

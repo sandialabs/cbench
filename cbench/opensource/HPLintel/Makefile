@@ -67,5 +67,5 @@ clean:
 distclean:
 	/bin/rm -rf $(UNTARSRC) xerbla.o src $(TAR)
 
-install uninstall:
+install uninstall: default
 	$(do-$@)

@@ -33,6 +33,6 @@ clean:
 distclean:
 	-/bin/rm -rf $(SRC) $(TAR) src
 
-install uninstall:
+install uninstall: default
 	$(do-$@)
 

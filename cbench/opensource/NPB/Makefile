@@ -68,6 +68,6 @@ cleanmpi:
 distclean:
 	/bin/rm -rf $(SRC) .patched src bin serial mpi .make-$(SRC)
 
-install uninstall:
+install uninstall: default
 	$(do-$@)
 

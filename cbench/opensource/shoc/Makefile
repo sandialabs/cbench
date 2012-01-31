@@ -78,9 +78,9 @@ clean:
 distclean:
 	/bin/rm -rf $(SRC) src $(TAR)
 
-install:
+install: default
 	$(do-$@-shoc)
 
-uninstall:
+uninstall: default
 	$(do-$@)
 
