@@ -110,57 +110,95 @@ openapps_install: openapps_compile
 # BEGIN STANDALONE 
 #
 cbench_standalone_sysprogs_distclean:
+	$(call print-header,"cbench standalone sysprogs distclean")
+	$(call print-header,"cbench standalone sysprogs pdsh distclean")
 	$(MAKE) -C opensource/pdsh distclean
+	$(call print-header,"cbench standalone sysprogs ompi distclean")
 	$(MAKE) -C opensource/ompi distclean
+	$(call print-header,"cbench standalone sysprogs OpenBLAS distclean")
 	$(MAKE) -C opensource/OpenBLAS distclean
 cbench_standalone_sysprogs_clean:
+	$(call print-header,"cbench standalone sysprogs clean")
+	$(call print-header,"cbench standalone sysprogs pdsh clean")
 	$(MAKE) -C opensource/pdsh clean
+	$(call print-header,"cbench standalone sysprogs ompi clean")
 	$(MAKE) -C opensource/ompi clean
+	$(call print-header,"cbench standalone sysprogs OpenBLAS clean")
 	$(MAKE) -C opensource/OpenBLAS clean
 cbench_standalone_sysprogs_download:
+	$(call print-header,"cbench standalone sysprogs download")
+	$(call print-header,"cbench standalone sysprogs pdsh download")
 	$(MAKE) -C opensource/pdsh download
+	$(call print-header,"cbench standalone sysprogs ompi download")
 	$(MAKE) -C opensource/ompi download
+	$(call print-header,"cbench standalone sysprogs OpenBLAS download")
 	$(MAKE) -C opensource/OpenBLAS download
 cbench_standalone_sysprogs_compile:
+	$(call print-header,"cbench standalone sysprogs compile")
+	$(call print-header,"cbench standalone sysprogs pdsh compile")
 	$(MAKE) -C opensource/pdsh 
+	$(call print-header,"cbench standalone sysprogs ompi compile")
 	$(MAKE) -C opensource/ompi 
+	$(call print-header,"cbench standalone sysprogs OpenBLAS compile")
 	$(MAKE) -C opensource/OpenBLAS 
 cbench_standalone_sysprogs_install:
+	$(call print-header,"cbench standalone sysprogs install")
 	@sbin/install_cbenchtest --testtop
+	$(call print-header,"cbench standalone sysprogs pdsh install")
 	$(MAKE) -C opensource/pdsh install
+	$(call print-header,"cbench standalone sysprogs ompi install")
 	$(MAKE) -C opensource/ompi install
+	$(call print-header,"cbench standalone sysprogs OpenBLAS install")
 	$(MAKE) -C opensource/OpenBLAS install
 cbench_standalone_sysprogs_reinstall:
+	$(call print-header,"cbench standalone sysprogs reinstall")
 	@sbin/install_cbenchtest --testtop
+	$(call print-header,"cbench standalone sysprogs pdsh reinstall")
 	$(MAKE) -C opensource/pdsh reinstall
+	$(call print-header,"cbench standalone sysprogs ompi reinstall")
 	$(MAKE) -C opensource/ompi reinstall
+	$(call print-header,"cbench standalone sysprogs OpenBLAS reinstall")
 	$(MAKE) -C opensource/OpenBLAS reinstall
 
 cbench_standalone_hwtestdirs_distclean: 
+	$(call print-header,"cbench standalone hwtestdirs distclean")
 	$(call do-hwtest-subdirs,distclean)
 cbench_standalone_hwtestdirs_clean:
+	$(call print-header,"cbench standalone hwtestdirs clean")
 	$(call do-hwtest-subdirs,clean)
 cbench_standalone_hwtestdirs_download:
+	$(call print-header,"cbench standalone hwtestdirs download")
 	$(call do-hwtest-subdirs,download)
 cbench_standalone_hwtestdirs_compile: cbench_standalone_sysprogs_install
+	$(call print-header,"cbench standalone hwtestdirs compile")
 	$(do-hwtest-subdirs)
 cbench_standalone_hwtestdirs_install: cbench_standalone_sysprogs_install
+	$(call print-header,"cbench standalone hwtestdirs install")
 	$(call do-hwtest-subdirs,install)
 
 cbench_standalonedir_alldistclean: cbench_standalone_sysprogs_distclean cbench_standalone_hwtestdirs_distclean
+	$(call print-header,"cbench standalone alldistclean")
 	$(call do-standaloneopen-subdirs,distclean)
+	$(call print-header,"cbench standalone HPLintel alldistclean")
 	$(MAKE) -C opensource/HPLintel distclean
 cbench_standalonedir_distclean: cbench_standalone_hwtestdirs_distclean
+	$(call print-header,"cbench standalone distclean")
 	$(call do-standaloneopen-subdirs,distclean)
+	$(call print-header,"cbench standalone HPLintel distclean")
 	$(MAKE) -C opensource/HPLintel distclean
 cbench_standalonedir_clean: cbench_standalone_hwtestdirs_clean
+	$(call print-header,"cbench standalone clean")
 	$(call do-standaloneopen-subdirs,clean)
+	$(call print-header,"cbench standalone HPLintel clean")
 	$(MAKE) -C opensource/HPLintel clean
 cbench_standalonedir_download: cbench_standalone_sysprogs_download cbench_standalone_hwtestdirs_download
+	$(call print-header,"cbench standalonedir download")
 	$(call do-standaloneopen-subdirs,download)
 cbench_standalonedir_compile: cbench_standalone_sysprogs_install cbench_standalone_hwtestdirs_compile
+	$(call print-header,"cbench standalonedir compile")
 	$(do-standaloneopen-subdirs)
 cbench_standalonedir_install: cbench_standalone_sysprogs_install cbench_standalone_hwtestdirs_install
+	$(call print-header,"cbench standalonedir install")
 	$(call do-standaloneopen-subdirs,install)
 	$(do-compiled-bin-installs-binident)
 	@sbin/install_cbenchtest --allsets --bindir $(BINDIR)

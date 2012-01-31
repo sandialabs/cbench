@@ -639,8 +639,8 @@ define download-wget-url
 	for path in $$url http://cbench.sourceforge.net/common/tarballs https://synapse.sandia.gov/static/tarballs; do \
 	   [ -f $$file ] && break; \
 	   wget --connect-timeout=10 --tries=2 --no-check-certificate $$path/$$file; \
-	   [ -f $$f ] && touch $$f ; \
-	done
+	   [ -f $$file ] && touch $$file ; \
+	done;
 endef
 
 # downlad a url with curl
@@ -651,8 +651,8 @@ define download-curl-url
 		[ -f $$file ] && break; \
 		echo "Downloading: $$path/$$file"; \
 		curl -k --connect-timeout 10 --retry 2 -L -O $$path/$$file; \
-		[ -f $$f ] && touch $$f ; \
-	done
+		[ -f $$file ] && touch $$file ; \
+	done;
 endef
 
 # common routing to unpack tgz/bzip
@@ -670,6 +670,12 @@ define untar-src
 	fi;
 endef
 
+# print a header
+define print-header
+	@echo "========================================================="; \
+	echo "----- $1"; \
+	echo "========================================================="; 
+endef
 
 # Installation variables
 bin_dir = $(BENCH_HOME)/bin
