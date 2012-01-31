@@ -8,9 +8,9 @@ EXEC = mpi_overhead mpi_overhead_bcast mpi_overhead_time
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXEC)
 
-download:
-
 default: $(EXEC)
+
+download:
 
 mpi_overhead: mpi_overhead.o meminfo.o
 	$(CC) $(COMMON_FLAGS) $(DEFINES) -o $@ $< $(LIBS) meminfo.o

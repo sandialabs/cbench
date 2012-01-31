@@ -9,6 +9,8 @@ EXEC = mpi_hello_ordered
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXEC)
 
+default: $(EXEC)
+
 download:
 
 $(EXEC): $(SRC)

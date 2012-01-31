@@ -19,9 +19,9 @@ LIBS =
 FLIBS =
 EXECS = cpi 
 
-download:
-
 default: cpi pi3 cpip pi3p
+
+download:
 
 # 
 # The cp for pi3f90 is needed because different Fortran 90 compilers

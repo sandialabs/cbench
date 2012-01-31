@@ -38,23 +38,23 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
-	touch $(SRC)
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 all: mpi 
 
 mpi: $(SRC) src/make.inc clean
-	$(MAKE) -C $(SRC)/mpi MPICC=$(CC) CC=$(PLAINCC) CFLAGS="-Drestrict=__restrict__ -DNDEBUG -DGRAPH_GENERATOR_MPI $(CFLAGS)" LDFLAGS=$(LDFLAGS) 
+	$(MAKE) -C $(SRC)/mpi MPICC=$(CC) CC=$(PLAINCC) CFLAGS="-Drestrict=__restrict__ -DNDEBUG -DGRAPH_GENERATOR_MPI $(CFLAGS)" LDFLAGS=$(LDFLAGS)  > .make-$(SRC) 2>&1
 #	$(MAKE) -C $(SRC) MPICC=$(CC) CC=$(PLAINCC) make-edgelist
 
 src/make.inc:
 	ln -sf $(GRAPH500)/make.inc-cbench $(GRAPH500)/src/make.inc
 
 clean:
-	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean
+	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean > .make-$(SRC) 2>&1
 
 distclean:
-	/bin/rm -rf $(SRC) src $(TAR) .patched
+	/bin/rm -rf $(SRC) src $(TAR) .patched .make-$(SRC)
 
 install uninstall:
 	$(do-$@)

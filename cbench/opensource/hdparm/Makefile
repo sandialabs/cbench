@@ -17,10 +17,12 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 .make-$(SRC): $(SRC)
 	make -C src CC=$(PLAINCC) > .make-$(SRC) 2>&1
+	@touch $@
 
 clean:
 	$(MAKE) -C src clean

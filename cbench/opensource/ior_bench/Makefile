@@ -8,7 +8,7 @@ URL="http://downloads.sourceforge.net/project/ior-sio/IOR%20latest/$(SRC)/$(SRC)
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(shell ls IOR.*)
 
-all: $(SRC) IOR.posix IOR.mpiio
+default all: IOR.posix IOR.mpiio
 
 download: $(TAR)
 
@@ -17,23 +17,26 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	mv IOR $(SRC)
-	ln -s $(SRC)/src/C src
+	mv IOR $@
+	ln -s $@/src/C src
+	@[ -d $@ ] && touch $@
 
-IOR.posix:
-	$(MAKE) -C src CC.Linux=$(CC) posix
+IOR.posix: $(SRC)
+	@echo "Compiling $(SRC) $@"
+	$(MAKE) -C src CC.Linux=$(CC) posix >> .make-$(SRC) 2>&1
 	/bin/cp -f src/IOR $@
 
-IOR.mpiio:
-	$(MAKE) -C src CC.Linux=$(CC) mpiio
+IOR.mpiio: $(SRC)
+	@echo "Compiling $(SRC) $@"
+	$(MAKE) -C src CC.Linux=$(CC) mpiio >> .make-$(SRC) 2>&1
 	/bin/cp -f src/IOR $@
 
 clean:
-	-[ -d $(SRC)/src/C ] && $(MAKE) -C src CC.Linux=$(CC) $@
-	/bin/rm -f IOR.*
+	-[ -d $(SRC)/src/C ] && $(MAKE) -C src CC.Linux=$(CC) $@ >> .make-$(SRC) 2>&1
+	/bin/rm -f IOR.* .make-$(SRC)
 
 distclean: clean
-	/bin/rm -rf $(TAR) $(SRC) src
+	/bin/rm -rf $(TAR) $(SRC) src .make-$(SRC)
 
 install uninstall:
 	$(do-$@)

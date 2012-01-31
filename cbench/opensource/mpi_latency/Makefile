@@ -10,6 +10,8 @@ EXEC = mpi_latency
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXEC)
 
+default: $(EXEC)
+
 download:
 
 $(EXEC): $(SRC)

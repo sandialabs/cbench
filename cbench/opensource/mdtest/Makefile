@@ -9,10 +9,10 @@ EXECS = $(SRC)/mdtest
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
-all normal: $(EXECS)
+default all normal: $(EXECS)
 
 $(EXECS): $(SRC)
-	$(MAKE) CC=$(CC) -C $(SRC)
+	$(MAKE) CC=$(CC) -C $(SRC) > .make-$(SRC) 2>&1
 
 download: $(TAR)
 
@@ -21,13 +21,14 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 clean:
-	$(MAKE) -C src clean
+	$(MAKE) -C src clean > .make-$(SRC) 2>&1
 
 distclean:
-	/bin/rm -rf $(SRC) $(TAR) src
+	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)
 
 install uninstall:
 	$(do-$@)

@@ -19,8 +19,8 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
-	@touch $@
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 .configure-$(SRC): $(SRC)
 	@echo "Configuring $(SRC)"

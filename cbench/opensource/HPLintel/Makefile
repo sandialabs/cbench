@@ -45,6 +45,7 @@ $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	ln -sf $(UNTARSRC)/benchmarks/mp_linpack src
 	ln -sf $(HPL2)/Make.cbench $(HPL2)/$(UNTARSRC)/benchmarks/mp_linpack/Make.cbench
+	@[ -d $@ ] && touch $@
 
 xerbla: 
 	$(CC) $(OPTFLAGS) -c xerbla.c

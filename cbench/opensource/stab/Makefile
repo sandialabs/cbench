@@ -13,8 +13,8 @@ download:
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
-	@touch $@
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 .patched: $(SRC)
 	@[ ! -f .patched ] && \

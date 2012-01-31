@@ -10,13 +10,16 @@ HPLGPU=$(CBENCHOME)/opensource/HPLinpack-gpu
 install: $(SRC)
 	$(do-$@)
 
+download: $(TAR)
+
 $(TAR):
 	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
 	ln -sf $(HPLGPU)/Make.cbench $(HPLGPU)/$(SRC)/Make.cbench
+	@[ -d $@ ] && touch $@
 
 linpack: $(SRC)
 	$(MAKE) -C $(SRC) arch=cbench

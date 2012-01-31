@@ -8,27 +8,28 @@ EXECS = miranda_io
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = $(EXECS)
 
-all normal: $(EXECS)
-
-$(EXECS): $(SRC)
-	$(F90) $(FFLAGS) -o miranda_io $(SRC)/miranda_io.f90
+default all normal: $(EXECS)
 
 download: $(TAR)
 
-$(TAR) download:
+$(TAR):
 	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
 	patch -p0 < fix-compile.patch
 	patch -p0 < swl.patch
+	@[ -d $@ ] && touch $@
+
+$(EXECS): $(SRC)
+	$(F90) $(FFLAGS) -o miranda_io $(SRC)/miranda_io.f90 
 
 clean:
 	/bin/rm -f $(EXECS)
 
 distclean: clean
-	/bin/rm -rf $(SRC) $(TAR) src
+	/bin/rm -rf $(SRC) $(TAR) src 
 
 install uninstall:
 	$(do-$@)

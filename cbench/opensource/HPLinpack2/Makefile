@@ -33,7 +33,7 @@ src/bin/cbench/xhpl2:
 	$(MAKE) linpack
 
 linpack: $(SRC) xerbla
-	$(MAKE) -C $(SRC) arch=cbench
+	$(MAKE) -C $(SRC) arch=cbench >> .make-$(SRC) 2>&1
 	[ -e src/bin/cbench/xhpl ] && /bin/mv src/bin/cbench/xhpl src/bin/cbench/xhpl2
 
 download: $(TAR)
@@ -43,8 +43,9 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
 	ln -sf $(HPL2)/Make.cbench $(HPL2)/$(SRC)/Make.cbench
+	@[ -d $@ ] && touch $@
 
 xerbla: 
 	$(CC) $(OPTFLAGS) -c xerbla.c
@@ -58,10 +59,10 @@ local: linpack
 clean:
 	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean_arch_all arch=cbench
 	/bin/rm -rf $(HPL2)/src/lib/* $(HPL2)/src/bin/*
-	/bin/rm -f xerbla.o
+	/bin/rm -f xerbla.o .make-$(SRC)
 
 distclean:
-	/bin/rm -rf $(SRC) xerbla.o src $(TAR)
+	/bin/rm -rf $(SRC) xerbla.o src $(TAR) .make-$(SRC)
 
 install uninstall:
 	$(do-$@)

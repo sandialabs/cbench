@@ -15,13 +15,12 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
-	@touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
 	patch -p1 -d src < lmbench3.cbench.patch
-	@touch $@
+	@[ -d $@ ] && touch $@
 
 .make-$(SRC): $(SRC)
 	$(MAKE) CC=$(CC) CFLAGS='$(CFLAGS)' -C src > .make-$(SRC) 2>&1

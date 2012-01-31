@@ -18,7 +18,8 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 all: $(SRC) src/Makefile
 	$(MAKE) -C src

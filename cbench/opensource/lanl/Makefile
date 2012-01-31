@@ -28,22 +28,19 @@ psnap: psnap-1.0/psnap
 psnaplocal local: psnap-1.0/psnap.$(MPICH_CH)
 
 psnap-1.0/psnap:
-	$(MAKE) -C psnap-1.0
+	$(MAKE) -C psnap-1.0 > .make-$(SRC) 2>&1
 
 psnap-1.0/psnap.$(MPICH_CH): psnap-1.0/psnap
 	/bin/mv -f psnap-1.0/psnap psnap-1.0/psnap.$(MPICH_CH)
 
-clean:
-	$(MAKE) -C psnap-1.0 clean
+clean: smallclean
 	/bin/rm -f $(EXECS)
 
 distclean: clean
+	rm -f .make-$(SRC)
 
 smallclean:
-	$(MAKE) -C psnap-1.0 clean
+	$(MAKE) -C psnap-1.0 clean > .make-$(SRC) 2>&1
 	
-install: default
-	$(do-$@)
-
-uninstall:
+install uninstall: 
 	$(do-$@)

@@ -18,7 +18,8 @@ $(TAR):
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	mv dt.d-WIP $(SRC)
-	ln -sf $(SRC) src
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 .make-$(SRC): $(SRC)
 	@echo "Compiling $(SRC)"

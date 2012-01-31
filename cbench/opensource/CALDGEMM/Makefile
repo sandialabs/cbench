@@ -20,9 +20,9 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
 	patch -p0 < rtlib.patch
-
+	@[ -d $@ ] && touch $@
 
 patchgoto2: $(SRC)
 	@echo "Compiling patching GotoBLAS2"

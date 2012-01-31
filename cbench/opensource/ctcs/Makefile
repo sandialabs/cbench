@@ -14,13 +14,12 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
-	@touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	mv ctcs-1.3.1pre1 $(SRC)
 	ln -sf src.old src
-	@touch $@
+	@[ -d $@ ] && touch $@
 
 .make-$(SRC): $(SRC)
 	$(MAKE) -C src CC=$(PLAINCC) CLINKER='$(PLAINCC) $(LDFLAGS)' CFLAGS='$(CFLAGS)' MEMTST_CFLAGS='$(CFLAGS) $(NOUNROLL_FLAGS)' all > .make-$(SRC) 2>&1

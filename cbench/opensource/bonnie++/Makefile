@@ -24,20 +24,19 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@ && ln -sf $@ src
 
 $(EXEC): $(SRC)
 	make -C src CC=$(PLAINCC) CXX=$(PLAINCXX) > .make-$(SRC) 2>&1
+	@[ -x $@ ] && touch $@
 #	cd src/; export CC=$(CC); export F77=$(F77); export MPILIB=$(MPICH)/lib; if [ ! -f config.status ]; then ./configure; fi; make
 
 clean:
-	make -C src clean 
+	make -C src clean > .make-$(SRC) 2>&1
 
 distclean: 
 	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)
 
-install: default
-	$(do-$@)
-
-uninstall: 
+install uninstall: 
 	$(do-$@)

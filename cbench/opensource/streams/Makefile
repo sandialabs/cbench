@@ -30,9 +30,9 @@ ifeq ($(CBENCH_STANDALONE),yes)
 default: stream-mpi.$(MPICH_CH)
 endif
 
-download:
-
 all: $(EXECS)
+
+download:
 
 stream-c: stream.c
 	$(PLAINCC) $(FLAGS) -o $@ $^ -lm

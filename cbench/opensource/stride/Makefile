@@ -11,15 +11,17 @@ INSTALLTARGETS = $(EXECS)
 
 default: .make-$(SRC)
 
-$(TAR) download:
+download: $(TAR)
+
+$(TAR):
 	$(call download-curl-url,$(URL))
 	@touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC)/src src
+	ln -sf $@/src src
 	cd src && ln -sf ../../Makefile.cbench
-	@touch $@
+	@[ -d $@ ] && touch $@
 
 .make-$(SRC): $(SRC)
 	$(MAKE) -C src -f Makefile.cbench > .make-$(SRC) 2>&1

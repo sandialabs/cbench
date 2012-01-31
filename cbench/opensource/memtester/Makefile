@@ -14,12 +14,11 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
-	@touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
-	@touch $@
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 .make-$(SRC): $(SRC)
 	$(MAKE) -C src all > .make-$(SRC) 2>&1

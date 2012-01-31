@@ -17,7 +17,8 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 $(EXECS): $(SRC)
 	$(CC) $(CFLAGS) -o simul $(SRC)/simul.c

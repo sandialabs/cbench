@@ -16,12 +16,11 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
-	@touch $@
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
-	@touch $@
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 .patched:
 	@for patch in *.patch ; do \

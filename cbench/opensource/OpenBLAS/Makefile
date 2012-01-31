@@ -10,18 +10,17 @@ INSTALLTARGETS = src/OpenBLAS
 
 default: .make-$(SRC)
 
+download: $(TAR)
+
 $(TAR):
 	$(call download-curl-url,$(URL))
 	mv v0.1alpha2.4 $(TAR)
-	@touch $@
-
-download: $(TAR)
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	mv xianyi-OpenBLAS-92ba8a7 $(SRC)
-	ln -sf $(SRC) src
-	@touch $@
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 
 .make-$(SRC): $(SRC)

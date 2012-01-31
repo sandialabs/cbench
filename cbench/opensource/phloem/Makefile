@@ -16,15 +16,21 @@ INSTALLTARGETS = $(EXECS)
 
 CFLAGS += -DPRINT_ENV
 
-all normal: $(SRC)
-	$(MAKE) CC=$(CC) -C src > .make-$(SRC) 2>&1
+default all normal: .make-$(SRC)
 
-$(TAR) download:
+download: $(TAR)
+
+$(TAR):
 	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
+
+.make-$(SRC): $(SRC)
+	$(MAKE) CC=$(CC) -C src > .make-$(SRC) 2>&1
+	@touch $@
 
 clean:
 	[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean || :

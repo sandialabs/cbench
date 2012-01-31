@@ -22,6 +22,8 @@ else
   LDFLAGS=$(BLASLIB) -lm
 endif
 
+  LDFLAGS=../../second.o $(LAPACKLIB) $(BLASLIB) -lm
+
 ifeq ($(COMPILER),gcc)
  #LDFLAGS += -lg2c
 endif
@@ -37,13 +39,12 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
-	@touch $(TAR)
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC)/matmult src
+	ln -sf $@/matmult src
 	cd src; mv Makefile Makefile.orig;ln -s ../../Makefile.cbench Makefile
-	@touch $(SRC)
+	@[ -d $@ ] && touch $@
 
 .patched:
 	@[ ! -f .patched ] && for patch in *.patch ; do \

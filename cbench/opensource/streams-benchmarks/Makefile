@@ -15,12 +15,10 @@ download: $(SRC)
 $(SRC):
 	@for f in $(FILES); do \
 		[ ! -f $$f ] && $(call download-wget-url, $(URL)/$$f); \
-		touch $$f; \
 	done
 
 mysecond.c stream.c stream.f stream.c.5.10: 
 	[ ! -f $$f ] && $(call download-curl-url, $(URL)/$@); \
-	touch $@
 
 mysecond.o: mysecond.c
 	$(PLAINCC) $(CCFLAGS) -c mysecond.c

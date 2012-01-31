@@ -11,12 +11,12 @@ download: $(TAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
-	@touch $@
+
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(SRC) src
-	@touch $@
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 # from ompi 1.4.X&& export CC=$(PLAINCC) && F77=$(PLAINF77) && FC=$(PLAINF77) && CXX=$(PLAINCXX) && \ 
 #	 ./configure --enable-orterun-prefix-by-default --enable-mpi-threads --prefix=$(BENCH_TEST)/openmpi > ../.configure-$(SRC) 2>&1)

@@ -9,9 +9,9 @@ TAR=$(SRC).tar.gz
 MPIDIR=$(SRC)/NPB3.2-MPI
 SERDIR=$(SRC)/NPB3.2-SER
 
-download:
+default all: serial mpi
 
-all: serial mpi
+download:
 
 $(MPIDIR)/config/suitedef:
 	./gen_suitedef --nasdir $(MPIDIR) --maxprocs $(MAXPROCS)
@@ -20,24 +20,42 @@ $(SERDIR)/config/suitedef:
 	./gen_suitedef --nasdir $(SERDIR) --serial
 
 serial:
-	$(MAKE) serial_real
-	-touch serial
+	@echo "Compiling $(SRC) $@"
+	$(MAKE) serial_real >> .make-$(SRC) 2>&1
+	@touch serial
 
-mpi:
-	$(MAKE) mpi_real
-	-touch mpi
+mpi: 
+	@echo "Compiling $(SRC) $@"
+	$(MAKE) mpi_real >> .make-$(SRC) 2>&1
+	@touch mpi
 
-serial_real: $(SRC) .patched $(SERDIR)/config/suitedef
+serial_real: .patched $(SERDIR)/config/suitedef
 	@ if [ ! -d bin ] ; then mkdir bin ; fi
 	cd $(SERDIR)/config; ln -sf ../../../make.def .
 	$(MAKE) CC=$(PLAINCC) F77=$(PLAINF77) F90=$(PLAINF90) -C $(SERDIR) suite
 
-mpi_real: $(SRC) .patched $(MPIDIR)/config/suitedef
+mpi_real: .patched $(MPIDIR)/config/suitedef
 	@ if [ ! -d bin ] ; then mkdir bin ; fi
 	cd $(MPIDIR)/config; ln -sf ../../../make.def .
 	$(MAKE) -C $(MPIDIR) suite
 
+$(SRC): $(TAR)
+	$(call untar-src, $(TAR))
+	rm -f .patched
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
+
+.patched: $(SRC)
+	for patch in *.patch ; do \
+           cd $(SRC); \
+           echo "Applying patch [ $$patch ]"; \
+           patch -p1 <../$$patch; \
+           cd - ; \
+        done
+	@touch .patched
+
 clean: cleanserial cleanmpi
+	rm -f .make-$(SRC)
 
 cleanserial:
 	$(MAKE) -C $(SERDIR) clean; /bin/rm -f $(SERDIR)/config/suite.def
@@ -47,21 +65,9 @@ cleanmpi:
 	$(MAKE) -C $(MPIDIR) clean; /bin/rm -f $(MPIDIR)/config/suite.def
 	/bin/rm -f bin/*.[ABCDSW].* mpi
 
+distclean:
+	/bin/rm -rf $(SRC) .patched src bin serial mpi
+
 install uninstall:
 	$(do-$@)
 
-$(SRC): $(TAR)
-	[ -d $(SRC) ] || tar zxf $(TAR) && rm -f .patched
-	ln -sf $(SRC) src
-
-.patched:
-	for patch in *.patch ; do \
-           cd $(SRC); \
-           echo "Applying patch [ $$patch ]"; \
-           patch -p1 <../$$patch; \
-           cd - ; \
-        done
-	-touch .patched
-
-distclean:
-	/bin/rm -rf $(SRC) .patched src bin serial mpi

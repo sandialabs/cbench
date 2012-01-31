@@ -18,7 +18,8 @@ $(TAR):
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	mv survivegotoblas2-3.14 $(SRC)
-	ln -sf $(SRC) src
+	ln -sf $@ src
+	@[ -d $@ ] && touch $@
 
 .make-$(SRC): $(SRC)
 	@if [ $(ARCH) = "x86_64" ]; then cd src && ./quickbuild.64bit; touch $@; \
