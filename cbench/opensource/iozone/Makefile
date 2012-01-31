@@ -20,12 +20,6 @@ endif
 
 default: src/src/current/iozone src/src/current/fileop
 
-src/src/current/iozone src/src/current/fileop:
-	$(MAKE) all > .make-$(SRC) 2>&1
-
-all: $(SRC)
-	$(MAKE) CC=$(PLAINCC) CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" -C src/src/current $(TARGET) > .make-$(SRC) 2>&1
-
 download: $(TAR)
 
 $(TAR):
@@ -34,15 +28,20 @@ $(TAR):
 $(SRC): $(TAR)
 	gzip -f $(TAR)
 	$(call untar-src,$(TAR).gz)
+	gzip -d $(TAR)
 	ln -sf $@ src
 	patch -p0 < make.patch
 	@[ -d $@ ] && touch $@
+
+all src/src/current/iozone src/src/current/fileop: $(SRC)
+	$(MAKE) CC=$(PLAINCC) CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" -C src/src/current $(TARGET) > .make-$(SRC) 2>&1
+#	$(MAKE) all > .make-$(SRC) 2>&1
 
 clean:
 	$(MAKE) -C src/src/current clean > .make-$(SRC) 2>&1
 
 distclean:
-	-/bin/rm -rf $(SRC) $(TAR).gz src .make-$(SRC)
+	-/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)
 
 install uninstall: default
 	$(do-$@)
