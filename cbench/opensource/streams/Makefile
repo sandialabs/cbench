@@ -13,7 +13,7 @@ ifeq ($(COMPILER),intel)
   EXECS += stream-intel-c stream-intel-f stream-intel2-c stream-intel2-f stream-intel3-f stream-intel-openmp-f stream-intel-openmp-c stream-intel2-openmp-f stream-intel2-openmp-c stream-mpi-openmp
 endif
 ifeq ($(COMPILER),gcc)
-  EXECS += stream-gcc-c stream-gcc2-c stream-gcc3-c stream-gcc4-c stream-gcc5-c stream-gcc6-c stream-gcc7-c
+  EXECS += stream-gcc-c stream-gcc2-c stream-gcc5-c stream-gcc6-c stream-gcc7-c
 endif
 ifeq ($(COMPILER),pgi)
   EXECS += stream-pgi-c stream-pgi2-c stream-pgi-f stream-pgi2-f stream-pgi3-f stream-pgi-openmp-f stream-pgi2-openmp-f stream-pgi3-openmp-f stream-pgi-openmp-c stream-pgi2-openmp-c stream-pgi3-openmp-c stream-pgi4-openmp-c stream-pgi4-openmp-f
