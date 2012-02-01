@@ -17,9 +17,12 @@ SHELL       = /bin/sh
 
 LIBS =
 FLIBS =
-EXECS = cpi 
+EXECS = cpi pi3 cpip pi3p 
 
-default: cpi pi3 cpip pi3p
+INSTALLDIR = $(bin_dir)
+INSTALLTARGETS = $(EXECS)
+
+default: cpi pi3 cpip pi3p 
 
 download:
 
@@ -101,3 +104,6 @@ distclean: clean
 .f90.o:
 	$(F90) $(FFLAGS) -c $<
 .SUFFIXES: .f90
+
+install uninstall: default
+	$(do-$@)
