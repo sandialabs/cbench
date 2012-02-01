@@ -45,7 +45,7 @@ stream_c_5_10: stream.c.5.10
 	touch $@
 
 clean: 
-	rm -f mysecond.o  stream_c-$(VERSION)  stream_f-$(VERSION)  stream.o .make-$(SRC)
+	rm -f mysecond.o  stream_c-$(VERSION)  stream_f-$(VERSION)  stream.o .make-$(SRC) stream_mpi stream_mpi.o
 
 distclean: clean
 	rm -f $(FILES) .make-$(SRC) stream_5_10.c stream_mpi.f
