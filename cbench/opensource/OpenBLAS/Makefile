@@ -5,6 +5,13 @@ SRC=xianyi-OpenBLAS-$(VERSION)
 TAR=$(SRC).tar.gz
 URL=http://github.com/xianyi/OpenBLAS/tarball/v0.1alpha2.4
 
+LAPACKSRC=lapack-3.1.1.tgz
+LAPACKURL=http://www.netlib.org/lapack/$(LAPACKSRC)
+LARGESRC=large.tgz
+LARGEURL=http://www.netlib.org/lapack/timing/$(LARGESRC)
+TIMINGSRC=timing.tgz
+TIMINGURL=http://www.netlib.org/lapack/timing/$(TIMINGSRC)
+
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = src/OpenBLAS
 
@@ -13,6 +20,9 @@ default: .make-$(SRC)
 download: $(TAR)
 
 $(TAR):
+	$(call download-curl-url,$(LAPACKURL))
+	$(call download-curl-url,$(LARGEURL))
+	$(call download-curl-url,$(TIMINGURL))
 	$(call download-curl-url,$(URL))
 	mv v0.1alpha2.4 $(TAR)
 
@@ -20,6 +30,9 @@ $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
 	mv xianyi-OpenBLAS-92ba8a7 $(SRC)
 	ln -sf $@ src
+	mv $(LAPACKSRC) src/
+	mv $(LARGESRC) src/
+	mv $(TIMINGSRC) src/
 	@[ -d $@ ] && touch $@
 
 

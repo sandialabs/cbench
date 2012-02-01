@@ -34,6 +34,7 @@ CC=$(PLAINCC)
 default: $(EXECS)
 
 $(EXECS): .make-$(SRC)
+	@[ -x $@ ] && touch $@
 
 download: $(TAR)
 
@@ -56,6 +57,7 @@ $(SRC): $(TAR)
 	@touch .patched
 
 .make-$(SRC): $(SRC) .patched second.o
+	@echo "Compiling $(SRC)"
 	$(MAKE) FC=$(PLAINF90) CC=$(PLAINCC) CFLAGS="$(CFLAGS) -DDGEMM -DMXMD16 -DLINUX" \
 		FFLAGS="$(FFLAGS) -DLINUX" LDFLAGS="$(LDFLAGS)" -C src > .make-$(SRC) 2>&1
 
