@@ -32,8 +32,8 @@ $(EXEC): .make-$(SRC)
 	[ -x src/src/IMB-MPI1 ] && cp -f src/src/IMB-MPI1 src/src/IMB-MPI1-$(VERSION)
 
 clean:
-	$(MAKE) -C src/src clean > .make-$(SRC) 2>&1
-	rm -f .make-$(SRC) 
+	-$(MAKE) -C src/src clean  > .make-$(SRC) 2>&1
+	rm -f .make-$(SRC)
 
 distclean:
 	rm -fr .make-$(SRC) src $(TAR) $(SRC)

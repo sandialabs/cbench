@@ -38,7 +38,8 @@ all src/src/current/iozone src/src/current/fileop: $(SRC)
 #	$(MAKE) all > .make-$(SRC) 2>&1
 
 clean:
-	$(MAKE) -C src/src/current clean > .make-$(SRC) 2>&1
+	-$(MAKE) -C src/src/current clean > .make-$(SRC) 2>&1
+	rm -f .make-$(SRC)
 
 distclean:
 	-/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)

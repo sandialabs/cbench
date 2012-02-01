@@ -27,7 +27,8 @@ $(SRC): $(TAR)
 	$(MAKE) -C src CC=$(PLAINCC) > .make-$(SRC) 2>&1
 
 clean:
-	$(MAKE) -C src clean
+	-$(MAKE) -C src clean > .make-$(SRC) 2>&1
+	rm -f .make-$(SRC)
 
 distclean:
 	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)

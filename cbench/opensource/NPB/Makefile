@@ -58,11 +58,11 @@ clean: cleanserial cleanmpi
 	rm -f .make-$(SRC)
 
 cleanserial:
-	$(MAKE) -C $(SERDIR) clean; /bin/rm -f $(SERDIR)/config/suite.def >> .make-$(SRC) 2>&1
+	-$(MAKE) -C $(SERDIR) clean >> .make-$(SRC) 2>&1 ; /bin/rm -f $(SERDIR)/config/suite.def 
 	/bin/rm -f bin/*.[ABCDSW] serial
 
 cleanmpi:
-	$(MAKE) -C $(MPIDIR) clean; /bin/rm -f $(MPIDIR)/config/suite.def >> .make-$(SRC) 2>&1
+	-$(MAKE) -C $(MPIDIR) clean >> .make-$(SRC) 2>&1; /bin/rm -f $(MPIDIR)/config/suite.def >> .make-$(SRC) 2>&1
 	/bin/rm -f bin/*.[ABCDSW].* mpi
 
 distclean:

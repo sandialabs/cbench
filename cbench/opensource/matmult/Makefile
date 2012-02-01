@@ -62,7 +62,7 @@ $(SRC): $(TAR)
 		FFLAGS="$(FFLAGS) -DLINUX" LDFLAGS="$(LDFLAGS)" -C src > .make-$(SRC) 2>&1
 
 clean:
-	[ -d $(SRC) ] && $(MAKE) -C src clean > .make-$(SRC) 2>&1
+	-$(MAKE) -C src clean > .make-$(SRC) 2>&1
 	/bin/rm -f second.o .make-$(SRC)
 
 distclean:

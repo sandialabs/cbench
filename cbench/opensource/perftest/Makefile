@@ -44,7 +44,8 @@ src/stress: src/Makefile
 	make -C src stress > .make-$(SRC) 2>&1
 
 clean:
-	$(MAKE) -C src clean
+	-$(MAKE) -C src clean > .make-$(SRC) 2>&1
+	rm -f .make-$(SRC)
 
 distclean:
 	/bin/rm -rf $(SRC) $(TAR) src .configure-$(SRC) .make-$(SRC)

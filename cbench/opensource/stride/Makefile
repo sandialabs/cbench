@@ -28,7 +28,7 @@ $(SRC): $(TAR)
 	@touch $@
 
 clean:
-	[ -d $(SRC) ] && $(MAKE) -C src -f Makefile.cbench clean > .make-$(SRC) 2>&1
+	-$(MAKE) -C src -f Makefile.cbench clean > .make-$(SRC) 2>&1
 	rm -f .make-$(SRC)
 
 distclean:

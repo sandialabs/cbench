@@ -41,6 +41,7 @@ distclean:
 install: .make-$(SRC)
 	@echo "Installing $(SRC)"
 	cd src && make install >> ../.make-$(SRC) 2>&1
+	mkdir -p $(CBENCHTEST)/bin
 	@for e in $(EXEC); do \
 		echo "$(CBENCHTEST)/$(SRC)/libexec/osu-micro-benchmarks/$$e -> $(CBENCHTEST)/bin/$$e-$(VERSION)"; \
 		ln -sf $(CBENCHTEST)/$(SRC)/libexec/osu-micro-benchmarks/$$e $(CBENCHTEST)/bin/$$e-$(VERSION); \

@@ -28,12 +28,13 @@ $(SRC): $(TAR)
 	@[ -d $@ ] && touch $@ && ln -sf $@ src
 
 $(EXEC): $(SRC)
-	make -C src CC=$(PLAINCC) CXX=$(PLAINCXX) > .make-$(SRC) 2>&1
+	$(MAKE) -C src CC=$(PLAINCC) CXX=$(PLAINCXX) > .make-$(SRC) 2>&1
 	@[ -x $@ ] && touch $@
 #	cd src/; export CC=$(CC); export F77=$(F77); export MPILIB=$(MPICH)/lib; if [ ! -f config.status ]; then ./configure; fi; make
 
 clean:
-	make -C src clean > .make-$(SRC) 2>&1
+	-$(MAKE) -C src clean > .make-$(SRC) 2>&1
+	rm -f .make-$(SRC)
 
 distclean: 
 	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)

@@ -51,7 +51,8 @@ src/make.inc:
 	ln -sf $(GRAPH500)/make.inc-cbench $(GRAPH500)/src/make.inc
 
 clean:
-	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean > .make-$(SRC) 2>&1
+	-$(MAKE) -C $(SRC) clean > .make-$(SRC) 2>&1
+	rm -f .make-$(SRC)
 
 distclean:
 	/bin/rm -rf $(SRC) src $(TAR) .patched .make-$(SRC)

@@ -20,7 +20,7 @@ $(SRC): $(TAR)
 	@[ -d $@ ] && touch $@
 
 .make-$(SRC): $(SRC)
-	$(MAKE) -C src reconfig >> .make-$(SRC) 2>&1
+	$(MAKE) -C src reconfig > .make-$(SRC) 2>&1
 	$(MAKE) -C src linux-mpich >> .make-$(SRC) 2>&1
 	$(MAKE) CB_CC=$(PLAINCC) CB_CFLAGS="$(CFLAGS)" -C src/cachebench cachebench >> .make-$(SRC) 2>&1
 	@touch $@
@@ -28,7 +28,7 @@ $(SRC): $(TAR)
 #	$(MAKE) BB_CC=$(PLAINCC) BB_F77=$(PLAINF77) BB_LD=$(PLAINF77) BB_LIBS="$(BLASLIB) -lrt" CB_CC=$(PLAINCC) MP_MPI_CC=$(CC) -C src compile
 
 clean:
-	$(MAKE) -C src clean >> .make-$(SRC) 2>&1; $(MAKE) -C src/cachebench clobber >> .make-$(SRC) 2>&1
+	-$(MAKE) -C src clean >> .make-$(SRC) 2>&1; $(MAKE) -C src/cachebench clobber >> .make-$(SRC) 2>&1
 	rm -f .make-$(SRC)
 
 distclean:

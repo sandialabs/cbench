@@ -26,7 +26,7 @@ $(SRC): $(TAR)
 	@touch $@
 
 clean:
-	$(MAKE) -C src dist-clean > .make-$(SRC) 2>&1
+	-$(MAKE) -C src dist-clean > .make-$(SRC) 2>&1
 	/bin/rm -rf src/runin/bin .make-$(SRC)
 
 distclean: 
