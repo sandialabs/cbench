@@ -5,10 +5,12 @@ SRC=IMB_$(VERSION)
 TAR=$(SRC).tgz
 URL="http://software.intel.com/sites/products/mpi-benchmarks/$(TAR)"
 
-INSTALLDIR = $(bin_dir)
-INSTALLTARGETS = 
+EXEC = src/src/IMB-MPI1-$(VERSION)
 
-default: .make-$(SRC)
+INSTALLDIR = $(bin_dir)
+INSTALLTARGETS = src/src/IMB-MPI1-$(VERSION)
+
+default: $(EXEC)
 
 download: $(TAR)
 
@@ -21,27 +23,21 @@ $(SRC): $(TAR)
 	ln -sf $@ src
 	@[ -d $@ ] && touch $@
 
-.configure-$(SRC): $(SRC)
-	@echo "Configuring $(SRC)"
-	cd src && ./configure --prefix=$(CBENCHTEST)$(SRC) > ../.configure-$(SRC) 2>&1
+.make-$(SRC): $(SRC)
+	@echo "Compiling $(SRC)"
+	$(MAKE) -C src/src CC=$(CC) > .make-$(SRC) 2>&1
 	@touch $@
 
-.make-$(SRC): .configure-$(SRC)
-	@echo "Compiling $(SRC)"
-	$(MAKE) -C src CC=$(CC) > .make-$(SRC) 2>&1; touch .configure-$(SRC)
-	@touch $@
+$(EXEC): .make-$(SRC)
+	[ -x src/src/IMB-MPI1 ] && cp -f src/src/IMB-MPI1 src/src/IMB-MPI1-$(VERSION)
 
 clean:
-	@if [ -f src/Makefile ] ; then $(MAKE) -C src clean > .make-$(SRC) 2>&1; fi
-	rm -f .make-$(SRC) .configure-$(SRC)
+	$(MAKE) -C src/src clean > .make-$(SRC) 2>&1
+	rm -f .make-$(SRC) 
 
 distclean:
-	rm -fr .make-$(SRC) .configure-$(SRC) src $(TAR) $(SRC)
+	rm -fr .make-$(SRC) src $(TAR) $(SRC)
 
-install: .make-$(SRC)
-	@echo "Installing $(SRC)"
-	cd src && make install >> ../.make-$(SRC) 2>&1
-	@for progs in dshbak  pdcp  pdsh  rpdcp; do \
-		ln -sf $(CBENCHTEST)/$(SRC)/bin/$$progs $(CBENCHTEST)/sbin/$$progs; \
-	done
+install uninstall: default
+	$(do-$@)
 
