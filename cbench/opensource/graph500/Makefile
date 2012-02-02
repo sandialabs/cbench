@@ -43,7 +43,10 @@ $(SRC): $(TAR)
 
 all: mpi 
 
-mpi: $(SRC) src/make.inc clean
+mpi: .make-$(SRC)
+
+.make-$(SRC): $(SRC) src/make.inc 
+	sed -i -e 's/error/warning/g' src/mpi/mpi_workarounds.h
 	$(MAKE) -C $(SRC)/mpi MPICC=$(CC) CC=$(PLAINCC) CFLAGS="-Drestrict=__restrict__ -DNDEBUG -DGRAPH_GENERATOR_MPI $(CFLAGS)" LDFLAGS=$(LDFLAGS)  > .make-$(SRC) 2>&1
 #	$(MAKE) -C $(SRC) MPICC=$(CC) CC=$(PLAINCC) make-edgelist
 
