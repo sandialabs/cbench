@@ -1,6 +1,6 @@
 include ../../make.def
 
-VERSION=3.5
+VERSION=3.5.1
 SRC=osu-micro-benchmarks-$(VERSION)
 TAR=$(SRC).tar.gz
 URL="http://mvapich.cse.ohio-state.edu/benchmarks/$(TAR)"
