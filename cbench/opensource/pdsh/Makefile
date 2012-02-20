@@ -1,9 +1,10 @@
 include ../../make.def
 
-VERSION=2.26
+VERSION=2.28
 SRC=pdsh-$(VERSION)
 TAR=$(SRC).tar.bz2
-URL="http://sourceforge.net/projects/pdsh/files/pdsh/pdsh-$(VERSION)/$(TAR)"
+#URL="http://sourceforge.net/projects/pdsh/files/pdsh/pdsh-$(VERSION)/$(TAR)"
+URL="http://pdsh.googlecode.com/files/$(TAR)"
 
 INSTALLDIR = $(bin_dir)
 INSTALLTARGETS = src/src/pdsh/pdsh
