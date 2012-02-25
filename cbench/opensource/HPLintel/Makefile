@@ -1,14 +1,11 @@
 # Makefile for HPLinpack 2.0 for Cbench
 
-
 include ../../make.def
 
 export CFLAGS
-SRC=l_lpk_p_10.3.2.005
-UNTARSRC=linpack_10.3.2
-TAR=$(SRC).tgz
-#URL=http://registrationcenter-download.intel.com/akdlm/irc_nas/1778/${TAR}
-URL=http://registrationcenter-download.intel.com/akdlm/irc_nas/2070/$(TAR)
+SRC=linpack_10.3.9
+TAR=l_lpk_p_10.3.9.014.tgz
+URL=http://registrationcenter.intel.com/irc_nas/2487/$(TAR)
 
 MPICH_CH=ch_shmem
 HPL2=$(CBENCHOME)/opensource/HPLintel
@@ -33,7 +30,7 @@ default: $(default_tgt)
 all: linpack clean local
 
 linpack: $(SRC) xerbla
-	$(MAKE) -C $(UNTARSRC)/benchmarks/mp_linpack arch=cbench > .make-$(SRC) 2>&1
+	$(MAKE) -C $(SRC)/benchmarks/mp_linpack arch=cbench > .make-$(SRC) 2>&1
 	[ -e src/bin/cbench/xhpl ] && /bin/mv src/bin/cbench/xhpl src/bin/cbench/xhplintel
 
 download: $(TAR)
@@ -43,8 +40,8 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
-	ln -sf $(UNTARSRC)/benchmarks/mp_linpack src
-	ln -sf $(HPL2)/Make.cbench $(HPL2)/$(UNTARSRC)/benchmarks/mp_linpack/Make.cbench
+	ln -sf $(SRC)/benchmarks/mp_linpack src
+	ln -sf $(HPL2)/Make.cbench $(HPL2)/$(SRC)/benchmarks/mp_linpack/Make.cbench
 	@[ -d $@ ] && touch $@
 
 xerbla: 
@@ -60,12 +57,12 @@ local: linpack
 extractnodeperf: $(SRC)
 
 clean:
-	-[ -d $(UNTARSRC) ] && $(MAKE) -C $(UNTARSRC)/benchmarks/mp_linpack clean_arch_all arch=cbench > .make-$(SRC) 2>&1
+	-[ -d $(SRC) ] && $(MAKE) -C $(SRC)/benchmarks/mp_linpack clean_arch_all arch=cbench > .make-$(SRC) 2>&1
 	/bin/rm -rf $(HPL2)/src/lib/* $(HPL2)/src/bin/*
 	/bin/rm -f xerbla.o
 
 distclean:
-	/bin/rm -rf $(UNTARSRC) xerbla.o src $(TAR) .make-$(SRC)
+	/bin/rm -rf $(SRC) xerbla.o src $(TAR) .make-$(SRC)
 
 install uninstall: default
 	$(do-$@)
