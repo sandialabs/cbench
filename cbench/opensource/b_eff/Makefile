@@ -1,6 +1,6 @@
 include ../../make.def
 
-MEMORY = $(shell $(CBENCHTEST)/sbin/get_clusterdef_param --param memory_per_processor | sed 's/\..*//')
+MEMORY = $(shell $(CBENCHOME)/sbin/get_clusterdef_param --param memory_per_processor | sed 's/\..*//')
 #MEMORY = 1024
 
 DEFINES = -DMEMORY_PER_PROCESSOR=$(MEMORY) -DPRINTLEVEL=1

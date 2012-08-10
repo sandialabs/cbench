@@ -10,7 +10,7 @@ export CFLAGS
 #SRC=graph500-1.2
 SRC=graph500-2.1.4
 TAR=$(SRC).tar.bz2
-URL=http://www.graph500.org/$(TAR)
+URL=http://www.graph500.org/sites/default/files/files/$(TAR)
 
 # this block was used to build graph500 from the alternate source tree on 
 # Github... your mileage may vary
