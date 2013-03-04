@@ -1,6 +1,6 @@
 include ../../make.def
 
-VERSION=4.2.1
+VERSION=4.3.0
 SRC=memtester-$(VERSION)
 TAR=$(SRC).tar.gz
 URL="http://pyropus.ca/software/memtester/old-versions/$(TAR)"
