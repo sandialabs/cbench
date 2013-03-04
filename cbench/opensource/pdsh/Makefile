@@ -1,6 +1,6 @@
 include ../../make.def
 
-VERSION=2.28
+VERSION=2.29
 SRC=pdsh-$(VERSION)
 TAR=$(SRC).tar.bz2
 #URL="http://sourceforge.net/projects/pdsh/files/pdsh/pdsh-$(VERSION)/$(TAR)"
