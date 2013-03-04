@@ -50,7 +50,7 @@ linpack: xerbla
 	$(MAKE) -C hpl >> .make-$(SRC) 2>&1
 
 local: linpack
-	/bin/mv -f hpl/bin/cbench/xhpl hpl/bin/cbench/xhpl.ch_shmem
+	[ -e hpl/bin/cbench/xhpl ] && /bin/mv -f hpl/bin/cbench/xhpl hpl/bin/cbench/xhpl.ch_shmem 
 
 clean:
 	/bin/rm -f linpack-size	

@@ -1,9 +1,10 @@
 include ../../make.def
 
-VERSION=v0.1alpha2.4-0-gfe7a932
+#VERSION=v0.1alpha2.4-0-gfe7a932
+VERSION=v0.2.6-g54e7b37
 SRC=xianyi-OpenBLAS-$(VERSION)
 TAR=$(SRC).tar.gz
-URL=http://github.com/xianyi/OpenBLAS/tarball/v0.1alpha2.4
+URL=http://github.com/xianyi/OpenBLAS/tarball/v0.2.6
 
 LAPACKTAR=lapack-3.1.1.tgz
 LAPACKURL=http://www.netlib.org/lapack/$(LAPACKTAR)
@@ -21,7 +22,7 @@ download: $(TAR) $(LAPACKTAR) $(LARGETAR) $(TIMINGTAR)
 
 $(TAR):
 	$(call download-curl-url,$(URL))
-	mv v0.1alpha2.4 $(TAR)
+	mv v0.2.6 $(TAR)
 
 $(LAPACKTAR): 
 	$(call download-curl-url,$(LAPACKURL))
@@ -34,7 +35,7 @@ $(TIMINGTAR):
 
 $(SRC): $(TAR) $(LAPACKTAR) $(LARGETAR) $(TIMINGTAR)
 	$(call untar-src,$(TAR))
-	mv xianyi-OpenBLAS-92ba8a7 $(SRC)
+	mv xianyi-OpenBLAS-87b4d0c $(SRC)
 	ln -sf $@ src
 	[ -d $(SRC) ] && cd src && ln -sf ../$(LAPACKTAR) 
 	[ -d $(SRC) ] && cd src && ln -sf ../$(LARGETAR) 

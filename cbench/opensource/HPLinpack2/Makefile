@@ -54,7 +54,7 @@ xerbla:
 # using the $(MPICH_CH) device.  We use this to compile a version of 
 # hpl that will run just on a single node.
 local: linpack
-	/bin/mv -f $(HPL2)/src/bin/cbench/xhpl2 $(HPL2)/src/bin/cbench/xhpl2.$(MPICH_CH)
+	[ -e (HPL2)/src/bin/cbench/xhpl2 ] && /bin/mv -f $(HPL2)/src/bin/cbench/xhpl2 $(HPL2)/src/bin/cbench/xhpl2.$(MPICH_CH)
 
 clean:
 	-[ -d $(SRC) ] && $(MAKE) -C $(SRC) clean_arch_all arch=cbench
