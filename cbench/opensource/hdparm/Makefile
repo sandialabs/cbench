@@ -1,6 +1,6 @@
 include ../../make.def
 
-VERSION=9.39
+VERSION=9.43
 SRC=hdparm-$(VERSION)
 TAR=$(SRC).tar.gz
 URL="http://sourceforge.net/projects/hdparm/files/hdparm/$(TAR)"

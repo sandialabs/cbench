@@ -1,6 +1,6 @@
 include ../../make.def
 
-VERSION=1.8.3
+VERSION=1.8.4
 SRC=mdtest-$(VERSION)
 TAR=$(SRC).tgz
 URL="http://sourceforge.net/projects/mdtest/files/mdtest%20latest/$(SRC)/$(TAR)"

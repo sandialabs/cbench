@@ -3,7 +3,7 @@
 include ../../make.def
 
 #VERSION=1.03e
-VERSION=1.96
+VERSION=1.97
 SRC=bonnie++-$(VERSION)
 TAR=$(SRC).tgz
 
@@ -24,12 +24,12 @@ $(TAR):
 
 $(SRC): $(TAR)
 	$(call untar-src,$(TAR))
+	[ -d $(SRC).1 ] && mv $(SRC).1 $(SRC)
 	ln -sf $@ src
 	@[ -d $@ ] && touch $@ && ln -sf $@ src
 
 $(EXEC): $(SRC)
 	$(MAKE) -C src CC=$(PLAINCC) CXX=$(PLAINCXX) > .make-$(SRC) 2>&1
-	@[ -x $@ ] && touch $@
 #	cd src/; export CC=$(CC); export F77=$(F77); export MPILIB=$(MPICH)/lib; if [ ! -f config.status ]; then ./configure; fi; make
 
 clean:
