@@ -27,10 +27,10 @@ $(SRC): $(TAR)
 .make-$(SRC): $(SRC)
 	@echo "Compiling $(SRC)"
 	$(MAKE) -C src CC=$(CC) > .make-$(SRC) 2>&1
+	[ -x src/IMB-MPI1 ] && cp -f src/IMB-MPI1 src/IMB-MPI1-$(VERSION)
 	@touch $@
 
 $(EXEC): .make-$(SRC)
-	[ -x src/IMB-MPI1 ] && cp -f src/IMB-MPI1 src/IMB-MPI1-$(VERSION)
 
 clean:
 	-$(MAKE) -C src clean  > .make-$(SRC) 2>&1
