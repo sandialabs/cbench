@@ -305,11 +305,11 @@ if (defined $nodebatch or defined $batch) {
 	$numsubmitted = 0;
 	$ppn = $numnodes = $numprocs = 1; 
 	$runtype = 'batch';
-	$jobname = "nodehwtest";
 	foreach my $node (sort sort_by_nodename keys(%nodehash)) {
 		# make sure the node wasn't excluded
 		($nodehash{$node} == 0xdead) and next;
 
+		$jobname = "nodehwtest-$node";
 		# get clean batch job template
 		$outbuf = $outbuf_clean;
 
