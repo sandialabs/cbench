@@ -6,6 +6,7 @@
 #
 #BSUB BSUB_NODESPEC_HERE
 #BSUB -W WALLTIME_HERE
+#BSUB -J JOBNAME_HERE
 #
 # other attributes you might use but are hidded from LSF processing
 #HIDE -q somequeue
