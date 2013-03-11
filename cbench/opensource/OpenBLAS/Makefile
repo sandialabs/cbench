@@ -6,7 +6,7 @@ SRC=xianyi-OpenBLAS-$(VERSION)
 TAR=$(SRC).tar.gz
 URL=http://github.com/xianyi/OpenBLAS/tarball/v0.2.6
 
-LAPACKTAR=lapack-3.1.1.tgz
+LAPACKTAR=lapack-3.4.2.tgz
 LAPACKURL=http://www.netlib.org/lapack/$(LAPACKTAR)
 LARGETAR=large.tgz
 LARGEURL=http://www.netlib.org/lapack/timing/$(LARGETAR)
@@ -44,6 +44,7 @@ $(SRC): $(TAR) $(LAPACKTAR) $(LARGETAR) $(TIMINGTAR)
 
 .make-$(SRC): $(SRC) 
 	@echo "Compiling $(SRC)"
+	cd src && patch < segfaults.patch
 	@if [ $(ARCH) = "x86_64" ]; then cd src && /bin/sh ./quickbuild.64bit > ../.make-$(SRC) 2>&1; touch $@; \
 	elif [ $(ARCH) = "x86" ]; then  cd src && /bin/sh ./quickbuild.32 > ../.make-$(SRC) 2>&1; touch $@; \
 	else \
