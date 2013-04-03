@@ -569,10 +569,41 @@ sub lsf_nodespec_build {
 	return $list;
 }
 sub lsf_query {
+	my $regex = shift;
 	die "Error: UNIMPLEMENTED lsf_query() ...";
 }
 sub lsf_batch_extension {
 	return "lsf";
+}
+
+###########################################################
+# Support for the "Load Leveler" batch system
+#
+sub loadleveler_batchsubmit_cmdbuild {
+	my $cmd;
+	if (length $batch_cmd > 1) {
+		$cmd = $batch_cmd;
+	}
+	else {
+		$cmd = "llsubmit";
+	}
+
+	# transform the output file on the submission script to include the job name
+	die "Error: loadleveler_batchsubmit_cmdbuild() transform the output file on the submission script to include the job name";
+	
+	(length $batch_extraargs > 1) and $cmd .= " $batch_extraargs";
+	
+	return "$cmd ";
+}
+sub loadleveler_nodespec_build {
+	die "Error: UNIMPLEMENTED lsf_nodespec_build() ...";
+}
+sub loadleveler_query {
+	my $regex = shift;
+	die "Error: UNIMPLEMENTED loadleveler_query() ...";
+}
+sub loadleveler_batch_extension {
+	return "loadleveler";
 }
 
 ###########################################################
