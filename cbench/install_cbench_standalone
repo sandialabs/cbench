@@ -1,0 +1,23 @@
+#!/bin/bash
+#set -x
+
+echo -n "Enter where cbench is located (default $(pwd)):"
+read CBENCHOME
+[ "x" = "x$CBENCHOME" ] && CBENCHOME=$(pwd)
+export CBENCHOME
+
+[ -f $CBENCHOME/doc/examples/cbench-standalonedir-template.sh ] && cp -f ${CBENCHOME}/doc/examples/cbench-standalonedir-template.sh $CBENCHOME/cbench-standalonedir.sh
+
+sed -i -e "s#REPLACE_CBENCHOME#${CBENCHOME}#" ${CBENCHOME}/cbench-standalonedir.sh 
+
+echo -n "Where do you wish to install CBENCH? (default $HOME/cbench-standalone):"
+read CBENCHSTANDALONEDIR
+[ "x" = "x$CBENCHSTANDALONEDIR" ] && CBENCHSTANDALONEDIR=$HOME/cbench-standalone
+export CBENCHSTANDALONEDIR
+[ -d $CBENCHSTANDALONEDIR ] && echo "Previous $CBENCHSTANDALONEDIR directory, remove or specify a different directory" && exit 1
+
+sed -i -e "s#REPLACE_CBENCHSTANDALONEDIR#${CBENCHSTANDALONEDIR=}#" ${CBENCHOME}/cbench-standalonedir.sh 
+
+source ${CBENCHOME}/cbench-standalonedir.sh && make cbench_standalonedir_alldistclean && make cbench_standalone
+exit
+
