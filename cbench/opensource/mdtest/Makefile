@@ -29,7 +29,7 @@ clean:
 	rm -f .make-$(SRC)
 
 distclean:
-	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC)
+	/bin/rm -rf $(SRC) $(TAR) src .make-$(SRC) ._mdtest-1.8.4
 
 install uninstall: default
 	$(do-$@)

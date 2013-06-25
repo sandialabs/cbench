@@ -1,6 +1,6 @@
 include ../../make.def
 
-VERSION=3.9
+VERSION=4.0.1
 SRC=osu-micro-benchmarks-$(VERSION)
 TAR=$(SRC).tar.gz
 URL="http://mvapich.cse.ohio-state.edu/benchmarks/$(TAR)"
@@ -42,10 +42,4 @@ install: .make-$(SRC)
 	@echo "Installing $(SRC)"
 	cd src && make install >> ../.make-$(SRC) 2>&1
 	mkdir -p $(CBENCHTEST)/bin
-	@for e in $(EXEC); do \
-		echo "$(CBENCHTEST)/$(SRC)/libexec/osu-micro-benchmarks/$$e -> $(CBENCHTEST)/bin/$$e-$(VERSION)"; \
-		ln -sf $(CBENCHTEST)/$(SRC)/libexec/osu-micro-benchmarks/$$e $(CBENCHTEST)/bin/$$e-$(VERSION); \
-	done
-
-
-
+	ln -s $(CBENCHTEST)/$(SRC) $(CBENCHTEST)/bin
