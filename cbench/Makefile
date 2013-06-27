@@ -286,8 +286,9 @@ distclean: clean
 
 # targets used for making tarballs
 sfrelease: 
-	@echo "Updating from svn tree" && svn up; svnready=`svn stat $(CBENCHOME) | wc -l`; \
-	[ $${svnready} -ne 0 ] && echo "svn tree is not clean to make a release" && svn stat && exit 1
+	echo "Updating from svn tree" && svn up; \
+	if [ `svn stat $(CBENCHOME) | wc -l` -ne 0 ]; then echo "svn tree is not clean to make a release" && svn stat $(CBENCHOME) && exit 1; fi; 
+	export cbench_rev=`grep Version VERSION | awk -F ': ' '{print $$2}'`; tar cfj cbench_release_$${cbench_rev}\.tar.gz * --exclude .svn --exclude restricted --exclude openapps
 
 release: distclean
 	export cbench_rev=`grep Version VERSION | awk -F ': ' '{print $$2}'`; tar cfvz cbench_release_$${cbench_rev}\.tar.gz * --exclude cbench*.tar.gz --exclude CVS --exclude .svn --exclude restricted --exclude *.o --exclude bin --exclude openapps
