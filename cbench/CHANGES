@@ -4,6 +4,52 @@
         
 A __brief__ summary of changes in each release of Cbench.
 
+* Cbench release (1.3.0)
+	* reworked Make files to download source when needed
+	* created a new cbench_standalone target that uses openmpi, pdsh, and 
+	openBLAS to build tests and doesn't rely on any external MPI installations
+	* allow curl and wget methods to be used to downloading code to be compiled
+	* allow git and svn methods to be used to downloading code to be compiled
+	* many, many useful contributions from sf users: cstackpole, mr_ep, braithr, 
+	randy_scott, sonicsoft70
+	* from now on join stdout/stderr into single files for torque like slurm 
+	* support LSF batch environment
+	* Basic support for running on the Cray Linux Environment (CLE) on a 
+	Cray XE6 class machine. CLE natively uses the Application Level Placement 
+	Scheduler (ALPS) system for launching applications on compute nodes. CLE 
+	can use more than one batch system, but this commit provides support for 
+	Torque on CLE.
+	Set the following in cluster.def:
+		$joblaunch_method = "alps";
+		$batch_method = "cletorque";
+	Note that CLE Torque has some additional resource parameters it knows 
+	about and thus I treated it separately. 
+	* Support for compiling Cbench in a Cray Compile Environment (CCE) on 
+	Cray XT (at least on CLE 2.1.56 and newer) and Cray XE systems.
+	* Add an '--exclude' option to allow for exclusion of certain 
+	jobnames during job submission. The use case justifying this feature is 
+	submitting jobs in the shakedown testset and excluding I/O jobs
+	* Addition of NUMA-GPU tests to the Single Node Benchmark script. 
+	The parsing of NUMA tests (both memory and GPU) utilizes the 
+	Algorithm::KMeans module, so that module is being committed as well. 
+	The parse code is a bit unwieldy but it creates some node colored tables 
+	for the NUMA test output.
+	* initial Open64 Compiler support to cbench
+	* make download target to download source tree, useful when non 
+	seemless internet access
+	* specify specific nodes for nodehwtest_start_jobs.pl for batch and ssh
+	* add --preamble method to generation of jobs
+	* if "$spool_as_final_name true" in torque config do not parse running jobs
+	* Add build support for the Scalable HeterOgeneous Computing (SHOC) 
+	Benchmark Suite from ORNL (http://ft.ornl.gov/doku/shoc/start)
+	* Add build support for the LMbench3 benchmark suite - 
+	http://www.bitmover.com/lmbench/
+	* Add build support for the Portable Hardware Locality (hwloc) tool from 
+	the OpenMPI project.
+	* First pass at using dmidecode to gather hardware config information 
+	and parsing it to identify inconsistencies across a set of nodes.
+	* add Single Node Benchmark test framework
+
 * Cbench release (1.2.2)
 	* Changed how cbench_start_jobs.pl and start_jobs() handle delaying 
 	between each job submission.  Should be much faster when submitting 
