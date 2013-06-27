@@ -655,6 +655,16 @@ define download-curl-url
 	done;
 endef
 
+define gitpull-src
+	@echo "git cloning: $1 $2"
+	git clone $1 $2
+endef
+
+define svncheckout-src
+	@echo "svn checkout: $1 $2"
+	svn co -q $1 $2
+endef
+
 # common routing to unpack tgz/bzip
 define untar-src
 	@echo "Extracting: $1"
