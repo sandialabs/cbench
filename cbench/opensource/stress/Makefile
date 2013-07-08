@@ -1,10 +1,11 @@
 include ../../make.def
 
-#SRC=stress-0.18.9
 VERSION=1.0.4
 SRC=stress-$(VERSION)
-TAR=$(SRC).tar.gz
-URL="http://weather.ou.edu/~apw/projects/stress/$(TAR)"
+#TAR=$(SRC).tar.gz
+#URL="http://weather.ou.edu/~apw/projects/stress/$(TAR)"
+TAR=$(SRC).git
+URL=https://github.com/cooljeanius/$(SRC)
 
 EXEC=src/src/stress
 INSTALLDIR = $(hwtest_bin_dir)
@@ -15,12 +16,15 @@ default: $(EXEC)
 download: $(TAR)
 
 $(TAR):
-	$(call download-curl-url,$(URL))
+	$(call gitpull-src,$(URL), $(TAR))
+#	$(call download-curl-url,$(URL))
 
 $(SRC): $(TAR)
-	$(call untar-src,$(TAR))
-	ln -sf $@ src
-	@[ -d $@ ] && touch $@
+	ln -sf $(TAR) src
+	@[ -d $(TAR) ] && touch $(TAR)
+#	$(call untar-src,$(TAR))
+#	ln -sf $@ src
+#	@[ -d $@ ] && touch $@
 
 .configure-$(SRC): $(SRC) 
 	@echo "Configuring: $(SRC)"
