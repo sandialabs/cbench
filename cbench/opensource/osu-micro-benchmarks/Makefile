@@ -1,6 +1,6 @@
 include ../../make.def
 
-VERSION=4.0.1
+VERSION=4.1
 SRC=osu-micro-benchmarks-$(VERSION)
 TAR=$(SRC).tar.gz
 URL="http://mvapich.cse.ohio-state.edu/benchmarks/$(TAR)"
@@ -23,7 +23,7 @@ $(SRC): $(TAR)
 
 .configure-$(SRC): $(SRC)
 	@echo "Configuring $(SRC)"
-	cd src && ./configure --prefix=$(CBENCHTEST)/$(SRC) > ../.configure-$(SRC) 2>&1
+	cd src && ./configure CC=$(CC) --prefix=$(CBENCHTEST)/$(SRC) > ../.configure-$(SRC) 2>&1
 	@touch $@
 
 .make-$(SRC): .configure-$(SRC)
