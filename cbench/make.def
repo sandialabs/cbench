@@ -25,7 +25,9 @@ ifdef CBENCHSTANDALONEDIR
 		COMPILERCOLLECTION = gcc
 	endif
 	CBENCHTEST = $(CBENCHSTANDALONEDIR)
-	MPIHOME = $(CBENCHSTANDALONEDIR)/openmpi
+	ifndef MPIHOME
+		MPIHOME = $(CBENCHSTANDALONEDIR)/openmpi
+	endif
 endif
 
 # abort if user forgot to set required variables
@@ -492,6 +494,16 @@ LIBS = $(MPILIB)
 
 ###### Common functions
 
+define make-cmd-in-dirs
+	@for dir in $2; do \
+	echo "---------------------------------------------------------"; \
+	echo "----- doing $(MAKE) $1 in $$dir"; \
+	echo "---------------------------------------------------------"; \
+	if [ $1 = "compile" -o $1 = "default" ] ; then $(MAKE) --no-print-directory -C $$dir; \
+	else $(MAKE) --no-print-directory -C $$dir $1; fi; \
+	done
+endef
+
 define do-hwtest-subdirs
 	@for dir in $(HWTEST_SUBDIRS); \
 	do \
@@ -500,17 +512,6 @@ define do-hwtest-subdirs
 	echo "---------------------------------------------------------"; \
 	$(MAKE) --no-print-directory -C $$dir $1; \
 	if [ $$? -ne 0 -a "$1" = all ] ; then exit 1 ; fi ; \
-	done
-endef
-
-define do-standaloneopen-subdirs
-	@for dir in $(STANDALONEOPEN_SUBDIRS); \
-	do \
-	echo "---------------------------------------------------------"; \
-	echo "----- doing $(MAKE) $1 in $$dir"; \
-	echo "---------------------------------------------------------"; \
-	$(MAKE) --no-print-directory -C $$dir $1; \
-	if [ $$? -ne 0 -a "$@" = all ] ; then exit 1 ; fi ; \
 	done
 endef
 
