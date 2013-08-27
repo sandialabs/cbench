@@ -17,11 +17,9 @@ $(SRC): $(TAR)
 	ln -sf $@ src
 	@[ -d $@ ] && touch $@
 
-# from ompi 1.4.X&& export CC=$(PLAINCC) && F77=$(PLAINF77) && FC=$(PLAINF77) && CXX=$(PLAINCXX) && \ 
-#	 ./configure --enable-orterun-prefix-by-default --enable-mpi-threads --prefix=$(BENCH_TEST)/openmpi > ../.configure-$(SRC) 2>&1)
 .configure-$(SRC): $(SRC)
-	@echo "Configuring $(SRC) ... NOT" && exit 1
-	(cd src && export CC=$(PLAINCC) && export F77=$(PLAINF77) && export FC=$(PLAINF77) && export CXX=$(PLAINCXX) && ./configure --enable-orterun-prefix-by-default --with-threads=posix --enable-mpi-thread-multiple --enable-opal-multi-threads --prefix=$(CBENCHTEST)/openmpi > ../.configure-$(SRC) 2>&1)
+	@echo "Configuring $(SRC)" 
+	(cd src && export CC=$(PLAINCC) && export F77=$(PLAINF77) && export FC=$(PLAINF77) && export CXX=$(PLAINCXX) && ./configure --prefix=$(CBENCHTEST)/$(SRC)-$(COMPILERCOLLECTION) > ../.configure-$(SRC) 2>&1)
 	@touch $@
 
 .make-$(SRC): .configure-$(SRC)
@@ -38,7 +36,8 @@ distclean:
 
 .install-$(SRC): .make-$(SRC)
 	@echo "Installing $(SRC)"
-	$(MAKE) -C src PREFIX=$(CBENCHTEST)/openmpi install >> .make-$(SRC) 2>&1
+	$(MAKE) -C src PREFIX=$(CBENCHTEST)/$(SRC)-$(COMPILERCOLLECTION) install >> .make-$(SRC) 2>&1
+	cd $(CBENCHTEST) && ln -sf $(SRC) mpich3
 	@touch $@ 
 
 install: .install-$(SRC)
