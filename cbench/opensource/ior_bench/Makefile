@@ -35,7 +35,7 @@ clean:
 	-[ -d $(SRC)/src/C ] && $(MAKE) -C src CC.Linux=$(CC) $@ >> .make-$(SRC) 2>&1
 	/bin/rm -f IOR.* .make-$(SRC)
 
-distclean: clean
+distclean: 
 	/bin/rm -rf $(TAR) $(SRC) src .make-$(SRC)
 
 install uninstall: default

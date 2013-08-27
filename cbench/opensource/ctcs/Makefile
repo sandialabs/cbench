@@ -30,7 +30,6 @@ clean:
 	/bin/rm -rf src/runin/bin .make-$(SRC)
 
 distclean: 
-	$(MAKE) -C src dist-clean > .make-$(SRC) 2>&1
 	rm -fr $(SRC) $(TAR) src .make-$(SRC) src.old/runin/bin
 
 
